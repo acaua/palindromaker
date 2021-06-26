@@ -26,10 +26,17 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main>
-        <h1>Palindromaker</h1>
-        <textarea value={value} onChange={handleChange} rows={5} cols={50} />
-        <br />
+      <main className="m-3">
+        <h1 className="text-2xl">Palindromaker</h1>
+        <textarea
+          className={`border border-black my-4 ${
+            isPalindrome ? "bg-green-200" : "bg-red-200"
+          }`}
+          value={value}
+          onChange={handleChange}
+          rows={5}
+          cols={50}
+        />
         <p>IsPalindrome: {isPalindrome ? "yes" : "NO"}</p>
         <p>{mirror}</p>
         <p>{center}</p>
