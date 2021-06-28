@@ -1,21 +1,70 @@
-import { useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Head from "next/head";
+
+import { createEditor, Editor, Node } from "slate";
+import { Slate, Editable, withReact } from "slate-react";
+import { withHistory } from "slate-history";
 
 import checkPalindrome from "@/lib/checkPalindrome";
 
 export default function Home() {
-  const [value, setValue] = useState("");
-  const [{ isPalindrome, mirror, center, normalizedText }, setPali] = useState({
-    isPalindrome: false,
-    mirror: [],
-    center: [],
-    normalizedText: "",
-  });
+  const editor = useMemo(() => withReact(withHistory(createEditor())), []);
+  const [value, setValue] = useState([
+    {
+      type: "paragraph",
+      children: [{ text: "abobrinha" }],
+    },
+  ]);
 
-  const handleChange = (event) => {
-    const text = event.target.value;
-    setValue(text);
-    setPali(checkPalindrome(text));
+  const decorate = useCallback(([node, path]) => {
+    let ranges = [];
+
+    if (
+      editor.palindrome &&
+      editor.palindrome.center &&
+      Editor.isEditor(node)
+    ) {
+      const [pos1, pos2] = editor.palindrome.center;
+
+      if (pos1)
+        ranges.push({
+          anchor: pos1,
+          focus: Editor.after(editor, pos1),
+          center1: true,
+        });
+
+      if (pos2)
+        ranges.push({
+          anchor: pos2,
+          focus: Editor.after(editor, pos2),
+          center2: true,
+        });
+    }
+
+    return ranges;
+  }, []);
+
+  const onChange = (newValue) => {
+    setValue(newValue);
+
+    const textNodes = [...Node.texts(editor)];
+    const texts = textNodes.map((node) => node[0].text);
+    const text = texts.join("\n");
+
+    const start = Editor.start(editor, []);
+    const end = Editor.end(editor, [textNodes.length - 1]);
+    const positions = [
+      ...Editor.positions(editor, { at: { anchor: start, focus: end } }),
+    ];
+
+    // { isPalindrome, mirror, center, normalizedText }
+    const palindorme = checkPalindrome(text);
+
+    const center = palindorme.center.map((pos) =>
+      pos ? positions[pos] : undefined
+    );
+
+    editor.palindrome = { isPalindrome: palindorme.isPalindrome, center };
   };
 
   return (
@@ -28,20 +77,36 @@ export default function Home() {
 
       <main className="m-3">
         <h1 className="text-2xl">Palindromaker</h1>
-        <textarea
-          className={`border border-black my-4 ${
-            isPalindrome ? "bg-green-200" : "bg-red-200"
-          }`}
-          value={value}
-          onChange={handleChange}
-          rows={5}
-          cols={50}
-        />
-        <p>IsPalindrome: {isPalindrome ? "yes" : "NO"}</p>
-        <p>{mirror}</p>
-        <p>{center}</p>
-        <p>{normalizedText}</p>
+
+        <Slate editor={editor} value={value} onChange={onChange}>
+          <div className="border border-black my-2">
+            <Editable
+              decorate={decorate}
+              renderLeaf={(props) => <Leaf {...props} />}
+            />
+          </div>
+        </Slate>
+
+        <button
+          onClick={() => {
+            console.log(editor.palindrome);
+          }}
+        >
+          log
+        </button>
       </main>
     </div>
   );
 }
+
+const Leaf = ({ attributes, children, leaf }) => {
+  const className = [
+    leaf.center1 ? "bg-red-200 border-r border-black" : "",
+    leaf.center2 ? "bg-red-200 border-l border-black" : "",
+  ].join(" ");
+  return (
+    <span {...attributes} className={className}>
+      {children}
+    </span>
+  );
+};
