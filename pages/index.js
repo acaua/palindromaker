@@ -1,22 +1,23 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Head from "next/head";
 
-import checkPalindrome from "@/lib/checkPalindrome";
+import { createEditor, Editor, Node } from "slate";
+import { Slate, Editable, withReact } from "slate-react";
+import { withHistory } from "slate-history";
+
+import { withPalindrome, EditablePalindrome } from "@/lib/palindrome-plugin";
 
 export default function Home() {
-  const [value, setValue] = useState("");
-  const [{ isPalindrome, mirror, center, normalizedText }, setPali] = useState({
-    isPalindrome: false,
-    mirror: [],
-    center: [],
-    normalizedText: "",
-  });
-
-  const handleChange = (event) => {
-    const text = event.target.value;
-    setValue(text);
-    setPali(checkPalindrome(text));
-  };
+  const editor = useMemo(
+    () => withPalindrome(withReact(withHistory(createEditor()))),
+    []
+  );
+  const [value, setValue] = useState([
+    {
+      type: "paragraph",
+      children: [{ text: "abobrinha" }],
+    },
+  ]);
 
   return (
     <div>
@@ -28,19 +29,24 @@ export default function Home() {
 
       <main className="m-3">
         <h1 className="text-2xl">Palindromaker</h1>
-        <textarea
-          className={`border border-black my-4 ${
-            isPalindrome ? "bg-green-200" : "bg-red-200"
-          }`}
+
+        <Slate
+          editor={editor}
           value={value}
-          onChange={handleChange}
-          rows={5}
-          cols={50}
-        />
-        <p>IsPalindrome: {isPalindrome ? "yes" : "NO"}</p>
-        <p>{mirror}</p>
-        <p>{center}</p>
-        <p>{normalizedText}</p>
+          onChange={(newValue) => setValue(newValue)}
+        >
+          <div className="border border-black my-2">
+            <EditablePalindrome editor={editor} />
+          </div>
+        </Slate>
+
+        <button
+          onClick={() => {
+            console.log(editor.palindrome);
+          }}
+        >
+          log
+        </button>
       </main>
     </div>
   );
