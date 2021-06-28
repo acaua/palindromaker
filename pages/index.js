@@ -35,7 +35,13 @@ export default function Home() {
           value={value}
           onChange={(newValue) => setValue(newValue)}
         >
-          <div className="border border-black my-2">
+          <div
+            className={`border-4 ${
+              editor.palindrome.isPalindrome
+                ? "border-green-600"
+                : "border-red-400"
+            } my-2 min-h-[300px]`}
+          >
             <EditablePalindrome editor={editor} />
           </div>
         </Slate>
