@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import Head from "next/head";
 
-import { createEditor, Editor, Node } from "slate";
-import { Slate, Editable, withReact } from "slate-react";
+import { createEditor } from "slate";
+import { Slate, withReact } from "slate-react";
 import { withHistory } from "slate-history";
 
 import { withPalindrome, EditablePalindrome } from "@/lib/palindrome-plugin";
@@ -15,7 +15,7 @@ export default function Home() {
   const [value, setValue] = useState([
     {
       type: "paragraph",
-      children: [{ text: "abobrinha" }],
+      children: [{ text: "A man, a plan, a canal: Panama!" }],
     },
   ]);
 
@@ -35,24 +35,27 @@ export default function Home() {
           value={value}
           onChange={(newValue) => setValue(newValue)}
         >
-          <div
-            className={`border-4 ${
+          <EditablePalindrome
+            className={[
+              "border-4",
+              "p-2",
+              "prose prose-lg",
               editor.palindrome.isPalindrome
                 ? "border-green-600"
-                : "border-red-400"
-            } my-2 min-h-[300px]`}
-          >
-            <EditablePalindrome editor={editor} />
-          </div>
+                : "border-red-400",
+              "my-2 min-h-[300px]",
+            ].join(" ")}
+            editor={editor}
+          />
         </Slate>
 
-        <button
+        {/* <button
           onClick={() => {
             console.log(editor.palindrome);
           }}
         >
           log
-        </button>
+        </button> */}
       </main>
     </div>
   );

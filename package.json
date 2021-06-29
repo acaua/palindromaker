@@ -10,9 +10,13 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.4.1",
     "next": "11.0.1",
     "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react-dom": "17.0.2",
+    "slate": "^0.63.0",
+    "slate-history": "^0.62.0",
+    "slate-react": "^0.65.2"
   },
   "devDependencies": {
     "autoprefixer": "^10.2.6",
