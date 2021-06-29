@@ -15,7 +15,8 @@ export default function Home() {
   const [value, setValue] = useState([
     {
       type: "paragraph",
-      children: [{ text: "A man, a plan, a canal: Panama!" }],
+      children: [{ text: "Eva, can I stab bats in a cave?" }],
+      // children: [{ text: "A man, a plan, a canal: Panama!" }],
     },
   ]);
 
@@ -37,8 +38,9 @@ export default function Home() {
         >
           <EditablePalindrome
             className={[
-              "border-4",
+              "border-4 rounded",
               "p-2",
+              "tracking-wide",
               "prose prose-lg",
               editor.palindrome.isPalindrome
                 ? "border-green-600"
