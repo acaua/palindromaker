@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import Head from "next/head";
 
 import { createEditor } from "slate";
-import { Slate, withReact } from "slate-react";
+import { Slate, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
 
 import { withPalindrome, EditablePalindrome } from "@/lib/palindrome-plugin";
@@ -26,9 +26,12 @@ export default function Home() {
     editor.onChange();
     // set value to new array to force rerender
     setValue([...value]);
+
+    setInterval(() => {
+      ReactEditor.focus(editor);
+    }, 10);
   }, []);
 
-  console.log(editor.palindrome.isPalindrome);
   return (
     <div>
       <Head>
