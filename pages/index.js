@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Head from "next/head";
 
 import { createEditor } from "slate";
@@ -15,11 +15,20 @@ export default function Home() {
   const [value, setValue] = useState([
     {
       type: "paragraph",
+      // children: [{ text: "" }],
       children: [{ text: "Eva, can I stab bats in a cave?" }],
       // children: [{ text: "A man, a plan, a canal: Panama!" }],
     },
   ]);
 
+  // Run once on first render to initialize stuff
+  useEffect(() => {
+    editor.onChange();
+    // set value to new array to force rerender
+    setValue([...value]);
+  }, []);
+
+  console.log(editor.palindrome.isPalindrome);
   return (
     <div>
       <Head>
