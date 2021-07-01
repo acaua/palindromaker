@@ -40,8 +40,10 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="m-3">
-        <h1 className="text-2xl">Palindromaker</h1>
+      <main className="m-4">
+        <h1 className="text-3xl font-semibold text-gray-900 mb-3">
+          Palindromaker
+        </h1>
 
         <Slate
           editor={editor}
@@ -50,10 +52,11 @@ export default function Home() {
         >
           <EditablePalindrome
             className={[
-              "border-4 rounded",
+              "border-4 rounded shadow",
+              "bg-white",
               "p-2",
-              "tracking-wide",
-              "prose prose-lg",
+              "font-mono text-lg tracking-wide text-gray-900",
+              "max-w-prose",
               editor.palindrome.isPalindrome
                 ? "border-green-600"
                 : "border-red-400",
