@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "jest",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -19,10 +20,12 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.2.6",
+    "babel-jest": "^27.0.6",
     "eslint": "^7.29.0",
     "eslint-config-next": "^11.0.1",
     "eslint-config-prettier": "^8.3.0",
     "husky": "^6.0.0",
+    "jest": "^27.0.6",
     "lint-staged": "^11.0.0",
     "postcss": "^8.3.5",
     "prettier": "2.3.1",
