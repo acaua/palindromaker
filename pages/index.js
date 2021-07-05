@@ -6,6 +6,7 @@ import { Slate, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
 
 import { withPalindrome, EditablePalindrome } from "@/lib/palindrome-plugin";
+import Toolbar from "@/components/toolbar";
 
 export default function Home() {
   const editor = useMemo(
@@ -50,20 +51,17 @@ export default function Home() {
           value={value}
           onChange={(newValue) => setValue(newValue)}
         >
-          <EditablePalindrome
-            className={[
-              "border-4 rounded shadow",
-              "bg-white",
-              "p-2",
-              "font-mono text-lg tracking-wide text-gray-900",
-              "max-w-prose",
-              editor.palindrome.isPalindrome
-                ? "border-green-600"
-                : "border-red-400",
-              "my-2 min-h-[300px]",
-            ].join(" ")}
-            editor={editor}
-          />
+          <div className="max-w-prose bg-white shadow">
+            <Toolbar isPalindrome={editor.palindrome.isPalindrome} />
+            <EditablePalindrome
+              className={[
+                "p-2",
+                "font-mono text-lg tracking-wide text-gray-900",
+                "my-2 min-h-[300px]",
+              ].join(" ")}
+              editor={editor}
+            />
+          </div>
         </Slate>
 
         {/* <button
