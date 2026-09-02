@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import checkPalindrome from "./check-palindrome";
+import checkPalindrome, { normalizeChar } from "./check-palindrome";
 
 describe("isPalindrome", () => {
   test("A man, a plan... is a palindrome", () => {
@@ -20,6 +20,28 @@ test("Normalize text", () => {
   const { normalizedText } = checkPalindrome("ãàáéèê :,;?!");
 
   expect(normalizedText).toEqual("aaaeee :,;?!");
+});
+
+describe("normalizeChar", () => {
+  test("strips accents from composed characters", () => {
+    expect(normalizeChar("é")).toBe("e");
+    expect(normalizeChar("Ç")).toBe("c");
+    expect(normalizeChar("ã")).toBe("a");
+  });
+
+  test("strips accents from decomposed characters", () => {
+    expect(normalizeChar("e\u0301")).toBe("e");
+  });
+
+  test("drops bare combining marks", () => {
+    expect(normalizeChar("\u0301")).toBe("");
+  });
+
+  test("leaves non-letters untouched", () => {
+    expect(normalizeChar("5")).toBe("5");
+    expect(normalizeChar(",")).toBe(",");
+    expect(normalizeChar(" ")).toBe(" ");
+  });
 });
 
 describe("center", () => {

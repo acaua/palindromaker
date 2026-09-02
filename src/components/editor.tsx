@@ -1,8 +1,14 @@
+import { useEffect } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { Palindrome } from "@/lib/palindrome-extension";
 import { MirrorEditing } from "@/lib/mirror-extension";
+import {
+  createPersistence,
+  DOC_STORAGE_KEY,
+  readStoredDoc,
+} from "@/lib/persistence";
 import Toolbar from "@/components/toolbar";
 import WordFinder from "@/components/word-finder";
 
@@ -33,7 +39,9 @@ export default function Editor() {
       Palindrome,
       MirrorEditing,
     ],
-    content: "Eva, can I stab bats in a cave?",
+    content:
+      readStoredDoc(localStorage, DOC_STORAGE_KEY) ??
+      "Eva, can I stab bats in a cave?",
     autofocus: "end",
     editorProps: {
       attributes: {
@@ -45,6 +53,11 @@ export default function Editor() {
       },
     },
   });
+
+  useEffect(() => {
+    if (!editor) return;
+    return createPersistence(editor, { storage: localStorage });
+  }, [editor]);
 
   if (!editor) return null;
 

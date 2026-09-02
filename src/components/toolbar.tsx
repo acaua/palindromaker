@@ -53,16 +53,25 @@ const IsPalindrome = ({ isPalindrome }: { isPalindrome: boolean }) => {
   const classNameIcon = "inline-block h-6 w-6 mr-1";
   return (
     <span
+      role="status"
+      aria-live="polite"
       className={`px-2 py-1 rounded-sm ${
         isPalindrome ? "bg-green-100" : "bg-red-100"
       }`}
     >
       {isPalindrome ? (
-        <CheckCircleIcon className={`${classNameIcon} text-green-700`} />
+        <CheckCircleIcon
+          aria-hidden="true"
+          className={`${classNameIcon} text-green-700`}
+        />
       ) : (
-        <XCircleIcon className={`${classNameIcon} text-red-700`} />
+        <XCircleIcon
+          aria-hidden="true"
+          className={`${classNameIcon} text-red-700`}
+        />
       )}
       palindrome
+      <span className="sr-only">{isPalindrome ? "yes" : "no"}</span>
     </span>
   );
 };
