@@ -11,7 +11,7 @@ const checkPalindrome = (text) => {
   let center = undefined;
 
   let i = 0;
-  let j = !!normalizedText.length ? normalizedText.length - 1 : 0;
+  let j = normalizedText.length ? normalizedText.length - 1 : 0;
 
   while (i <= j) {
     if (!isLetter(normalizedText[i])) {

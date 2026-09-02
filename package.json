@@ -3,16 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src",
     "test": "jest",
     "prepare": "husky install"
   },
   "dependencies": {
     "@heroicons/react": "^1.0.1",
-    "next": "11.0.1",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "slate": "^0.63.0",
@@ -20,21 +19,24 @@
     "slate-react": "^0.65.2"
   },
   "devDependencies": {
+    "@babel/preset-env": "^8.0.2",
+    "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.2.6",
     "babel-jest": "^27.0.6",
     "eslint": "^7.29.0",
-    "eslint-config-next": "^11.0.1",
     "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-react": "^7.37.5",
     "husky": "^6.0.0",
     "jest": "^27.0.6",
     "lint-staged": "^11.0.0",
     "postcss": "^8.3.5",
     "prettier": "2.3.1",
-    "tailwindcss": "^2.2.4"
+    "tailwindcss": "^2.2.4",
+    "vite": "^8.2.2"
   },
   "lint-staged": {
-    "*.{js,css,md}": "prettier --write",
-    "*.js": [
+    "*.{js,jsx,css,md}": "prettier --write",
+    "*.{js,jsx}": [
       "eslint --cache --fix",
       "jest --bail --findRelatedTests"
     ]
