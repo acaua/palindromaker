@@ -80,7 +80,8 @@ as a static-asset Worker, with builds triggered by pushes to GitHub:
 pnpm deploy
 ```
 
-Runs the build (`build.command` in `wrangler.jsonc`) and uploads `dist/`.
+Type-checks, runs the unit tests, builds (`build.command` in
+`wrangler.jsonc`), and uploads `dist/` — a failing check blocks the deploy.
 
 ### CI setup (Workers Builds)
 

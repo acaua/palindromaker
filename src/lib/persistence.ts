@@ -1,4 +1,5 @@
 import type { JSONContent } from "@tiptap/core";
+import type { Schema } from "@tiptap/pm/model";
 
 export const DOC_STORAGE_KEY = "palindromaker:doc:v1";
 
@@ -28,13 +29,21 @@ const isStoredDoc = (value: unknown): value is JSONContent => {
 export const readStoredDoc = (
   storage: Pick<Storage, "getItem"> | null,
   key: string,
+  schema?: Schema,
 ): JSONContent | null => {
   if (!storage) return null;
   try {
     const raw = storage.getItem(key);
     if (raw === null) return null;
     const parsed: unknown = JSON.parse(raw);
-    return isStoredDoc(parsed) ? parsed : null;
+    if (!isStoredDoc(parsed)) return null;
+    if (schema) {
+      // parseable JSON that the editor's schema cannot represent (unknown
+      // node/mark types, broken structure) would crash nodeFromJSON during
+      // render and take the whole app down on every reload; reject it here
+      schema.nodeFromJSON(parsed).check();
+    }
+    return parsed;
   } catch {
     return null;
   }

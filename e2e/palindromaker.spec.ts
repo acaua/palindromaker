@@ -17,7 +17,10 @@ async function clearEditor(page: Page) {
   await editable.click();
   await page.keyboard.press("End");
   await page.waitForTimeout(100);
-  for (let i = 0; i < 40; i++) {
+  // bound the loop to the current text; textContent drops the "\n"
+  // between blocks, so keep a margin for paragraph separators
+  const length = ((await editable.textContent()) ?? "").length;
+  for (let i = 0; i < length + 5; i++) {
     await page.keyboard.press("Backspace");
     await page.waitForTimeout(15);
   }
@@ -155,6 +158,22 @@ test("falls back to the sample palindrome when storage is corrupt", async ({
 }) => {
   await page.addInitScript(() => {
     localStorage.setItem("palindromaker:doc:v1", "not json");
+  });
+
+  await page.reload();
+
+  await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
+});
+
+test("falls back to the sample palindrome when storage holds unknown nodes", async ({
+  page,
+}) => {
+  // parseable JSON the editor schema rejects would crash during render
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "palindromaker:doc:v1",
+      JSON.stringify({ type: "doc", content: [{ type: "bogus" }] }),
+    );
   });
 
   await page.reload();

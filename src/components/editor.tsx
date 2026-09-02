@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { getSchema } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
@@ -33,15 +34,21 @@ const disabledStarterKitExtensions = {
   underline: false,
 } as const;
 
+const extensions = [
+  StarterKit.configure(disabledStarterKitExtensions),
+  Palindrome,
+  MirrorEditing,
+];
+
+// lets readStoredDoc reject stored docs this editor cannot represent;
+// without it, corrupt localStorage would crash nodeFromJSON during render
+const schema = getSchema(extensions);
+
 export default function Editor() {
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure(disabledStarterKitExtensions),
-      Palindrome,
-      MirrorEditing,
-    ],
+    extensions,
     content:
-      readStoredDoc(localStorage, DOC_STORAGE_KEY) ??
+      readStoredDoc(localStorage, DOC_STORAGE_KEY, schema) ??
       "Eva, can I stab bats in a cave?",
     autofocus: "end",
     editorProps: {
