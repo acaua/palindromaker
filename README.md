@@ -74,6 +74,10 @@ as a static-asset Worker, with builds triggered by pushes to GitHub:
 - **`main`** deploys to production at `palindromaker.<subdomain>.workers.dev`
 - Any other branch gets a preview URL
 
+Dictionary files are cached in the browser for a week (then
+stale-while-revalidate for a day) via a `_headers` file shipped from
+`public/`.
+
 ### Manual deploy
 
 ```bash
