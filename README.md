@@ -33,6 +33,7 @@ Open http://localhost:5173.
 | `pnpm dev`       | Start the dev server                 |
 | `pnpm build`     | Production build to `dist/`          |
 | `pnpm preview`   | Serve the production build           |
+| `pnpm deploy`    | Build and deploy to Cloudflare       |
 | `pnpm test`      | Unit tests (Vitest)                  |
 | `pnpm test:e2e`  | Browser tests (Playwright, Chromium) |
 | `pnpm typecheck` | Type-check with `tsc`                |
@@ -49,5 +50,30 @@ VITE_GOATCOUNTER_URL=https://yourcode.goatcounter.com/count
 
 ## Deploy
 
-`pnpm build` produces a fully static site in `dist/` — serve it from any
-static host (Vercel, Netlify, GitHub Pages, nginx, ...).
+The site deploys to [Cloudflare Workers](https://developers.cloudflare.com/workers/static-assets/)
+as a static-asset Worker, with builds triggered by pushes to GitHub:
+
+- **`main`** deploys to production at `palindromaker.<subdomain>.workers.dev`
+- Any other branch gets a preview URL
+
+### Manual deploy
+
+```bash
+pnpm deploy
+```
+
+Runs the build (`build.command` in `wrangler.jsonc`) and uploads `dist/`.
+
+### CI setup (Workers Builds)
+
+1. Cloudflare dashboard → Workers & Pages → **Create → Workers → Import a
+   repository** → select `acaua/palindromaker`
+2. Add these **build variables** in the Worker's build settings:
+
+   | Variable               | Value                                         |
+   | ---------------------- | --------------------------------------------- |
+   | `VITE_GOATCOUNTER_URL` | `https://palindromaker.goatcounter.com/count` |
+   | `NODE_VERSION`         | `22`                                          |
+
+Build and deploy commands are read from `wrangler.jsonc`, so no other
+configuration is needed.
