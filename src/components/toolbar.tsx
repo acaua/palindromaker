@@ -1,11 +1,17 @@
-import { useSlate } from "slate-react";
-import type { Editor } from "slate";
+import { useEditorState } from "@tiptap/react";
+import type { Editor } from "@tiptap/core";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 
-export default function Toolbar() {
-  const editor = useSlate() as Editor;
+import { palindromePluginKey } from "@/lib/palindrome-extension";
 
-  const { isPalindrome } = editor.palindrome;
+export default function Toolbar({ editor }: { editor: Editor }) {
+  const { isPalindrome } = useEditorState({
+    editor,
+    selector: ({ editor }) => ({
+      isPalindrome:
+        palindromePluginKey.getState(editor.state)?.isPalindrome ?? false,
+    }),
+  });
 
   return (
     <div className="flex items-center p-2 border-b-2 border-gray-200">

@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+.pm-center1,
+.pm-center2 {
+  @apply relative;
+}
+
+.pm-center1::after {
+  content: "";
+  @apply absolute -top-1 -bottom-1 right-0 w-2 border-t-4 border-b-4 border-blue-500;
+}
+
+.pm-center2::before {
+  content: "";
+  @apply absolute -top-1 -bottom-1 left-0 w-2 border-t-4 border-b-4 border-blue-500;
+}

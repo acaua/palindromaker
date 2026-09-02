@@ -1,54 +1,54 @@
-import { useState, useMemo, useEffect } from "react";
-import { createEditor } from "slate";
-import type { Descendant } from "slate";
-import { Slate, withReact, ReactEditor } from "slate-react";
-import { withHistory } from "slate-history";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 
-import { withPalindrome, EditablePalindrome } from "@/lib/palindrome-plugin";
+import { Palindrome } from "@/lib/palindrome-extension";
 import Toolbar from "@/components/toolbar";
 
-const initialValue: Descendant[] = [
-  {
-    type: "paragraph",
-    children: [{ text: "Eva, can I stab bats in a cave?" }],
-  },
-];
+const disabledStarterKitExtensions = {
+  blockquote: false,
+  bold: false,
+  bulletList: false,
+  code: false,
+  codeBlock: false,
+  dropcursor: false,
+  hardBreak: false,
+  heading: false,
+  horizontalRule: false,
+  italic: false,
+  link: false,
+  listKeymap: false,
+  listItem: false,
+  orderedList: false,
+  strike: false,
+  trailingNode: false,
+  underline: false,
+} as const;
 
 export default function Editor() {
-  const editor = useMemo(
-    () => withPalindrome(withReact(withHistory(createEditor()))),
-    [],
-  );
-  const [value, setValue] = useState<Descendant[]>(initialValue);
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure(disabledStarterKitExtensions),
+      Palindrome,
+    ],
+    content: "Eva, can I stab bats in a cave?",
+    autofocus: "end",
+    editorProps: {
+      attributes: {
+        class: [
+          "p-2",
+          "font-mono text-lg tracking-wide text-gray-900",
+          "my-2 min-h-[300px]",
+        ].join(" "),
+      },
+    },
+  });
 
-  // Run once on first render to initialize stuff
-  useEffect(() => {
-    editor.onChange();
-    // set value to new array to force rerender
-    setValue([...value]);
-
-    setInterval(() => {
-      ReactEditor.focus(editor);
-    }, 10);
-  }, []);
+  if (!editor) return null;
 
   return (
-    <Slate
-      editor={editor}
-      value={value}
-      onChange={(newValue) => setValue(newValue)}
-    >
-      <div className="max-w-prose bg-white shadow">
-        <Toolbar />
-        <EditablePalindrome
-          className={[
-            "p-2",
-            "font-mono text-lg tracking-wide text-gray-900",
-            "my-2 min-h-[300px]",
-          ].join(" ")}
-          editor={editor}
-        />
-      </div>
-    </Slate>
+    <div className="max-w-prose bg-white shadow">
+      <Toolbar editor={editor} />
+      <EditorContent editor={editor} />
+    </div>
   );
 }

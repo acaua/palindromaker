@@ -1,5 +1,5 @@
-import React from "react";
-import ReactDOM from "react-dom";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 
 import App from "@/App";
 import "@/styles/globals.css";
@@ -13,9 +13,8 @@ if (goatcounterUrl) {
   document.head.appendChild(script);
 }
 
-ReactDOM.render(
-  <React.StrictMode>
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
     <App />
-  </React.StrictMode>,
-  document.getElementById("root"),
+  </StrictMode>,
 );
