@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
 import type { Dictionary, Language, SearchMode } from "@/lib/dictionary";
@@ -10,6 +11,9 @@ import {
 } from "@/lib/dictionary";
 
 type Status = "idle" | "loading" | "ready" | "error";
+
+const ROW_HEIGHT = 32;
+const OVERSCAN = 6;
 
 const modes: Array<{ value: SearchMode; label: string }> = [
   { value: "starts", label: "starts with" },
@@ -27,6 +31,7 @@ export default function WordFinder() {
   const [dictionaryLang, setDictionaryLang] = useState<Language | null>(null);
   const [results, setResults] = useState<string[]>([]);
   const requestRef = useRef(0);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
   const load = (code: Language) => {
     const request = ++requestRef.current;
@@ -58,6 +63,21 @@ export default function WordFinder() {
     }, 150);
     return () => clearTimeout(handle);
   }, [dictionary, query, mode]);
+
+  const virtualizer = useVirtualizer({
+    count: results.length,
+    getScrollElement: () => scrollerRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: OVERSCAN,
+    // avoid React 19's "flushSync was called from inside a lifecycle method" warning
+    useFlushSync: false,
+  });
+
+  useEffect(() => {
+    virtualizer.scrollToOffset(0);
+  }, [results]);
+
+  const virtualItems = virtualizer.getVirtualItems();
 
   const hasQuery = query.trim() !== "";
 
@@ -146,20 +166,41 @@ export default function WordFinder() {
           )}
 
           {results.length > 0 && (
-            <ul
+            <div
+              ref={scrollerRef}
+              role="list"
               aria-label="results"
-              className="max-h-80 overflow-y-auto px-2 pb-2 font-mono text-lg"
+              className="max-h-80 overflow-y-auto font-mono text-lg"
             >
-              {results.map((word, index) => (
-                <li
-                  key={`${word}-${index}`}
-                  className="flex justify-between gap-4 [content-visibility:auto]"
-                >
-                  <span>{word}</span>
-                  <span className="text-gray-400">{mirrorWord(word)}</span>
-                </li>
-              ))}
-            </ul>
+              <div
+                style={{
+                  height: virtualizer.getTotalSize(),
+                  position: "relative",
+                }}
+              >
+                {virtualItems.map((virtualRow) => {
+                  const word = results[virtualRow.index];
+                  return (
+                    <div
+                      key={`${word}-${virtualRow.index}`}
+                      role="listitem"
+                      className="absolute left-0 top-0 flex h-8 w-full items-center gap-4 px-2"
+                      style={{ transform: `translateY(${virtualRow.start}px)` }}
+                    >
+                      <span className="min-w-0 flex-1 truncate" title={word}>
+                        {word}
+                      </span>
+                      <span
+                        className="min-w-0 truncate text-gray-400"
+                        title={mirrorWord(word)}
+                      >
+                        {mirrorWord(word)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       )}

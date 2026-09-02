@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@tanstack/react-virtual": "^3.14.10",
     "@tiptap/core": "^3.30.6",
     "@tiptap/pm": "^3.30.6",
     "@tiptap/react": "^3.30.6",

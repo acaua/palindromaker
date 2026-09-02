@@ -129,7 +129,7 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
 
   // "abacate" is the first word starting with "abac"; its mirror differs
   await searchInput.fill("abac");
-  const results = page.locator('ul[aria-label="results"] > li');
+  const results = page.locator('[aria-label="results"] [role="listitem"]');
   await expect(results.first()).toContainText("abacate");
 
   const word =
@@ -149,4 +149,37 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
   await searchInput.fill("hello");
   await expect(results.first()).toContainText("hello");
   await expect(results.first().locator("span").last()).toHaveText("olleh");
+});
+
+test("word finder virtualizes broad result sets", async ({ page }) => {
+  await page.locator('button:has-text("find words")').click();
+
+  const searchInput = page.locator('input[aria-label="search words"]');
+  // ~37k words start with "a" in the pt-br dictionary
+  await searchInput.fill("a");
+
+  const scroller = page.locator('div[aria-label="results"]');
+  const rows = page.locator('[aria-label="results"] [role="listitem"]');
+  await expect(rows.first()).toContainText("a");
+
+  // the full list is virtualized: only a small window of rows exists
+  expect(await rows.count()).toBeLessThan(100);
+  const scrollHeight = await scroller.evaluate(
+    (element) => element.scrollHeight,
+  );
+  expect(scrollHeight).toBeGreaterThan(1_000_000);
+
+  // scrolling to the bottom swaps the rendered window, never grows it
+  const firstRowBefore = await rows
+    .first()
+    .locator("span")
+    .first()
+    .textContent();
+  await scroller.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(rows.first().locator("span").first()).not.toHaveText(
+    firstRowBefore!,
+  );
+  expect(await rows.count()).toBeLessThan(100);
 });
