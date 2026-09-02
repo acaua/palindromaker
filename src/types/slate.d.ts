@@ -5,7 +5,7 @@ export type PalindromeMark = "center1" | "center2" | "gap" | "self" | "mirror";
 
 export interface PalindromeInfo {
   isPalindrome: boolean;
-  center: Point[] | undefined;
+  center: Array<Point | undefined> | undefined;
   mirror: Array<[Point, Point] | undefined>;
 }
 

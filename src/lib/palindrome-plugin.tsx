@@ -30,11 +30,15 @@ const checkPalindrome = (editor: Editor) => {
   const texts = textNodes.map((node) => node[0].text);
   const text = texts.join("\n");
 
-  const start = Editor.start(editor, []);
-  const end = Editor.end(editor, [textNodes.length - 1]);
-  const positions = [
-    ...Editor.positions(editor, { at: { anchor: start, focus: end } }),
-  ];
+  // map every character of `text` to its Point in the document;
+  // the "\n" join characters have no document position
+  const positions: Array<Point | undefined> = [];
+  textNodes.forEach(([node, path], i) => {
+    if (i > 0) positions.push(undefined);
+    for (let offset = 0; offset < node.text.length; offset++) {
+      positions.push({ path, offset });
+    }
+  });
 
   const palindrome = checkPalindromeBase(text);
 
@@ -45,7 +49,7 @@ const checkPalindrome = (editor: Editor) => {
   const mirror = palindrome.mirror.map((pos, i) => {
     const from = positions[i];
     const to = pos === undefined ? undefined : positions[pos];
-    return [from, to] as [Point, Point];
+    return from && to ? ([from, to] as [Point, Point]) : undefined;
   });
 
   return {
@@ -95,12 +99,15 @@ export const EditablePalindrome = ({
       }
 
       if (!palindrome.isPalindrome && palindrome.center) {
-        ranges.push({
-          anchor:
-            Editor.after(editor, palindrome.center[0]) || palindrome.center[0],
-          focus: palindrome.center[1],
-          gap: true,
-        });
+        const [gapStart, gapEnd] = palindrome.center;
+
+        if (gapStart && gapEnd) {
+          ranges.push({
+            anchor: Editor.after(editor, gapStart) || gapStart,
+            focus: gapEnd,
+            gap: true,
+          });
+        }
       }
 
       const { selection } = editor;

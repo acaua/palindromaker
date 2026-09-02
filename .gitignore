@@ -37,3 +37,7 @@ yarn-error.log*
 
 # vite
 /dist
+
+# playwright
+test-results
+playwright-report

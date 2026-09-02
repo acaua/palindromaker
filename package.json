@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@babel/preset-env": "^8.0.2",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^17.0.93",
     "@types/react-dom": "^17.0.26",
