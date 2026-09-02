@@ -1,0 +1,204 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { JSONContent } from "@tiptap/core";
+
+import {
+  createPersistence,
+  DOC_STORAGE_KEY,
+  readStoredDoc,
+} from "./persistence";
+
+class MemoryStorage {
+  private map = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.map.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.map.set(key, value);
+  }
+}
+
+class FailingStorage {
+  getItem(): string | null {
+    return null;
+  }
+
+  setItem(): void {
+    throw new Error("quota exceeded");
+  }
+}
+
+type Handler = () => void;
+
+class FakeEditor {
+  doc: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
+  private listeners = new Map<string, Set<Handler>>();
+
+  on(event: string, handler: Handler): this {
+    let handlers = this.listeners.get(event);
+    if (!handlers) {
+      handlers = new Set();
+      this.listeners.set(event, handlers);
+    }
+    handlers.add(handler);
+    return this;
+  }
+
+  off(event: string, handler: Handler): this {
+    this.listeners.get(event)?.delete(handler);
+    return this;
+  }
+
+  getJSON(): JSONContent {
+    return this.doc;
+  }
+
+  emit(event: string): void {
+    for (const handler of [...(this.listeners.get(event) ?? [])]) {
+      handler();
+    }
+  }
+}
+
+const stored = (storage: MemoryStorage) => storage.getItem(DOC_STORAGE_KEY);
+
+describe("readStoredDoc", () => {
+  test("returns null when storage is unavailable", () => {
+    expect(readStoredDoc(null, DOC_STORAGE_KEY)).toBeNull();
+  });
+
+  test("returns null when the key is absent", () => {
+    expect(readStoredDoc(new MemoryStorage(), DOC_STORAGE_KEY)).toBeNull();
+  });
+
+  test("returns the parsed doc", () => {
+    const storage = new MemoryStorage();
+    const doc = { type: "doc", content: [{ type: "paragraph" }] };
+    storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
+
+    expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toEqual(doc);
+  });
+
+  test("returns null for corrupt JSON", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(DOC_STORAGE_KEY, "not json");
+
+    expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toBeNull();
+  });
+
+  test("returns null for values that are not a doc", () => {
+    const storage = new MemoryStorage();
+    for (const value of ["null", '"hello"', "42", '{"type":"paragraph"}']) {
+      storage.setItem(DOC_STORAGE_KEY, value);
+      expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toBeNull();
+    }
+  });
+
+  test("returns null for an empty content array", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(DOC_STORAGE_KEY, '{"type":"doc","content":[]}');
+
+    expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toBeNull();
+  });
+});
+
+describe("createPersistence", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("saves the doc after the debounce delay", () => {
+    const storage = new MemoryStorage();
+    const editor = new FakeEditor();
+    const detach = createPersistence(editor, { storage });
+
+    editor.emit("update");
+    expect(stored(storage)).toBeNull();
+
+    vi.advanceTimersByTime(500);
+    expect(stored(storage)).toBe(JSON.stringify(editor.doc));
+
+    detach();
+  });
+
+  test("coalesces bursts of updates into one save", () => {
+    const storage = new MemoryStorage();
+    const editor = new FakeEditor();
+    const detach = createPersistence(editor, { storage });
+
+    editor.emit("update");
+    vi.advanceTimersByTime(200);
+
+    const changed: JSONContent = {
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "ab" }] }],
+    };
+    editor.doc = changed;
+    editor.emit("update");
+
+    vi.advanceTimersByTime(200);
+    expect(stored(storage)).toBeNull();
+
+    vi.advanceTimersByTime(300);
+    expect(stored(storage)).toBe(JSON.stringify(changed));
+
+    detach();
+  });
+
+  test("flushes a pending save when the editor is destroyed", () => {
+    const storage = new MemoryStorage();
+    const editor = new FakeEditor();
+    createPersistence(editor, { storage });
+
+    editor.emit("update");
+    editor.emit("destroy");
+
+    expect(stored(storage)).toBe(JSON.stringify(editor.doc));
+
+    // no duplicate save once the debounce would have fired
+    vi.advanceTimersByTime(1000);
+    expect(stored(storage)).toBe(JSON.stringify(editor.doc));
+  });
+
+  test("detaching flushes and stops listening", () => {
+    const storage = new MemoryStorage();
+    const editor = new FakeEditor();
+    const original = editor.doc;
+    const detach = createPersistence(editor, { storage });
+
+    editor.emit("update");
+    detach();
+    expect(stored(storage)).toBe(JSON.stringify(original));
+
+    editor.doc = { type: "doc", content: [{ type: "paragraph" }] };
+    editor.emit("update");
+    vi.advanceTimersByTime(1000);
+    expect(stored(storage)).toBe(JSON.stringify(original));
+  });
+
+  test("swallows storage failures", () => {
+    const editor = new FakeEditor();
+    const detach = createPersistence(editor, {
+      storage: new FailingStorage(),
+    });
+
+    editor.emit("update");
+    expect(() => vi.advanceTimersByTime(500)).not.toThrow();
+
+    detach();
+  });
+
+  test("does nothing when storage is unavailable", () => {
+    const editor = new FakeEditor();
+    const detach = createPersistence(editor, { storage: null });
+
+    editor.emit("update");
+    vi.advanceTimersByTime(1000);
+    expect(() => detach()).not.toThrow();
+  });
+});

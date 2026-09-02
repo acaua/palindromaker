@@ -38,6 +38,8 @@ test("loads focused with the default palindrome and a green badge", async ({
 
   await expect(editable).toContainText("Eva, can I stab bats in a cave?");
   await expect(greenBadge(page)).toContainText("palindrome");
+  await expect(greenBadge(page)).toHaveAttribute("role", "status");
+  await expect(greenBadge(page)).toHaveAttribute("aria-live", "polite");
   await expect(redBadge(page)).toHaveCount(0);
 });
 
@@ -117,6 +119,28 @@ test("mirror editing duplicates and removes mirrored characters", async ({
   await type(page, "x");
   await expect(editor(page)).toContainText("babx");
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "false");
+});
+
+test("persists editor content across reloads", async ({ page }) => {
+  await replaceAll(page, "racecar");
+  await expect(greenBadge(page)).toBeVisible();
+
+  // the pending debounced save is flushed on unload
+  await page.reload();
+
+  await expect(editor(page)).toContainText("racecar");
+});
+
+test("falls back to the sample palindrome when storage is corrupt", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("palindromaker:doc:v1", "not json");
+  });
+
+  await page.reload();
+
+  await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
 });
 
 test("word finder searches the pt-br dictionary and shows mirrors", async ({
