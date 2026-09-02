@@ -1,17 +1,27 @@
-const isLetter = (char) => RegExp(/^\p{L}/, "u").test(char);
+export interface PalindromeResult {
+  isPalindrome: boolean;
+  mirror: Array<number | undefined>;
+  center: [number, number] | undefined;
+  normalizedText: string;
+}
 
-const checkPalindrome = (text) => {
-  const normalizedText = text
+export const isLetter = (char: string): boolean => /^\p{L}/u.test(char);
+
+export const normalizeText = (text: string): string =>
+  text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
+const checkPalindrome = (text: string): PalindromeResult => {
+  const normalizedText = normalizeText(text);
+
   let isPalindrome = true;
-  let mirror = new Array(normalizedText.length);
-  let center = undefined;
+  const mirror: Array<number | undefined> = new Array(normalizedText.length);
+  let center: [number, number] | undefined = undefined;
 
   let i = 0;
-  let j = !!normalizedText.length ? normalizedText.length - 1 : 0;
+  let j = normalizedText.length ? normalizedText.length - 1 : 0;
 
   while (i <= j) {
     if (!isLetter(normalizedText[i])) {

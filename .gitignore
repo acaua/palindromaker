@@ -33,4 +33,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cloudflare
+.wrangler
+
 .eslintcache
+
+# vite
+/dist
+
+# playwright
+test-results
+playwright-report
