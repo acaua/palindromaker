@@ -1,6 +1,6 @@
 import { useSlate } from "slate-react";
 import type { Editor } from "slate";
-import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/solid";
+import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 
 export default function Toolbar() {
   const editor = useSlate() as Editor;
