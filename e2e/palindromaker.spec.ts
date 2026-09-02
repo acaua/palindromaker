@@ -118,3 +118,68 @@ test("mirror editing duplicates and removes mirrored characters", async ({
   await expect(editor(page)).toContainText("babx");
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "false");
 });
+
+test("word finder searches the pt-br dictionary and shows mirrors", async ({
+  page,
+}) => {
+  await page.locator('button:has-text("find words")').click();
+
+  const searchInput = page.locator('input[aria-label="search words"]');
+  await expect(searchInput).toBeVisible();
+
+  // "abacate" is the first word starting with "abac"; its mirror differs
+  await searchInput.fill("abac");
+  const results = page.locator('[aria-label="results"] [role="listitem"]');
+  await expect(results.first()).toContainText("abacate");
+
+  const word =
+    (await results.first().locator("span").first().textContent()) ?? "";
+  await expect(results.first().locator("span").last()).toHaveText(
+    [...word].reverse().join(""),
+  );
+
+  await page.locator('button:has-text("ends with")').click();
+  await searchInput.fill("ate");
+  await expect(results.first()).toContainText("abacate");
+
+  // switching the language reloads the dictionary and re-runs the search
+  const language = page.locator('select[aria-label="dictionary language"]');
+  await expect(language).toHaveValue("pt-br");
+  await language.selectOption("en");
+  await searchInput.fill("hello");
+  await expect(results.first()).toContainText("hello");
+  await expect(results.first().locator("span").last()).toHaveText("olleh");
+});
+
+test("word finder virtualizes broad result sets", async ({ page }) => {
+  await page.locator('button:has-text("find words")').click();
+
+  const searchInput = page.locator('input[aria-label="search words"]');
+  // ~37k words start with "a" in the pt-br dictionary
+  await searchInput.fill("a");
+
+  const scroller = page.locator('div[aria-label="results"]');
+  const rows = page.locator('[aria-label="results"] [role="listitem"]');
+  await expect(rows.first()).toContainText("a");
+
+  // the full list is virtualized: only a small window of rows exists
+  expect(await rows.count()).toBeLessThan(100);
+  const scrollHeight = await scroller.evaluate(
+    (element) => element.scrollHeight,
+  );
+  expect(scrollHeight).toBeGreaterThan(1_000_000);
+
+  // scrolling to the bottom swaps the rendered window, never grows it
+  const firstRowBefore = await rows
+    .first()
+    .locator("span")
+    .first()
+    .textContent();
+  await scroller.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(rows.first().locator("span").first()).not.toHaveText(
+    firstRowBefore!,
+  );
+  expect(await rows.count()).toBeLessThan(100);
+});

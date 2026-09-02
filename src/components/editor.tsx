@@ -4,6 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Palindrome } from "@/lib/palindrome-extension";
 import { MirrorEditing } from "@/lib/mirror-extension";
 import Toolbar from "@/components/toolbar";
+import WordFinder from "@/components/word-finder";
 
 const disabledStarterKitExtensions = {
   blockquote: false,
@@ -51,6 +52,7 @@ export default function Editor() {
     <div className="max-w-prose bg-white shadow">
       <Toolbar editor={editor} />
       <EditorContent editor={editor} />
+      <WordFinder />
     </div>
   );
 }

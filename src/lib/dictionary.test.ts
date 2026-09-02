@@ -1,0 +1,145 @@
+import { afterEach, describe, expect, test, vi } from "vitest";
+
+import {
+  buildDictionary,
+  LANGUAGES,
+  loadDictionary,
+  mirrorWord,
+  searchWords,
+} from "./dictionary";
+
+const dictionary = buildDictionary(
+  ["casa", "saúde", "asa", "Azul", "massa", "abacate"].join("\n"),
+);
+
+describe("buildDictionary", () => {
+  test("splits lines and skips empty ones", () => {
+    expect(dictionary.words).toEqual([
+      "casa",
+      "saúde",
+      "asa",
+      "Azul",
+      "massa",
+      "abacate",
+    ]);
+  });
+
+  test("builds normalized forms for matching", () => {
+    expect(dictionary.normalized).toEqual([
+      "casa",
+      "saude",
+      "asa",
+      "azul",
+      "massa",
+      "abacate",
+    ]);
+  });
+});
+
+describe("searchWords", () => {
+  test("returns nothing for an empty query", () => {
+    expect(searchWords(dictionary, "", "contains")).toEqual([]);
+    expect(searchWords(dictionary, "   ", "starts")).toEqual([]);
+  });
+
+  test("matches words that start with the query", () => {
+    expect(searchWords(dictionary, "as", "starts")).toEqual(["asa"]);
+  });
+
+  test("matches words that end with the query", () => {
+    expect(searchWords(dictionary, "asa", "ends")).toEqual(["casa", "asa"]);
+  });
+
+  test("matches words that contain the query", () => {
+    expect(searchWords(dictionary, "s", "contains")).toEqual([
+      "casa",
+      "saúde",
+      "asa",
+      "massa",
+    ]);
+  });
+
+  test("is accent-insensitive", () => {
+    expect(searchWords(dictionary, "saude", "starts")).toEqual(["saúde"]);
+    expect(searchWords(dictionary, "SAÚDE", "starts")).toEqual(["saúde"]);
+  });
+
+  test("is case-insensitive", () => {
+    expect(searchWords(dictionary, "azul", "starts")).toEqual(["Azul"]);
+    expect(searchWords(dictionary, "AZUL", "contains")).toEqual(["Azul"]);
+  });
+});
+
+describe("mirrorWord", () => {
+  test("reverses the word keeping accents in place", () => {
+    expect(mirrorWord("casa")).toBe("asac");
+    expect(mirrorWord("lápis")).toBe("sipál");
+    expect(mirrorWord("ábaco")).toBe("ocabá");
+  });
+
+  test("reverses a palindrome to itself", () => {
+    expect(mirrorWord("arara")).toBe("arara");
+  });
+});
+
+describe("LANGUAGES", () => {
+  test("lists all supported dictionaries with pt-br first", () => {
+    expect(LANGUAGES.map((info) => info.code)).toEqual([
+      "pt-br",
+      "en",
+      "es",
+      "de",
+      "fr",
+      "it",
+    ]);
+  });
+
+  test("has unique dictionary files", () => {
+    const files = LANGUAGES.map((info) => info.file);
+    expect(new Set(files).size).toBe(files.length);
+    expect(files.every((file) => file.startsWith("/dictionary/"))).toBe(true);
+  });
+});
+
+describe("loadDictionary", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("requests the file of the requested language", async () => {
+    const fetchMock = vi.fn(async () => new Response("x\n", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await loadDictionary("de");
+
+    expect(fetchMock).toHaveBeenCalledWith("/dictionary/de.txt");
+  });
+
+  test("caches the dictionary per language", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response("a\nb\n", { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const first = await loadDictionary("en");
+    const second = await loadDictionary("en");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(first).toEqual(second);
+  });
+
+  test("retries after a failed load", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () => new Response("", { status: 500 }))
+      .mockImplementation(async () => new Response("a\n", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(loadDictionary("es")).rejects.toThrow();
+    await expect(loadDictionary("es")).resolves.toEqual({
+      words: ["a"],
+      normalized: ["a"],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
