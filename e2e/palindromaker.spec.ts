@@ -118,3 +118,27 @@ test("mirror editing duplicates and removes mirrored characters", async ({
   await expect(editor(page)).toContainText("babx");
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "false");
 });
+
+test("word finder searches the pt-br dictionary and shows mirrors", async ({
+  page,
+}) => {
+  await page.locator('button:has-text("find words")').click();
+
+  const searchInput = page.locator('input[aria-label="search words"]');
+  await expect(searchInput).toBeVisible();
+
+  // "abacate" is the first word starting with "abac"; its mirror differs
+  await searchInput.fill("abac");
+  const results = page.locator('ul[aria-label="results"] > li');
+  await expect(results.first()).toContainText("abacate");
+
+  const word =
+    (await results.first().locator("span").first().textContent()) ?? "";
+  await expect(results.first().locator("span").last()).toHaveText(
+    [...word].reverse().join(""),
+  );
+
+  await page.locator('button:has-text("ends with")').click();
+  await searchInput.fill("ate");
+  await expect(results.first()).toContainText("abacate");
+});

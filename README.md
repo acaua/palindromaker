@@ -39,6 +39,16 @@ Open http://localhost:5173.
 | `pnpm typecheck` | Type-check with `tsc`                |
 | `pnpm lint`      | Lint with ESLint 9                   |
 
+## Word finder
+
+The "find words" panel below the editor searches a list of ~262k pt-BR words —
+by prefix, suffix, or substring, accent-insensitively — and shows each result's
+mirror (the reversed word). The list comes from
+[IME USP's `br-utf8.txt`](https://www.ime.usp.br/~pf/dicios/) (derived from the
+GPL-licensed br.ispell dictionary) and is bundled as
+`public/dictionary/pt-br.txt`, fetched lazily the first time the panel is
+opened.
+
 ## Analytics
 
 Set your GoatCounter endpoint in a `.env.local` file (see
