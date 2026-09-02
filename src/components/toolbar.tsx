@@ -1,24 +1,53 @@
 import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
-import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import {
+  ArrowsRightLeftIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/solid";
 
+import { mirrorPluginKey } from "@/lib/mirror-extension";
 import { palindromePluginKey } from "@/lib/palindrome-extension";
 
 export default function Toolbar({ editor }: { editor: Editor }) {
-  const { isPalindrome } = useEditorState({
+  const { isPalindrome, mirrorEnabled } = useEditorState({
     editor,
     selector: ({ editor }) => ({
       isPalindrome:
         palindromePluginKey.getState(editor.state)?.isPalindrome ?? false,
+      mirrorEnabled: mirrorPluginKey.getState(editor.state)?.enabled ?? false,
     }),
   });
 
   return (
     <div className="flex items-center p-2 border-b-2 border-gray-200">
       <IsPalindrome isPalindrome={isPalindrome} />
+      <MirrorEditingToggle editor={editor} enabled={mirrorEnabled} />
     </div>
   );
 }
+
+const MirrorEditingToggle = ({
+  editor,
+  enabled,
+}: {
+  editor: Editor;
+  enabled: boolean;
+}) => (
+  <button
+    type="button"
+    aria-pressed={enabled}
+    onClick={() => editor.commands.toggleMirrorEditing()}
+    // keep the editor focus (and caret) when toggling
+    onMouseDown={(event) => event.preventDefault()}
+    className={`ml-2 inline-flex cursor-pointer items-center rounded-sm px-2 py-1 ${
+      enabled ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-500"
+    }`}
+  >
+    <ArrowsRightLeftIcon className="mr-1 inline-block h-6 w-6" />
+    mirror
+  </button>
+);
 
 const IsPalindrome = ({ isPalindrome }: { isPalindrome: boolean }) => {
   const classNameIcon = "inline-block h-6 w-6 mr-1";

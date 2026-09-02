@@ -2,7 +2,10 @@
 
 A tiny editor for crafting palindromes with live feedback: it highlights the
 center characters, marks the gap that breaks the palindrome, and mirrors your
-caret position against its matching character.
+caret position against its matching character. The optional mirror mode
+(toggle it in the toolbar) duplicates every character you type — and every
+character you delete — at its mirror position, keeping the text a palindrome
+as you write.
 
 ## Stack
 

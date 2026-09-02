@@ -5,13 +5,16 @@ export interface PalindromeResult {
   normalizedText: string;
 }
 
-const isLetter = (char: string): boolean => /^\p{L}/u.test(char);
+export const isLetter = (char: string): boolean => /^\p{L}/u.test(char);
 
-const checkPalindrome = (text: string): PalindromeResult => {
-  const normalizedText = text
+export const normalizeText = (text: string): string =>
+  text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+
+const checkPalindrome = (text: string): PalindromeResult => {
+  const normalizedText = normalizeText(text);
 
   let isPalindrome = true;
   const mirror: Array<number | undefined> = new Array(normalizedText.length);

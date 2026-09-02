@@ -2,6 +2,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { Palindrome } from "@/lib/palindrome-extension";
+import { MirrorEditing } from "@/lib/mirror-extension";
 import Toolbar from "@/components/toolbar";
 
 const disabledStarterKitExtensions = {
@@ -29,6 +30,7 @@ export default function Editor() {
     extensions: [
       StarterKit.configure(disabledStarterKitExtensions),
       Palindrome,
+      MirrorEditing,
     ],
     content: "Eva, can I stab bats in a cave?",
     autofocus: "end",

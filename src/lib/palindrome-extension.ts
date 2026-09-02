@@ -17,7 +17,7 @@ export const palindromePluginKey = new PluginKey<PalindromePluginState>(
 
 // map every character of the joined text to its document position;
 // the "\n" separators between blocks have no document position
-const analyzeDoc = (doc: ProseMirrorNode) => {
+export const analyzeDoc = (doc: ProseMirrorNode) => {
   let text = "";
   const positions: Array<number | undefined> = [];
   let isFirstBlock = true;

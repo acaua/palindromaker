@@ -92,3 +92,29 @@ test("handles multiple paragraphs without crashing", async ({ page }) => {
   await page.waitForTimeout(200);
   await expect(greenBadge(page)).toBeVisible();
 });
+
+test("mirror editing duplicates and removes mirrored characters", async ({
+  page,
+}) => {
+  const mirrorToggle = page.locator('button:has-text("mirror")');
+  await mirrorToggle.click();
+  await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
+
+  await clearEditor(page);
+  await type(page, "abc");
+
+  // the first char becomes the center, every next keystroke is duplicated
+  await expect(editor(page)).toContainText("cbabc");
+  await expect(greenBadge(page)).toBeVisible();
+
+  // backspace removes the mirrored pair
+  await page.keyboard.press("Backspace");
+  await expect(editor(page)).toContainText("bab");
+  await expect(greenBadge(page)).toBeVisible();
+
+  // toggling off stops the duplication
+  await mirrorToggle.click();
+  await type(page, "x");
+  await expect(editor(page)).toContainText("babx");
+  await expect(mirrorToggle).toHaveAttribute("aria-pressed", "false");
+});
