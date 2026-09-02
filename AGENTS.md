@@ -33,7 +33,7 @@ There is no combined check script. `pnpm build` (Vite) does **not** type-check. 
 - `src/lib/mirror-extension.ts` — TipTap `MirrorEditing` extension; an `appendTransaction` plugin duplicates/deletes mirrored characters. Only reacts to single-step `ReplaceStep`s, ignores its own edits (`{ own: true }` meta) and IME composition. Position math lives in `src/lib/mirror-edit.ts` and counts in "letter space" (punctuation/separators invisible).
 - `src/lib/persistence.ts` — debounced `localStorage` persistence: `readStoredDoc()` loads and validates the stored doc JSON (null on anything unexpected) for the editor's initial content; `createPersistence()` saves on editor updates and flushes on destroy/unload/tab-hide, returning a detach fn used as React effect cleanup in `editor.tsx`.
 - `src/lib/dictionary.ts` — word finder dictionaries: lazily fetched per language (cached promises); `buildDictionary()` keeps raw + normalized words and a normalized `Set` used by `mirrorMatch()` to mark rows whose mirror is also a word ("pair") or is itself a palindrome. UI in `src/components/word-finder.tsx` with virtualized rows.
-- `src/components/editor.tsx` — wires StarterKit (most extensions disabled) + the two custom extensions; initial content comes from `localStorage` (via `persistence.ts`) with a sample palindrome as fallback.
+- `src/components/editor.tsx` — wires StarterKit (most extensions disabled) + the two custom extensions; initial content comes from `localStorage` (via `persistence.ts`) with a sample palindrome as fallback. Renders the card: Toolbar, editor, WordFinder, and the always-visible color legend (`src/components/legend.tsx`).
 - `src/main.tsx` — injects GoatCounter only when `VITE_GOATCOUNTER_URL` is set (see `.env.local.example`).
 
 ## Gotchas

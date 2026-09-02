@@ -9,6 +9,7 @@ import {
   DOC_STORAGE_KEY,
   readStoredDoc,
 } from "@/lib/persistence";
+import Legend from "@/components/legend";
 import Toolbar from "@/components/toolbar";
 import WordFinder from "@/components/word-finder";
 
@@ -66,6 +67,7 @@ export default function Editor() {
       <Toolbar editor={editor} />
       <EditorContent editor={editor} />
       <WordFinder />
+      <Legend />
     </div>
   );
 }

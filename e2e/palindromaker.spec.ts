@@ -5,6 +5,11 @@ const editor = (page: Page) => page.locator('[contenteditable="true"]');
 const greenBadge = (page: Page) => page.locator("span.bg-green-100");
 const redBadge = (page: Page) => page.locator("span.bg-red-100");
 
+// decoration spans live inside the editor; scoping keeps them apart from
+// the legend, whose swatches reuse the same classes
+const decoration = (page: Page, className: string) =>
+  editor(page).locator(`span.${className}`);
+
 // ProseMirror needs realistic keystroke pacing for its selection
 // sync to keep up with synthetic CDP input
 async function clearEditor(page: Page) {
@@ -43,6 +48,20 @@ test("loads focused with the default palindrome and a green badge", async ({
   await expect(redBadge(page)).toHaveCount(0);
 });
 
+test("shows a legend explaining the highlights", async ({ page }) => {
+  const legend = page.locator('footer[aria-label="legend"]');
+
+  for (const label of [
+    "center of the palindrome",
+    "breaks the palindrome",
+    "mirror of your caret",
+    "mirror is also a word",
+    "palindrome word",
+  ]) {
+    await expect(legend).toContainText(label);
+  }
+});
+
 test("shows a red badge for non-palindrome text", async ({ page }) => {
   await replaceAll(page, "hello world");
 
@@ -54,8 +73,8 @@ test("highlights the center characters of a palindrome", async ({ page }) => {
   await replaceAll(page, "A b, b a");
 
   await expect(greenBadge(page)).toBeVisible();
-  await expect(page.locator("span.bg-blue-200")).toHaveCount(2);
-  await expect(page.locator("span.bg-red-300")).toHaveCount(0);
+  await expect(decoration(page, "bg-blue-200")).toHaveCount(2);
+  await expect(decoration(page, "bg-red-300")).toHaveCount(0);
 });
 
 test("shows the gap highlight when text is not a palindrome", async ({
@@ -64,7 +83,7 @@ test("shows the gap highlight when text is not a palindrome", async ({
   await replaceAll(page, "abc a");
 
   await expect(redBadge(page)).toBeVisible();
-  await expect(page.locator("span.bg-red-300")).toBeVisible();
+  await expect(decoration(page, "bg-red-300")).toBeVisible();
 });
 
 test("highlights the mirrored character of the caret position", async ({
@@ -76,8 +95,8 @@ test("highlights the mirrored character of the caret position", async ({
   await page.keyboard.press("ArrowRight");
 
   // caret is on the first "b" (index 2), mirrored by the "b" at index 5
-  await expect(page.locator("span.bg-purple-200")).toBeVisible();
-  await expect(page.locator("span.bg-purple-400")).toBeVisible();
+  await expect(decoration(page, "bg-purple-200")).toBeVisible();
+  await expect(decoration(page, "bg-purple-400")).toBeVisible();
 });
 
 test("handles multiple paragraphs without crashing", async ({ page }) => {
