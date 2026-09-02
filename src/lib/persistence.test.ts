@@ -1,11 +1,20 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { JSONContent } from "@tiptap/core";
+import { Schema } from "@tiptap/pm/model";
 
 import {
   createPersistence,
   DOC_STORAGE_KEY,
   readStoredDoc,
 } from "./persistence";
+
+const schema = new Schema({
+  nodes: {
+    doc: { content: "block+" },
+    paragraph: { group: "block", content: "text*" },
+    text: { group: "inline" },
+  },
+});
 
 class MemoryStorage {
   private map = new Map<string, string>();
@@ -100,6 +109,34 @@ describe("readStoredDoc", () => {
     storage.setItem(DOC_STORAGE_KEY, '{"type":"doc","content":[]}');
 
     expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toBeNull();
+  });
+
+  test("accepts schema-valid docs", () => {
+    const storage = new MemoryStorage();
+    const doc = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "aba" }] },
+      ],
+    };
+    storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
+
+    expect(readStoredDoc(storage, DOC_STORAGE_KEY, schema)).toEqual(doc);
+  });
+
+  test("rejects docs the schema cannot represent", () => {
+    const storage = new MemoryStorage();
+    const invalid = [
+      // shallow check would pass: type "doc" with non-empty content,
+      // but the unknown node type crashes nodeFromJSON at render time
+      '{"type":"doc","content":[{"type":"bogus"}]}',
+      // structurally invalid: a text node directly in the doc
+      '{"type":"doc","content":[{"type":"text","text":"hi"}]}',
+    ];
+    for (const value of invalid) {
+      storage.setItem(DOC_STORAGE_KEY, value);
+      expect(readStoredDoc(storage, DOC_STORAGE_KEY, schema)).toBeNull();
+    }
   });
 });
 
