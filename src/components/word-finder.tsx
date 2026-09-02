@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
-import type { Dictionary, SearchMode } from "@/lib/dictionary";
-import { loadDictionary, mirrorWord, searchWords } from "@/lib/dictionary";
+import type { Dictionary, Language, SearchMode } from "@/lib/dictionary";
+import {
+  LANGUAGES,
+  loadDictionary,
+  mirrorWord,
+  searchWords,
+} from "@/lib/dictionary";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -14,23 +19,37 @@ const modes: Array<{ value: SearchMode; label: string }> = [
 
 export default function WordFinder() {
   const [open, setOpen] = useState(false);
+  const [lang, setLang] = useState<Language>("pt-br");
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("starts");
   const [status, setStatus] = useState<Status>("idle");
   const [dictionary, setDictionary] = useState<Dictionary | null>(null);
+  const [dictionaryLang, setDictionaryLang] = useState<Language | null>(null);
   const [results, setResults] = useState<string[]>([]);
+  const requestRef = useRef(0);
 
-  useEffect(() => {
-    if (!open || status === "ready" || status === "loading") return;
+  const load = (code: Language) => {
+    const request = ++requestRef.current;
     setStatus("loading");
-    loadDictionary().then(
+    setResults([]);
+    loadDictionary(code).then(
       (loaded) => {
+        if (requestRef.current !== request) return;
         setDictionary(loaded);
+        setDictionaryLang(code);
         setStatus("ready");
       },
-      () => setStatus("error"),
+      () => {
+        if (requestRef.current !== request) return;
+        setStatus("error");
+      },
     );
-  }, [open, status]);
+  };
+
+  useEffect(() => {
+    if (!open || (dictionaryLang === lang && dictionary)) return;
+    load(lang);
+  }, [open, lang, dictionary, dictionaryLang]);
 
   useEffect(() => {
     if (!dictionary) return;
@@ -62,7 +81,7 @@ export default function WordFinder() {
 
       {open && (
         <div>
-          <div className="flex items-center gap-2 px-2 pb-2">
+          <div className="flex flex-wrap items-center gap-2 px-2 pb-2">
             <input
               type="text"
               aria-label="search words"
@@ -72,6 +91,18 @@ export default function WordFinder() {
               onChange={(event) => setQuery(event.target.value)}
               className="min-w-0 grow rounded-sm bg-gray-100 px-2 py-1 font-mono text-lg"
             />
+            <select
+              aria-label="dictionary language"
+              value={lang}
+              onChange={(event) => setLang(event.target.value as Language)}
+              className="shrink-0 cursor-pointer rounded-sm bg-gray-100 px-2 py-1 text-sm text-gray-500"
+            >
+              {LANGUAGES.map(({ code, label }) => (
+                <option key={code} value={code}>
+                  {label}
+                </option>
+              ))}
+            </select>
             <div className="flex shrink-0">
               {modes.map(({ value, label }) => (
                 <button
@@ -102,7 +133,7 @@ export default function WordFinder() {
               failed to load dictionary{" "}
               <button
                 type="button"
-                onClick={() => setStatus("idle")}
+                onClick={() => load(lang)}
                 className="cursor-pointer underline"
               >
                 retry

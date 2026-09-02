@@ -1,6 +1,12 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { buildDictionary, mirrorWord, searchWords } from "./dictionary";
+import {
+  buildDictionary,
+  LANGUAGES,
+  loadDictionary,
+  mirrorWord,
+  searchWords,
+} from "./dictionary";
 
 const dictionary = buildDictionary(
   ["casa", "saúde", "asa", "Azul", "massa", "abacate"].join("\n"),
@@ -73,5 +79,67 @@ describe("mirrorWord", () => {
 
   test("reverses a palindrome to itself", () => {
     expect(mirrorWord("arara")).toBe("arara");
+  });
+});
+
+describe("LANGUAGES", () => {
+  test("lists all supported dictionaries with pt-br first", () => {
+    expect(LANGUAGES.map((info) => info.code)).toEqual([
+      "pt-br",
+      "en",
+      "es",
+      "de",
+      "fr",
+      "it",
+    ]);
+  });
+
+  test("has unique dictionary files", () => {
+    const files = LANGUAGES.map((info) => info.file);
+    expect(new Set(files).size).toBe(files.length);
+    expect(files.every((file) => file.startsWith("/dictionary/"))).toBe(true);
+  });
+});
+
+describe("loadDictionary", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("requests the file of the requested language", async () => {
+    const fetchMock = vi.fn(async () => new Response("x\n", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await loadDictionary("de");
+
+    expect(fetchMock).toHaveBeenCalledWith("/dictionary/de.txt");
+  });
+
+  test("caches the dictionary per language", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response("a\nb\n", { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const first = await loadDictionary("en");
+    const second = await loadDictionary("en");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(first).toEqual(second);
+  });
+
+  test("retries after a failed load", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () => new Response("", { status: 500 }))
+      .mockImplementation(async () => new Response("a\n", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(loadDictionary("es")).rejects.toThrow();
+    await expect(loadDictionary("es")).resolves.toEqual({
+      words: ["a"],
+      normalized: ["a"],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

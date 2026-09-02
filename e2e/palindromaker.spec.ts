@@ -141,4 +141,12 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
   await page.locator('button:has-text("ends with")').click();
   await searchInput.fill("ate");
   await expect(results.first()).toContainText("abacate");
+
+  // switching the language reloads the dictionary and re-runs the search
+  const language = page.locator('select[aria-label="dictionary language"]');
+  await expect(language).toHaveValue("pt-br");
+  await language.selectOption("en");
+  await searchInput.fill("hello");
+  await expect(results.first()).toContainText("hello");
+  await expect(results.first().locator("span").last()).toHaveText("olleh");
 });

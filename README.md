@@ -41,13 +41,21 @@ Open http://localhost:5173.
 
 ## Word finder
 
-The "find words" panel below the editor searches a list of ~262k pt-BR words —
-by prefix, suffix, or substring, accent-insensitively — and shows each result's
-mirror (the reversed word). The list comes from
-[IME USP's `br-utf8.txt`](https://www.ime.usp.br/~pf/dicios/) (derived from the
-GPL-licensed br.ispell dictionary) and is bundled as
-`public/dictionary/pt-br.txt`, fetched lazily the first time the panel is
-opened.
+The "find words" panel below the editor searches a dictionary of words — by
+prefix, suffix, or substring, accent-insensitively — and shows each result's
+mirror (the reversed word). The language defaults to pt-BR and can be switched
+to english, español, deutsch, français, or italiano. Dictionaries are bundled
+as plain-text files in `public/dictionary/` and fetched lazily the first time
+they are needed:
+
+| Language       | File        | Source                                                                               | Words | License         |
+| -------------- | ----------- | ------------------------------------------------------------------------------------ | ----- | --------------- |
+| português (BR) | `pt-br.txt` | [IME USP `br-utf8.txt`](https://www.ime.usp.br/~pf/dicios/)                          | ~262k | GPL (br.ispell) |
+| english        | `en.txt`    | [`an-array-of-english-words`](https://github.com/words/an-array-of-english-words)    | ~275k | MIT             |
+| español        | `es.txt`    | [`an-array-of-spanish-words`](https://github.com/words/an-array-of-spanish-words)    | ~637k | MIT             |
+| deutsch        | `de.txt`    | [`an-array-of-german-words`](https://github.com/hexapode/an-array-of-german-words)   | ~117k | MIT             |
+| français       | `fr.txt`    | [`an-array-of-french-words`](https://github.com/words/an-array-of-french-words)      | ~337k | MIT             |
+| italiano       | `it.txt`    | [`an-array-of-italian-words`](https://github.com/hexapode/an-array-of-italian-words) | ~124k | MIT             |
 
 ## Analytics
 
