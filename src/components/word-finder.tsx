@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import {
+  ArrowsRightLeftIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/solid";
 
 import type { Dictionary, Language, SearchMode } from "@/lib/dictionary";
 import {
   LANGUAGES,
   loadDictionary,
+  mirrorMatch,
   mirrorWord,
   searchWords,
 } from "@/lib/dictionary";
@@ -180,6 +186,9 @@ export default function WordFinder() {
               >
                 {virtualItems.map((virtualRow) => {
                   const word = results[virtualRow.index];
+                  const match = dictionary
+                    ? mirrorMatch(dictionary, word)
+                    : null;
                   return (
                     <div
                       key={`${word}-${virtualRow.index}`}
@@ -191,11 +200,44 @@ export default function WordFinder() {
                         {word}
                       </span>
                       <span
-                        className="min-w-0 truncate text-gray-400"
-                        title={mirrorWord(word)}
+                        className={`min-w-0 truncate ${
+                          match === "pair"
+                            ? "text-purple-700"
+                            : match === "palindrome"
+                              ? "text-green-700"
+                              : "text-gray-400"
+                        }`}
+                        title={
+                          match === "pair"
+                            ? "mirror is also a word"
+                            : match === "palindrome"
+                              ? "palindrome word"
+                              : mirrorWord(word)
+                        }
                       >
                         {mirrorWord(word)}
+                        {match === "pair" && (
+                          <span className="sr-only">
+                            {" "}
+                            (mirror is also a word)
+                          </span>
+                        )}
+                        {match === "palindrome" && (
+                          <span className="sr-only"> (palindrome word)</span>
+                        )}
                       </span>
+                      {match === "pair" && (
+                        <ArrowsRightLeftIcon
+                          aria-hidden="true"
+                          className="h-4 w-4 shrink-0 text-purple-700"
+                        />
+                      )}
+                      {match === "palindrome" && (
+                        <CheckCircleIcon
+                          aria-hidden="true"
+                          className="h-4 w-4 shrink-0 text-green-700"
+                        />
+                      )}
                     </div>
                   );
                 })}

@@ -4,6 +4,7 @@ import {
   buildDictionary,
   LANGUAGES,
   loadDictionary,
+  mirrorMatch,
   mirrorWord,
   searchWords,
 } from "./dictionary";
@@ -33,6 +34,12 @@ describe("buildDictionary", () => {
       "massa",
       "abacate",
     ]);
+  });
+
+  test("builds a set of normalized forms for mirror lookups", () => {
+    expect(dictionary.normalizedSet).toEqual(
+      new Set(["casa", "saude", "asa", "azul", "massa", "abacate"]),
+    );
   });
 });
 
@@ -79,6 +86,28 @@ describe("mirrorWord", () => {
 
   test("reverses a palindrome to itself", () => {
     expect(mirrorWord("arara")).toBe("arara");
+  });
+});
+
+describe("mirrorMatch", () => {
+  const words = buildDictionary(["amor", "roma", "arara", "médio"].join("\n"));
+
+  test("marks words whose mirror is also a word", () => {
+    expect(mirrorMatch(words, "amor")).toBe("pair");
+    expect(mirrorMatch(words, "oidem")).toBe("pair");
+  });
+
+  test("is case-insensitive", () => {
+    expect(mirrorMatch(words, "Amor")).toBe("pair");
+    expect(mirrorMatch(words, "ARARA")).toBe("palindrome");
+  });
+
+  test("marks words that are themselves palindromes", () => {
+    expect(mirrorMatch(words, "arara")).toBe("palindrome");
+  });
+
+  test("returns null when the mirror is not a word", () => {
+    expect(mirrorMatch(words, "casa")).toBeNull();
   });
 });
 
@@ -139,6 +168,7 @@ describe("loadDictionary", () => {
     await expect(loadDictionary("es")).resolves.toEqual({
       words: ["a"],
       normalized: ["a"],
+      normalizedSet: new Set(["a"]),
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

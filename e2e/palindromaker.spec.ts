@@ -175,6 +175,29 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
   await expect(results.first().locator("span").last()).toHaveText("olleh");
 });
 
+test("word finder marks mirror pairs and palindromes", async ({ page }) => {
+  await page.locator('button:has-text("find words")').click();
+
+  const searchInput = page.locator('input[aria-label="search words"]');
+  const results = page.locator('[aria-label="results"] [role="listitem"]');
+
+  // "amor" mirrors to "roma", which is also a dictionary word
+  await searchInput.fill("amor");
+  await expect(results.first()).toContainText("amor");
+  await expect(results.first().locator("span.text-purple-700")).toBeVisible();
+
+  // "radar" is itself a palindrome
+  await searchInput.fill("radar");
+  await expect(results.first()).toContainText("radar");
+  await expect(results.first().locator("span.text-green-700")).toBeVisible();
+
+  // "abacate" mirrors to "etacaba", not a word: no markers
+  await searchInput.fill("abac");
+  await expect(results.first()).toContainText("abacate");
+  await expect(results.first().locator("span.text-purple-700")).toHaveCount(0);
+  await expect(results.first().locator("span.text-green-700")).toHaveCount(0);
+});
+
 test("word finder virtualizes broad result sets", async ({ page }) => {
   await page.locator('button:has-text("find words")').click();
 

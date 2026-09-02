@@ -22,11 +22,13 @@ export type SearchMode = "starts" | "ends" | "contains";
 export interface Dictionary {
   words: string[];
   normalized: string[];
+  normalizedSet: Set<string>;
 }
 
 export const buildDictionary = (text: string): Dictionary => {
   const words = text.split("\n").filter((word) => word !== "");
-  return { words, normalized: words.map(normalizeText) };
+  const normalized = words.map(normalizeText);
+  return { words, normalized, normalizedSet: new Set(normalized) };
 };
 
 const dictionaryPromises = new Map<Language, Promise<Dictionary>>();
@@ -81,3 +83,18 @@ export const searchWords = (
 
 export const mirrorWord = (word: string): string =>
   [...word].reverse().join("");
+
+export type MirrorMatch = "pair" | "palindrome" | null;
+
+// what the word's mirror means for building palindromes: "palindrome"
+// when the word mirrors to itself, "pair" when the mirror is also a
+// dictionary word, null otherwise (accent/case-insensitive)
+export const mirrorMatch = (
+  dictionary: Dictionary,
+  word: string,
+): MirrorMatch => {
+  const normalized = normalizeText(word);
+  const mirrored = normalizeText(mirrorWord(word));
+  if (mirrored === normalized) return "palindrome";
+  return dictionary.normalizedSet.has(mirrored) ? "pair" : null;
+};
