@@ -1,34 +1,50 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Palindromaker
 
-## Getting Started
+A tiny editor for crafting palindromes with live feedback: it highlights the
+center characters, marks the gap that breaks the palindrome, and mirrors your
+caret position against its matching character.
 
-First, run the development server:
+## Stack
+
+- [Vite](https://vite.dev/) + [React 19](https://react.dev/) + TypeScript (strict)
+- [TipTap 3](https://tiptap.dev/) (ProseMirror) with a custom `Palindrome`
+  extension that drives the highlighting via ProseMirror decorations
+- [Tailwind CSS 4](https://tailwindcss.com/)
+- [GoatCounter](https://www.goatcounter.com/) for privacy-friendly analytics
+
+## Getting started
+
+Requires Node 20+ and [pnpm](https://pnpm.io/).
 
 ```bash
-npm run dev
-# or
-yarn dev
+pnpm install
+pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:5173.
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+## Scripts
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+| Script           | What it does                         |
+| ---------------- | ------------------------------------ |
+| `pnpm dev`       | Start the dev server                 |
+| `pnpm build`     | Production build to `dist/`          |
+| `pnpm preview`   | Serve the production build           |
+| `pnpm test`      | Unit tests (Vitest)                  |
+| `pnpm test:e2e`  | Browser tests (Playwright, Chromium) |
+| `pnpm typecheck` | Type-check with `tsc`                |
+| `pnpm lint`      | Lint with ESLint 9                   |
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## Analytics
 
-## Learn More
+Set your GoatCounter endpoint in a `.env.local` file (see
+`.env.local.example`):
 
-To learn more about Next.js, take a look at the following resources:
+```
+VITE_GOATCOUNTER_URL=https://yourcode.goatcounter.com/count
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+`pnpm build` produces a fully static site in `dist/` — serve it from any
+static host (Vercel, Netlify, GitHub Pages, nginx, ...).
