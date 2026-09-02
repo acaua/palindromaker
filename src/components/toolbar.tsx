@@ -1,8 +1,9 @@
 import { useSlate } from "slate-react";
+import type { Editor } from "slate";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/solid";
 
 export default function Toolbar() {
-  const editor = useSlate();
+  const editor = useSlate() as Editor;
 
   const { isPalindrome } = editor.palindrome;
 
@@ -13,7 +14,7 @@ export default function Toolbar() {
   );
 }
 
-const IsPalindrome = ({ isPalindrome }) => {
+const IsPalindrome = ({ isPalindrome }: { isPalindrome: boolean }) => {
   const classNameIcon = "inline-block h-6 w-6 mr-1";
   return (
     <span

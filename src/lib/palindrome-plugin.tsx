@@ -1,15 +1,19 @@
 import { useCallback } from "react";
+import type { ComponentProps } from "react";
 import { Editor, Node, Point } from "slate";
+import type { NodeEntry, Range } from "slate";
+import type { RenderLeafProps } from "slate-react";
 import { Editable } from "slate-react";
 
 import checkPalindromeBase from "@/lib/check-palindrome";
 
-export const withPalindrome = (editor) => {
+export const withPalindrome = (editor: Editor): Editor => {
   const { onChange } = editor;
 
   editor.palindrome = {
     isPalindrome: false,
     center: undefined,
+    mirror: [],
   };
 
   editor.onChange = () => {
@@ -21,7 +25,7 @@ export const withPalindrome = (editor) => {
   return editor;
 };
 
-const checkPalindrome = (editor) => {
+const checkPalindrome = (editor: Editor) => {
   const textNodes = [...Node.texts(editor)];
   const texts = textNodes.map((node) => node[0].text);
   const text = texts.join("\n");
@@ -34,12 +38,14 @@ const checkPalindrome = (editor) => {
 
   const palindrome = checkPalindromeBase(text);
 
-  const center = !!palindrome.center
+  const center = palindrome.center
     ? palindrome.center.map((pos) => positions[pos])
     : undefined;
 
   const mirror = palindrome.mirror.map((pos, i) => {
-    return [positions[i], positions[pos]];
+    const from = positions[i];
+    const to = pos === undefined ? undefined : positions[pos];
+    return [from, to] as [Point, Point];
   });
 
   return {
@@ -49,10 +55,22 @@ const checkPalindrome = (editor) => {
   };
 };
 
-export const EditablePalindrome = ({ editor, ...props }) => {
+type EditableProps = ComponentProps<typeof Editable>;
+
+type EditablePalindromeProps = Omit<
+  EditableProps,
+  "decorate" | "renderLeaf"
+> & {
+  editor: Editor;
+};
+
+export const EditablePalindrome = ({
+  editor,
+  ...props
+}: EditablePalindromeProps) => {
   const decorate = useCallback(
-    ([node, path]) => {
-      let ranges = [];
+    ([node]: NodeEntry): Range[] => {
+      const ranges: Range[] = [];
 
       const { palindrome } = editor;
 
@@ -85,9 +103,11 @@ export const EditablePalindrome = ({ editor, ...props }) => {
         });
       }
 
-      if (editor.selection) {
-        const mirror = editor.palindrome.mirror.find((el) => {
-          return el && Point.equals(el[0], editor.selection.anchor);
+      const { selection } = editor;
+
+      if (selection) {
+        const mirror = palindrome.mirror.find((el) => {
+          return el && Point.equals(el[0], selection.anchor);
         });
 
         if (mirror) {
@@ -98,10 +118,8 @@ export const EditablePalindrome = ({ editor, ...props }) => {
           });
 
           ranges.push({
-            anchor: editor.selection.anchor,
-            focus:
-              Editor.after(editor, editor.selection.anchor) ||
-              editor.selection.anchor,
+            anchor: selection.anchor,
+            focus: Editor.after(editor, selection.anchor) || selection.anchor,
             self: true,
           });
         }
@@ -109,7 +127,7 @@ export const EditablePalindrome = ({ editor, ...props }) => {
 
       return ranges;
     },
-    [editor]
+    [editor],
   );
 
   return (
@@ -121,7 +139,7 @@ export const EditablePalindrome = ({ editor, ...props }) => {
   );
 };
 
-const Leaf = ({ attributes, children, leaf }) => {
+const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
   const className = [
     leaf.center1 || leaf.center2 ? "bg-blue-200" : "",
     leaf.gap ? "bg-red-300" : "",

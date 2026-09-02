@@ -1,25 +1,25 @@
 import { useState, useMemo, useEffect } from "react";
-
 import { createEditor } from "slate";
+import type { Descendant } from "slate";
 import { Slate, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
 
 import { withPalindrome, EditablePalindrome } from "@/lib/palindrome-plugin";
 import Toolbar from "@/components/toolbar";
 
+const initialValue: Descendant[] = [
+  {
+    type: "paragraph",
+    children: [{ text: "Eva, can I stab bats in a cave?" }],
+  },
+];
+
 export default function Editor() {
   const editor = useMemo(
     () => withPalindrome(withReact(withHistory(createEditor()))),
-    []
+    [],
   );
-  const [value, setValue] = useState([
-    {
-      type: "paragraph",
-      // children: [{ text: "" }],
-      children: [{ text: "Eva, can I stab bats in a cave?" }],
-      // children: [{ text: "A man, a plan, a canal: Panama!" }],
-    },
-  ]);
+  const [value, setValue] = useState<Descendant[]>(initialValue);
 
   // Run once on first render to initialize stuff
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function Editor() {
       onChange={(newValue) => setValue(newValue)}
     >
       <div className="max-w-prose bg-white shadow">
-        <Toolbar isPalindrome={editor.palindrome.isPalindrome} />
+        <Toolbar />
         <EditablePalindrome
           className={[
             "p-2",
