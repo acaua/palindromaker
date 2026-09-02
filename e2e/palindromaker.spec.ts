@@ -5,7 +5,7 @@ const editor = (page: Page) => page.locator('[contenteditable="true"]');
 const greenBadge = (page: Page) => page.locator("span.bg-green-100");
 const redBadge = (page: Page) => page.locator("span.bg-red-100");
 
-// Slate 0.65 needs realistic keystroke pacing for its selection
+// ProseMirror needs realistic keystroke pacing for its selection
 // sync to keep up with synthetic CDP input
 async function clearEditor(page: Page) {
   const editable = editor(page);

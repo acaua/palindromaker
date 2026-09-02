@@ -7,6 +7,12 @@ export interface PalindromeResult {
 
 export const isLetter = (char: string): boolean => /^\p{L}/u.test(char);
 
+export const normalizeChar = (char: string): string =>
+  char
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
 export const normalizeText = (text: string): string =>
   text
     .normalize("NFD")
