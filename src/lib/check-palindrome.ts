@@ -29,7 +29,7 @@ const checkPalindrome = (text: string): PalindromeResult => {
   let center: [number, number] | undefined = undefined;
 
   let i = 0;
-  let j = normalizedText.length ? normalizedText.length - 1 : 0;
+  let j = normalizedText.length - 1;
 
   while (i <= j) {
     if (!isLetter(normalizedText[i])) {
