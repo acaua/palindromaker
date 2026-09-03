@@ -8,19 +8,21 @@ export interface PalindromeResult {
 export const isLetter = (char: string): boolean => /^\p{L}/u.test(char);
 
 export const normalizeChar = (char: string): string =>
-  char
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  char.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 export const normalizeText = (text: string): string =>
-  text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 const checkPalindrome = (text: string): PalindromeResult => {
   const normalizedText = normalizeText(text);
+  if (normalizedText === "") {
+    return {
+      isPalindrome: true,
+      mirror: [],
+      center: undefined,
+      normalizedText,
+    };
+  }
 
   let isPalindrome = true;
   const mirror: Array<number | undefined> = new Array(normalizedText.length);

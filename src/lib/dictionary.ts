@@ -26,9 +26,20 @@ export interface Dictionary {
 }
 
 export const buildDictionary = (text: string): Dictionary => {
-  const words = text.split("\n").filter((word) => word !== "");
-  const normalized = words.map(normalizeText);
-  return { words, normalized, normalizedSet: new Set(normalized) };
+  const words: string[] = [];
+  const normalized: string[] = [];
+  // words whose normalized forms collide (duplicates, case/accents) are
+  // deduplicated, keeping the first spelling; the lists stay parallel
+  const seen = new Set<string>();
+  for (const raw of text.split("\n")) {
+    if (raw === "") continue;
+    const normalizedWord = normalizeText(raw);
+    if (seen.has(normalizedWord)) continue;
+    seen.add(normalizedWord);
+    words.push(raw);
+    normalized.push(normalizedWord);
+  }
+  return { words, normalized, normalizedSet: seen };
 };
 
 const dictionaryPromises = new Map<Language, Promise<Dictionary>>();

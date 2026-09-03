@@ -15,7 +15,7 @@ Use **pnpm** (not npm/yarn). Requires Node 20+.
 | `pnpm lint`                   | ESLint 9 flat config                          |
 | `pnpm build` / `pnpm preview` | Static build to `dist/` / serve it            |
 
-There is no combined check script. `pnpm build` (Vite) does **not** type-check. Run `pnpm typecheck && pnpm lint && pnpm test` for a full check.
+`pnpm check` runs typecheck + lint + unit tests for a full check. Note `pnpm build` (Vite) does **not** type-check.
 
 - Single test: `pnpm vitest run src/lib/mirror-edit.test.ts`
 - Pre-commit (husky → lint-staged) runs `prettier --write`, `eslint --cache --fix`, and `vitest related --run` on staged files.

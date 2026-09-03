@@ -1,9 +1,18 @@
 import type { JSONContent } from "@tiptap/core";
 import type { Schema } from "@tiptap/pm/model";
 
+import { LANGUAGES } from "@/lib/dictionary";
+import type { Language } from "@/lib/dictionary";
+
 export const DOC_STORAGE_KEY = "palindromaker:doc:v1";
+export const PREFS_STORAGE_KEY = "palindromaker:prefs:v1";
 
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
+
+export interface Prefs {
+  lang?: Language;
+  mirrorEnabled?: boolean;
+}
 
 export interface PersistenceEditor {
   getJSON: () => JSONContent;
@@ -46,6 +55,47 @@ export const readStoredDoc = (
     return parsed;
   } catch {
     return null;
+  }
+};
+
+// loads UI preferences, keeping only recognized languages and booleans;
+// anything unexpected falls back to defaults chosen by the callers
+export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
+  if (!storage) return {};
+  try {
+    const raw = storage.getItem(PREFS_STORAGE_KEY);
+    if (raw === null) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return {};
+    const { lang, mirrorEnabled } = parsed as {
+      lang?: unknown;
+      mirrorEnabled?: unknown;
+    };
+    const prefs: Prefs = {};
+    if (
+      typeof lang === "string" &&
+      LANGUAGES.some((info) => info.code === lang)
+    ) {
+      prefs.lang = lang as Language;
+    }
+    if (typeof mirrorEnabled === "boolean") {
+      prefs.mirrorEnabled = mirrorEnabled;
+    }
+    return prefs;
+  } catch {
+    return {};
+  }
+};
+
+// merges a patch into the stored UI preferences: best effort, so storage
+// failures never break the interaction that triggered the write
+export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
+  if (!storage) return;
+  try {
+    const merged = { ...readStoredPrefs(storage), ...patch };
+    storage.setItem(PREFS_STORAGE_KEY, JSON.stringify(merged));
+  } catch {
+    // storage full or blocked: best effort, keep going
   }
 };
 

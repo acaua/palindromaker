@@ -5,7 +5,10 @@ import { Schema } from "@tiptap/pm/model";
 import {
   createPersistence,
   DOC_STORAGE_KEY,
+  PREFS_STORAGE_KEY,
   readStoredDoc,
+  readStoredPrefs,
+  writePrefs,
 } from "./persistence";
 
 const schema = new Schema({
@@ -237,5 +240,65 @@ describe("createPersistence", () => {
     editor.emit("update");
     vi.advanceTimersByTime(1000);
     expect(() => detach()).not.toThrow();
+  });
+});
+
+describe("readStoredPrefs", () => {
+  test("returns nothing when storage is unavailable or key is absent", () => {
+    expect(readStoredPrefs(null)).toEqual({});
+    expect(readStoredPrefs(new MemoryStorage())).toEqual({});
+  });
+
+  test("returns the stored prefs", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      PREFS_STORAGE_KEY,
+      JSON.stringify({ lang: "en", mirrorEnabled: true }),
+    );
+
+    expect(readStoredPrefs(storage)).toEqual({
+      lang: "en",
+      mirrorEnabled: true,
+    });
+  });
+
+  test("drops unknown languages and mistyped values", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      PREFS_STORAGE_KEY,
+      JSON.stringify({ lang: "xx", mirrorEnabled: "yes" }),
+    );
+
+    expect(readStoredPrefs(storage)).toEqual({});
+  });
+
+  test("returns nothing for corrupt JSON", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(PREFS_STORAGE_KEY, "not json");
+
+    expect(readStoredPrefs(storage)).toEqual({});
+  });
+});
+
+describe("writePrefs", () => {
+  test("merges the patch into the stored prefs", () => {
+    const storage = new MemoryStorage();
+    writePrefs(storage, { lang: "de" });
+    writePrefs(storage, { mirrorEnabled: true });
+
+    expect(readStoredPrefs(storage)).toEqual({
+      lang: "de",
+      mirrorEnabled: true,
+    });
+  });
+
+  test("swallows storage failures", () => {
+    const storage = new FailingStorage();
+
+    expect(() => writePrefs(storage, { lang: "de" })).not.toThrow();
+  });
+
+  test("does nothing when storage is unavailable", () => {
+    expect(() => writePrefs(null, { lang: "de" })).not.toThrow();
   });
 });

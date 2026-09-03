@@ -41,6 +41,14 @@ describe("buildDictionary", () => {
       new Set(["casa", "saude", "asa", "azul", "massa", "abacate"]),
     );
   });
+
+  test("dedupes words that normalize to the same form", () => {
+    const deduped = buildDictionary("casa\nCasa\ncasa\nasa");
+
+    expect(deduped.words).toEqual(["casa", "asa"]);
+    expect(deduped.normalized).toEqual(["casa", "asa"]);
+    expect(deduped.normalizedSet).toEqual(new Set(["casa", "asa"]));
+  });
 });
 
 describe("searchWords", () => {
