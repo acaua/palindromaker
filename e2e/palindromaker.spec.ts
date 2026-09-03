@@ -153,6 +153,27 @@ test("persists editor content across reloads", async ({ page }) => {
   await expect(editor(page)).toContainText("racecar");
 });
 
+test("persists the mirror toggle and word finder language across reloads", async ({
+  page,
+}) => {
+  const mirrorToggle = page.locator('button:has-text("mirror")');
+  await mirrorToggle.click();
+  await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
+
+  await page.locator('button:has-text("find words")').click();
+  await page
+    .locator('select[aria-label="dictionary language"]')
+    .selectOption("en");
+
+  await page.reload();
+
+  await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
+  await page.locator('button:has-text("find words")').click();
+  await expect(
+    page.locator('select[aria-label="dictionary language"]'),
+  ).toHaveValue("en");
+});
+
 test("falls back to the sample palindrome when storage is corrupt", async ({
   page,
 }) => {

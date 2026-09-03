@@ -8,6 +8,7 @@ import {
 
 import { mirrorPluginKey } from "@/lib/mirror-extension";
 import { palindromePluginKey } from "@/lib/palindrome-extension";
+import { writePrefs } from "@/lib/persistence";
 
 export default function Toolbar({ editor }: { editor: Editor }) {
   const { isPalindrome, mirrorEnabled } = useEditorState({
@@ -37,7 +38,11 @@ const MirrorEditingToggle = ({
   <button
     type="button"
     aria-pressed={enabled}
-    onClick={() => editor.commands.toggleMirrorEditing()}
+    onClick={() => {
+      editor.commands.toggleMirrorEditing();
+      // remember the new state across reloads
+      writePrefs(localStorage, { mirrorEnabled: !enabled });
+    }}
     // keep the editor focus (and caret) when toggling
     onMouseDown={(event) => event.preventDefault()}
     className={`ml-2 inline-flex cursor-pointer items-center rounded-sm px-2 py-1 ${

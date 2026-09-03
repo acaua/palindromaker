@@ -15,6 +15,7 @@ import {
   mirrorWord,
   searchWords,
 } from "@/lib/dictionary";
+import { readStoredPrefs, writePrefs } from "@/lib/persistence";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -29,7 +30,9 @@ const modes: Array<{ value: SearchMode; label: string }> = [
 
 export default function WordFinder() {
   const [open, setOpen] = useState(false);
-  const [lang, setLang] = useState<Language>("pt-br");
+  const [lang, setLang] = useState<Language>(
+    () => readStoredPrefs(localStorage).lang ?? "pt-br",
+  );
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("starts");
   const [status, setStatus] = useState<Status>("idle");
@@ -70,6 +73,9 @@ export default function WordFinder() {
     return () => clearTimeout(handle);
   }, [dictionary, query, mode]);
 
+  // TanStack Virtual's instance is not compiler-memoizable; safe here since
+  // it stays local to this component
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: results.length,
     getScrollElement: () => scrollerRef.current,
@@ -81,7 +87,7 @@ export default function WordFinder() {
 
   useEffect(() => {
     virtualizer.scrollToOffset(0);
-  }, [results]);
+  }, [results, virtualizer]);
 
   const virtualItems = virtualizer.getVirtualItems();
 
@@ -120,7 +126,11 @@ export default function WordFinder() {
             <select
               aria-label="dictionary language"
               value={lang}
-              onChange={(event) => setLang(event.target.value as Language)}
+              onChange={(event) => {
+                const code = event.target.value as Language;
+                setLang(code);
+                writePrefs(localStorage, { lang: code });
+              }}
               className="shrink-0 cursor-pointer rounded-sm bg-gray-100 px-2 py-1 text-sm text-gray-500"
             >
               {LANGUAGES.map(({ code, label }) => (
@@ -191,7 +201,7 @@ export default function WordFinder() {
                     : null;
                   return (
                     <div
-                      key={`${word}-${virtualRow.index}`}
+                      key={word}
                       role="listitem"
                       className="absolute left-0 top-0 flex h-8 w-full items-center gap-4 px-2"
                       style={{ transform: `translateY(${virtualRow.start}px)` }}

@@ -38,6 +38,7 @@ Open http://localhost:5173.
 | `pnpm test:e2e`  | Browser tests (Playwright, Chromium) |
 | `pnpm typecheck` | Type-check with `tsc`                |
 | `pnpm lint`      | Lint with ESLint 9                   |
+| `pnpm check`     | Type-check, lint, and unit tests     |
 
 ## Word finder
 

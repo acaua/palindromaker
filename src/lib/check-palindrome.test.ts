@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 
-import checkPalindrome, { normalizeChar } from "./check-palindrome";
+import checkPalindrome, {
+  normalizeChar,
+  normalizeText,
+} from "./check-palindrome";
 
 describe("isPalindrome", () => {
   test("A man, a plan... is a palindrome", () => {
@@ -31,6 +34,13 @@ describe("normalizeChar", () => {
 
   test("strips accents from decomposed characters", () => {
     expect(normalizeChar("e\u0301")).toBe("e");
+  });
+
+  test("strips combining marks outside the Latin-1 accent range", () => {
+    expect(normalizeChar("a\u20d0")).toBe("a"); // combining left arrow above
+    expect(normalizeChar("a\ufe20")).toBe("a"); // combining ligature left half
+    expect(normalizeChar("a\u1ab0")).toBe("a"); // combining digraph rising
+    expect(normalizeText("a\u20d0b")).toBe("ab");
   });
 
   test("drops bare combining marks", () => {
@@ -76,14 +86,12 @@ test("Mirror", () => {
 });
 
 describe("edge cases", () => {
-  test("empty string reports the quirk center [0, 0]", () => {
-    // current behavior: text[0] is undefined, coerced to "undefined",
-    // whose first char "u" counts as a letter and mirrors itself
+  test("empty string is a palindrome with no center", () => {
     const result = checkPalindrome("");
 
     expect(result.isPalindrome).toBe(true);
-    expect(result.center).toEqual([0, 0]);
-    expect(result.mirror).toEqual([0]);
+    expect(result.center).toBeUndefined();
+    expect(result.mirror).toEqual([]);
     expect(result.normalizedText).toBe("");
   });
 

@@ -4,11 +4,12 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { Palindrome } from "@/lib/palindrome-extension";
-import { MirrorEditing } from "@/lib/mirror-extension";
+import { mirrorPluginKey, MirrorEditing } from "@/lib/mirror-extension";
 import {
   createPersistence,
   DOC_STORAGE_KEY,
   readStoredDoc,
+  readStoredPrefs,
 } from "@/lib/persistence";
 import Legend from "@/components/legend";
 import Toolbar from "@/components/toolbar";
@@ -64,6 +65,14 @@ export default function Editor() {
 
   useEffect(() => {
     if (!editor) return;
+    // restore the mirror toggle from the previous session; the guard keeps
+    // it idempotent if React runs this effect again on a fresh editor
+    if (
+      readStoredPrefs(localStorage).mirrorEnabled &&
+      !mirrorPluginKey.getState(editor.state)?.enabled
+    ) {
+      editor.commands.toggleMirrorEditing();
+    }
     return createPersistence(editor, { storage: localStorage });
   }, [editor]);
 
