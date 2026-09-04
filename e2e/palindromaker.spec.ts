@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 const editor = (page: Page) => page.locator('[contenteditable="true"]');
@@ -45,10 +46,28 @@ test("loads focused with the default palindrome and a green badge", async ({
   const editable = editor(page);
 
   await expect(editable).toContainText("Eva, can I stab bats in a cave?");
+  await expect(
+    page.getByRole("textbox", { name: "Palindrome editor" }),
+  ).toBeVisible();
+  await expect(editable).toHaveAttribute("aria-multiline", "true");
   await expect(greenBadge(page)).toContainText("palindrome");
   await expect(greenBadge(page)).toHaveAttribute("role", "status");
   await expect(greenBadge(page)).toHaveAttribute("aria-live", "polite");
   await expect(redBadge(page)).toHaveCount(0);
+});
+
+test("has no automatically detectable accessibility violations", async ({
+  page,
+}) => {
+  await page.locator('button:has-text("find words")').click();
+  await page.locator('input[aria-label="search words"]').fill("abac");
+  await expect(
+    page.locator('[aria-label="results"] [role="listitem"]').first(),
+  ).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).analyze();
+
+  expect(results.violations).toEqual([]);
 });
 
 test("shows a legend explaining the highlights", async ({ page }) => {
@@ -267,6 +286,8 @@ test("word finder virtualizes broad result sets", async ({ page }) => {
   const scroller = page.locator('div[aria-label="results"]');
   const rows = page.locator('[aria-label="results"] [role="listitem"]');
   await expect(rows.first()).toContainText("a");
+  await expect(rows.first()).toHaveAttribute("aria-posinset", "1");
+  await expect(rows.first()).toHaveAttribute("aria-setsize", /^\d+$/);
 
   // the full list is virtualized: only a small window of rows exists
   expect(await rows.count()).toBeLessThan(100);

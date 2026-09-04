@@ -46,7 +46,7 @@ const MirrorEditingToggle = ({
     // keep the editor focus (and caret) when toggling
     onMouseDown={(event) => event.preventDefault()}
     className={`ml-2 inline-flex cursor-pointer items-center rounded-sm px-2 py-1 ${
-      enabled ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-500"
+      enabled ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"
     }`}
   >
     <ArrowsRightLeftIcon className="mr-1 inline-block h-6 w-6" />

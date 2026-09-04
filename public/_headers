@@ -2,3 +2,12 @@
 # browser for a week, then serve stale for up to a day while revalidating
 /dictionary/*
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# The app only loads its own assets plus GoatCounter's script and endpoint.
+# Inline styles are needed for the virtualized result rows' dynamic positions.
+/*
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; connect-src 'self' https://*.goatcounter.com; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests
+  Permissions-Policy: camera=(), geolocation=(), microphone=()
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY

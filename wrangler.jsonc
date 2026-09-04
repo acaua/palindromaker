@@ -7,6 +7,6 @@
     "not_found_handling": "single-page-application"
   },
   "build": {
-    "command": "pnpm typecheck && pnpm test && pnpm build"
+    "command": "pnpm check && pnpm build"
   }
 }

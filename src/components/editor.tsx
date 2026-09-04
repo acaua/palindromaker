@@ -54,6 +54,9 @@ export default function Editor() {
     autofocus: "end",
     editorProps: {
       attributes: {
+        "aria-label": "Palindrome editor",
+        "aria-multiline": "true",
+        role: "textbox",
         class: [
           "p-2",
           "font-mono text-lg tracking-wide text-gray-900",

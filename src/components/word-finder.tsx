@@ -100,7 +100,7 @@ export default function WordFinder() {
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex cursor-pointer items-center rounded-sm bg-gray-100 px-2 py-1 text-gray-500"
+          className="inline-flex cursor-pointer items-center rounded-sm bg-gray-100 px-2 py-1 text-gray-600"
         >
           {open ? (
             <ChevronDownIcon className="mr-1 inline-block h-6 w-6" />
@@ -131,7 +131,7 @@ export default function WordFinder() {
                 setLang(code);
                 writePrefs(localStorage, { lang: code });
               }}
-              className="shrink-0 cursor-pointer rounded-sm bg-gray-100 px-2 py-1 text-sm text-gray-500"
+              className="shrink-0 cursor-pointer rounded-sm bg-gray-100 px-2 py-1 text-sm text-gray-600"
             >
               {LANGUAGES.map(({ code, label }) => (
                 <option key={code} value={code}>
@@ -149,7 +149,7 @@ export default function WordFinder() {
                   className={`cursor-pointer px-2 py-1 text-sm first:rounded-l-sm last:rounded-r-sm ${
                     mode === value
                       ? "bg-purple-100 text-purple-700"
-                      : "bg-gray-100 text-gray-500"
+                      : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {label}
@@ -203,6 +203,8 @@ export default function WordFinder() {
                     <div
                       key={word}
                       role="listitem"
+                      aria-posinset={virtualRow.index + 1}
+                      aria-setsize={results.length}
                       className="absolute left-0 top-0 flex h-8 w-full items-center gap-4 px-2"
                       style={{ transform: `translateY(${virtualRow.start}px)` }}
                     >
@@ -215,7 +217,7 @@ export default function WordFinder() {
                             ? "text-purple-700"
                             : match === "palindrome"
                               ? "text-green-700"
-                              : "text-gray-400"
+                              : "text-gray-500"
                         }`}
                         title={
                           match === "pair"
