@@ -58,9 +58,8 @@ export default function Editor() {
         "aria-multiline": "true",
         role: "textbox",
         class: [
-          "p-2",
-          "font-mono text-lg tracking-wide text-gray-900",
-          "my-2 min-h-[300px]",
+          "min-h-[360px] p-5 outline-none lg:min-h-[500px]",
+          "font-mono text-lg leading-8 tracking-wide text-gray-900 sm:text-xl",
         ].join(" "),
       },
     },
@@ -82,11 +81,15 @@ export default function Editor() {
   if (!editor) return null;
 
   return (
-    <div className="max-w-prose bg-white shadow">
-      <Toolbar editor={editor} />
-      <EditorContent editor={editor} />
-      <WordFinder />
-      <Legend />
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/60">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="flex min-w-0 flex-col" aria-label="writing studio">
+          <Toolbar editor={editor} />
+          <EditorContent editor={editor} className="flex-1" />
+          <Legend variant="editor" />
+        </section>
+        <WordFinder />
+      </div>
     </div>
   );
 }
