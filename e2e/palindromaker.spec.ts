@@ -50,7 +50,7 @@ test("loads focused with the default palindrome and a green badge", async ({
     page.getByRole("textbox", { name: "Palindrome editor" }),
   ).toBeVisible();
   await expect(editable).toHaveAttribute("aria-multiline", "true");
-  await expect(greenBadge(page)).toContainText("palindrome");
+  await expect(greenBadge(page)).toContainText("Palindrome");
   await expect(greenBadge(page)).toHaveAttribute("role", "status");
   await expect(greenBadge(page)).toHaveAttribute("aria-live", "polite");
   await expect(redBadge(page)).toHaveCount(0);
@@ -71,16 +71,20 @@ test("has no automatically detectable accessibility violations", async ({
 });
 
 test("shows a legend explaining the highlights", async ({ page }) => {
-  const legend = page.locator('footer[aria-label="legend"]');
+  const editorLegend = page.locator('footer[aria-label="editor legend"]');
 
   for (const label of [
     "center of the palindrome",
     "breaks the palindrome",
     "mirror of your caret",
-    "mirror is also a word",
-    "palindrome word",
   ]) {
-    await expect(legend).toContainText(label);
+    await expect(editorLegend).toContainText(label);
+  }
+
+  await page.locator('button:has-text("Find words")').click();
+  const finderLegend = page.locator('footer[aria-label="word finder legend"]');
+  for (const label of ["mirror is also a word", "palindrome word"]) {
+    await expect(finderLegend).toContainText(label);
   }
 });
 
@@ -112,9 +116,12 @@ test("highlights the mirrored character of the caret position", async ({
   page,
 }) => {
   await replaceAll(page, "A b, b a");
-  await page.keyboard.press("Home");
-  await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("ArrowRight");
+  // Move from the end to the first "b". Unlike Home, ArrowLeft does not
+  // become a page-scrolling command when the responsive workspace is taller
+  // than the viewport.
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press("ArrowLeft");
+  }
 
   // caret is on the first "b" (index 2), mirrored by the "b" at index 5
   await expect(decoration(page, "bg-purple-200")).toBeVisible();
