@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
   buildDictionary,
+  buildDictionaryIncrementally,
   LANGUAGES,
   loadDictionary,
   mirrorMatch,
@@ -48,6 +49,46 @@ describe("buildDictionary", () => {
     expect(deduped.words).toEqual(["casa", "asa"]);
     expect(deduped.normalized).toEqual(["casa", "asa"]);
     expect(deduped.normalizedSet).toEqual(new Set(["casa", "asa"]));
+  });
+
+  test("handles blank lines and either kind of ending", () => {
+    expect(buildDictionary("").words).toEqual([]);
+    expect(buildDictionary("casa").words).toEqual(["casa"]);
+    expect(buildDictionary("casa\n").words).toEqual(["casa"]);
+    expect(buildDictionary("casa\n\nasa\n").words).toEqual(["casa", "asa"]);
+  });
+});
+
+describe("buildDictionaryIncrementally", () => {
+  // more lines than fit in one slice, so the build has to resume
+  const many = Array.from({ length: 45_000 }, (_, i) => `word${i}`).join("\n");
+  const immediately = () => Promise.resolve();
+
+  test("produces the same dictionary as the blocking build", async () => {
+    expect(await buildDictionaryIncrementally(many, immediately)).toEqual(
+      buildDictionary(many),
+    );
+  });
+
+  test("hands control back between slices", async () => {
+    let yields = 0;
+    await buildDictionaryIncrementally(many, () => {
+      yields += 1;
+      return Promise.resolve();
+    });
+
+    expect(yields).toBeGreaterThan(0);
+  });
+
+  test("a short word list needs no slicing at all", async () => {
+    let yields = 0;
+    const dictionary = await buildDictionaryIncrementally("casa\nasa", () => {
+      yields += 1;
+      return Promise.resolve();
+    });
+
+    expect(yields).toBe(0);
+    expect(dictionary.words).toEqual(["casa", "asa"]);
   });
 });
 
