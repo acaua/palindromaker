@@ -387,6 +387,34 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
   await expect(results.first().locator("span").last()).toHaveText("olleh");
 });
 
+test("loading a dictionary does not block the page", async ({ page }) => {
+  // the largest dictionary is 7 MB / 635k words: normalizing and
+  // deduplicating it used to block the main thread for ~250ms
+  await page.evaluate(() => {
+    const durations: number[] = [];
+    (window as unknown as { longTasks: number[] }).longTasks = durations;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) durations.push(entry.duration);
+    }).observe({ entryTypes: ["longtask"] });
+  });
+
+  await page.locator('button:has-text("find words")').click();
+  await page
+    .locator('select[aria-label="dictionary language"]')
+    .selectOption("es");
+  await page.locator('input[aria-label="search words"]').fill("casa");
+  await expect(
+    page.locator('[aria-label="results"] [role="listitem"]').first(),
+  ).toContainText("casa");
+
+  const longTasks = await page.evaluate(
+    () => (window as unknown as { longTasks: number[] }).longTasks,
+  );
+  // slices are ~10ms of work here; the ceiling leaves room for a slow CI
+  // machine while still catching a return to one big blocking build
+  expect(Math.max(0, ...longTasks)).toBeLessThan(150);
+});
+
 test("word finder recovers from a failed dictionary load", async ({ page }) => {
   await page.locator('button:has-text("find words")').click();
 
