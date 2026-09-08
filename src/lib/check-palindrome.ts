@@ -1,7 +1,11 @@
 export interface PalindromeResult {
   isPalindrome: boolean;
   mirror: Array<number | undefined>;
+  // innermost pair of matching letters, undefined when nothing matched
   center: [number, number] | undefined;
+  // inclusive range of the letters that could not be paired, undefined
+  // while the text still reads the same both ways
+  gap: [number, number] | undefined;
   normalizedText: string;
 }
 
@@ -20,6 +24,7 @@ const checkPalindrome = (text: string): PalindromeResult => {
       isPalindrome: true,
       mirror: [],
       center: undefined,
+      gap: undefined,
       normalizedText,
     };
   }
@@ -27,6 +32,7 @@ const checkPalindrome = (text: string): PalindromeResult => {
   let isPalindrome = true;
   const mirror: Array<number | undefined> = new Array(normalizedText.length);
   let center: [number, number] | undefined = undefined;
+  let gap: [number, number] | undefined = undefined;
 
   let i = 0;
   let j = normalizedText.length - 1;
@@ -50,11 +56,13 @@ const checkPalindrome = (text: string): PalindromeResult => {
       continue;
     }
 
+    // the outermost letters that disagree bound everything still unpaired
     isPalindrome = false;
+    gap = [i, j];
     break;
   }
 
-  return { isPalindrome, mirror, center, normalizedText };
+  return { isPalindrome, mirror, center, gap, normalizedText };
 };
 
 export default checkPalindrome;
