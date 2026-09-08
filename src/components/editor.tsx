@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSchema } from "@tiptap/core";
+import type { RefObject } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
@@ -17,7 +18,7 @@ import type { ConflictChoice, Persistence } from "@/lib/persistence";
 import { SAMPLE_CONTENT } from "@/lib/sample";
 import ConflictNotice from "@/components/conflict-notice";
 import { EditorLegend } from "@/components/legend";
-import Toolbar from "@/components/toolbar";
+import StatusBar from "@/components/status-bar";
 import WordFinder from "@/components/word-finder";
 
 const disabledStarterKitExtensions = {
@@ -51,7 +52,17 @@ const extensions = (mirror: Partial<MirrorEditingOptions>) => [
 // The mirror options play no part in the schema.
 const schema = getSchema(extensions({}));
 
-export default function Editor() {
+export default function Editor({
+  finderOpen,
+  onToggleFinder,
+  onCloseFinder,
+  triggerRef,
+}: {
+  finderOpen: boolean;
+  onToggleFinder: () => void;
+  onCloseFinder: () => void;
+  triggerRef: RefObject<HTMLButtonElement | null>;
+}) {
   const storage = localStorageOrNull();
   // the editor keeps the content and the toggle state it was created with,
   // so storage is read once: re-reading every render would re-validate the
@@ -77,8 +88,9 @@ export default function Editor() {
         // underline the whole document and fight the gap highlight
         spellcheck: "false",
         class: [
-          "min-h-[360px] p-5 outline-none lg:min-h-[500px]",
-          "font-mono text-lg leading-8 tracking-wide text-gray-900 sm:text-xl",
+          "min-h-32 p-6 pb-5 outline-none md:min-h-40 md:p-10 md:pb-8",
+          "font-mono text-lg leading-8 tracking-wide text-gray-900",
+          "md:text-2xl md:leading-[2.75rem]",
         ].join(" "),
       },
     },
@@ -126,19 +138,24 @@ export default function Editor() {
   if (!editor) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/60">
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <section className="flex min-w-0 flex-col" aria-label="writing studio">
-          <Toolbar editor={editor} />
-          {conflict && <ConflictNotice onResolve={resolveConflict} />}
-          <EditorContent editor={editor} className="flex-1" />
-          <EditorLegend />
-        </section>
-        <WordFinder
-          onInsertWord={insertWord}
-          insertMode={insertMode ?? "caret"}
+    <>
+      <div className="mt-5 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_20px_50px_-20px_rgba(0,0,0,0.18)] md:mt-8">
+        {conflict && <ConflictNotice onResolve={resolveConflict} />}
+        <EditorContent editor={editor} />
+        <StatusBar
+          editor={editor}
+          finderOpen={finderOpen}
+          onToggleFinder={onToggleFinder}
+          triggerRef={triggerRef}
         />
       </div>
-    </div>
+      <EditorLegend />
+      <WordFinder
+        open={finderOpen}
+        onClose={onCloseFinder}
+        onInsertWord={insertWord}
+        insertMode={insertMode ?? "caret"}
+      />
+    </>
   );
 }

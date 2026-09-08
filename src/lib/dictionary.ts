@@ -9,7 +9,7 @@ export interface LanguageInfo {
 }
 
 export const LANGUAGES: LanguageInfo[] = [
-  { code: "pt-br", label: "português (BR)", file: "/dictionary/pt-br.txt" },
+  { code: "pt-br", label: "português", file: "/dictionary/pt-br.txt" },
   { code: "en", label: "english", file: "/dictionary/en.txt" },
   { code: "es", label: "español", file: "/dictionary/es.txt" },
   { code: "de", label: "deutsch", file: "/dictionary/de.txt" },

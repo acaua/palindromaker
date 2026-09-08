@@ -23,19 +23,28 @@ const dictionaries: Partial<Record<Language, Dictionary>> = {
 let failing: Set<Language>;
 
 const onInsertWord = vi.fn();
+const onClose = vi.fn();
 
-// the panel as the editor mounts it; the insert mode is whatever the
-// editor's state says a click would do
-const renderPanel = (insertMode: WordInsertMode = "caret") =>
-  render(<WordFinder onInsertWord={onInsertWord} insertMode={insertMode} />);
-
-const open = () =>
-  fireEvent.click(screen.getByRole("button", { name: /find words/i }));
+// the panel as the editor mounts it: whether it is shown at all is the
+// editor's finderOpen state, and the insert mode is whatever the editor's
+// state says a click would do
+const renderPanel = ({
+  open = true,
+  insertMode = "caret",
+}: { open?: boolean; insertMode?: WordInsertMode } = {}) =>
+  render(
+    <WordFinder
+      open={open}
+      onClose={onClose}
+      onInsertWord={onInsertWord}
+      insertMode={insertMode}
+    />,
+  );
 
 // the panel with its dictionary loaded; an empty search shows no list, so
 // "loaded" is the loading line going away rather than results appearing
 const openLoaded = async () => {
-  open();
+  renderPanel();
   await waitFor(() =>
     expect(screen.queryByText("loading dictionary…")).toBeNull(),
   );
@@ -59,6 +68,7 @@ beforeEach(() => {
   localStorage.clear();
   failing = new Set();
   onInsertWord.mockReset();
+  onClose.mockReset();
   vi.mocked(loadDictionary).mockReset();
   vi.mocked(loadDictionary).mockImplementation(async (language) => {
     if (failing.has(language)) throw new Error(`cannot load ${language}`);
@@ -69,23 +79,22 @@ beforeEach(() => {
 });
 
 describe("WordFinder", () => {
-  test("loads nothing until the panel is opened", async () => {
-    renderPanel();
+  test("renders nothing while closed, and loads nothing", () => {
+    renderPanel({ open: false });
 
     expect(screen.queryByLabelText("search words")).toBeNull();
     expect(loadDictionary).not.toHaveBeenCalled();
+  });
 
-    open();
-    expect(screen.getByText("loading dictionary…")).toBeTruthy();
-    expect(loadDictionary).toHaveBeenCalledWith("pt-br");
+  test("the ✕ in the header asks the editor to close the panel", () => {
+    renderPanel();
 
-    await waitFor(() =>
-      expect(screen.queryByText("loading dictionary…")).toBeNull(),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Close word finder" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   test("a search reports its matches, and says so when there are none", async () => {
-    renderPanel();
     await openLoaded();
 
     type("ovo");
@@ -99,7 +108,6 @@ describe("WordFinder", () => {
 
   test("a failed load reports the error and keeps no results on screen", async () => {
     renderPanel();
-    open();
     type("ovo");
     expect(await screen.findByText("Mirror · 1 result")).toBeTruthy();
 
@@ -114,7 +122,6 @@ describe("WordFinder", () => {
   test("retrying a failed language recovers", async () => {
     failing.add("pt-br");
     renderPanel();
-    open();
     await screen.findByText(/failed to load dictionary/);
 
     failing.delete("pt-br");
@@ -128,7 +135,6 @@ describe("WordFinder", () => {
   });
 
   test("the match position picks where the letters have to appear", async () => {
-    renderPanel();
     await openLoaded();
 
     // of "amor" and "amora", neither starts with "mor", one ends with it
@@ -145,7 +151,6 @@ describe("WordFinder", () => {
 
   test("the chosen language is remembered for the next visit", async () => {
     const { unmount } = renderPanel();
-    open();
     chooseLanguage("en");
     await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("en"));
 
@@ -153,29 +158,25 @@ describe("WordFinder", () => {
 
     unmount();
     renderPanel();
-    open();
     expect(languageSelect().value).toBe("en");
   });
 
   test("unreadable stored prefs fall back to the default language", async () => {
     localStorage.setItem(PREFS_STORAGE_KEY, "{ not json");
     renderPanel();
-    open();
 
     expect(languageSelect().value).toBe("pt-br");
     await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("pt-br"));
   });
 
   test("the panel says what clicking a word will do", async () => {
-    const { unmount } = renderPanel("mirrored");
-    open();
+    const { unmount } = renderPanel({ insertMode: "mirrored" });
     expect(
       screen.getByText(/insert it at the caret, and its mirror opposite/),
     ).toBeTruthy();
     unmount();
 
-    renderPanel("paused");
-    open();
+    renderPanel({ insertMode: "paused" });
     expect(screen.getByText(/Mirroring resumes/)).toBeTruthy();
   });
 
@@ -185,7 +186,6 @@ describe("WordFinder", () => {
   // word-finder-results.test.tsx, and in the Playwright suite.
   test("renders no rows without layout", async () => {
     renderPanel();
-    open();
     type("ovo");
     await screen.findByText("Mirror · 1 result");
 

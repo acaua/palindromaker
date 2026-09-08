@@ -54,6 +54,7 @@ const readJson = (
 export interface Prefs {
   lang?: Language;
   mirrorEnabled?: boolean;
+  finderOpen?: boolean;
 }
 
 export interface PersistenceEditor {
@@ -123,9 +124,10 @@ export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
   const parsed = readJson(storage, PREFS_STORAGE_KEY);
   if (typeof parsed !== "object" || parsed === null) return {};
 
-  const { lang, mirrorEnabled } = parsed as {
+  const { lang, mirrorEnabled, finderOpen } = parsed as {
     lang?: unknown;
     mirrorEnabled?: unknown;
+    finderOpen?: unknown;
   };
   const prefs: Prefs = {};
   if (
@@ -136,6 +138,9 @@ export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
   }
   if (typeof mirrorEnabled === "boolean") {
     prefs.mirrorEnabled = mirrorEnabled;
+  }
+  if (typeof finderOpen === "boolean") {
+    prefs.finderOpen = finderOpen;
   }
   return prefs;
 };

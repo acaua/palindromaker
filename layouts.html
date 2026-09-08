@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Palindromaker — layout explorations</title>
+    <!--
+      Static mockups of the zen-bar-title-mid family: the picked mid-scale
+      title block and 4 variations of it. Paper canvas, writer's status
+      bar; same features as the app (status, mirror toggle, editor +
+      legend, word finder). Open with the dev server:
+      http://localhost:5173/layouts.html#zen-bar-title-mid
+      Hash routes: #zen-bar-title-mid #zen-bar-title-mid-rule
+      #zen-bar-title-mid-inline #zen-bar-title-mid-tight
+      #zen-bar-title-mid-airy — or press 1–5. All find-words triggers are
+      labeled.
+      All content is fake: highlight colors and results are illustrative.
+    -->
+    <script type="module">
+      import "/src/styles/globals.css";
+    </script>
+    <style>
+      section[data-layout] {
+        display: none;
+      }
+      section[data-layout].active {
+        display: flex;
+      }
+    </style>
+  </head>
+  <body class="h-dvh overflow-hidden bg-gray-100">
+    <!-- ============ 1 · ZEN BAR TITLE MID — mid-scale editorial title block, left with the card ============ -->
+    <section
+      data-layout="zen-bar-title-mid"
+      class="fixed inset-0 z-0 bg-[#faf8f5]"
+      aria-label="layout zen bar title mid"
+    >
+      <div
+        class="absolute inset-0 z-0 flex flex-col items-center justify-center px-5 max-md:bottom-[48%] md:right-[27.5rem] xl:right-[30rem]"
+      >
+        <div class="w-full max-w-3xl">
+          <header>
+            <div class="flex items-center gap-2.5">
+              <span
+                class="text-2xl font-bold text-violet-600 md:text-3xl"
+                aria-hidden="true">↔</span
+              >
+              <span
+                class="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl"
+                >Palindromaker</span
+              >
+            </div>
+            <p
+              class="mt-2.5 max-w-xl text-sm leading-5 text-gray-600 md:mt-3 md:text-base md:leading-6"
+            >
+              Write a phrase. We’ll show where its mirrored letters agree—and
+              where they break.
+            </p>
+          </header>
+          <div
+            class="mt-5 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_20px_50px_-20px_rgba(0,0,0,0.18)] md:mt-8"
+          >
+            <div
+              data-part="editor-text"
+              data-size="text-lg leading-8 md:text-2xl md:leading-[2.75rem]"
+              class="p-6 pb-5 md:p-10 md:pb-8"
+            ></div>
+            <div
+              class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:px-5"
+            >
+              <span
+                class="flex items-center gap-2 text-sm font-medium text-red-700"
+                role="status"
+              >
+                <i data-i="XCircleIcon" class="h-4 w-4"></i>Not a palindrome</span
+              >
+              <div class="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  aria-pressed="true"
+                  title="Mirror typing is on"
+                  class="flex cursor-pointer items-center gap-2"
+                >
+                  <span
+                    class="flex h-6 w-11 items-center rounded-full bg-violet-600 p-0.5 shadow-inner"
+                  >
+                    <span
+                      class="ml-auto h-5 w-5 rounded-full bg-white shadow"
+                    ></span>
+                  </span>
+                  <span class="text-sm font-medium text-gray-700"
+                    >Mirror typing</span
+                  >
+                </button>
+                <span class="h-4 w-px bg-gray-200"></span>
+                <button
+                  type="button"
+                  title="Find words"
+                  class="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  <i data-i="MagnifyingGlassIcon" class="h-4 w-4 text-gray-500"></i>Find
+                  words
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            data-part="editor-legend-items"
+            class="mt-5 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 text-xs text-gray-400"
+          ></div>
+        </div>
+      </div>
+      <aside
+        class="absolute z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
+        aria-label="word finder"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5"
+        >
+          <span class="font-semibold text-gray-900">Find words</span>
+          <button
+            type="button"
+            class="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-gray-400 hover:bg-gray-100"
+          >
+            <i data-i="XMarkIcon" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div
+          data-part="finder"
+          data-variant="light"
+          data-rows="12"
+          class="flex min-h-0 flex-1 flex-col pt-3"
+        ></div>
+      </aside>
+    </section>
+
+    <!-- ============ 2 · ZEN BAR TITLE MID RULE — title block over a hairline keyline ============ -->
+    <section
+      data-layout="zen-bar-title-mid-rule"
+      class="fixed inset-0 z-0 bg-[#faf8f5]"
+      aria-label="layout zen bar title mid rule"
+    >
+      <div
+        class="absolute inset-0 z-0 flex flex-col items-center justify-center px-5 max-md:bottom-[48%] md:right-[27.5rem] xl:right-[30rem]"
+      >
+        <div class="w-full max-w-3xl">
+          <header class="border-b border-gray-200/70 pb-4 md:pb-5">
+            <div class="flex items-center gap-2.5">
+              <span
+                class="text-2xl font-bold text-violet-600 md:text-3xl"
+                aria-hidden="true">↔</span
+              >
+              <span
+                class="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl"
+                >Palindromaker</span
+              >
+            </div>
+            <p
+              class="mt-2.5 max-w-xl text-sm leading-5 text-gray-600 md:mt-3 md:text-base md:leading-6"
+            >
+              Write a phrase. We’ll show where its mirrored letters agree—and
+              where they break.
+            </p>
+          </header>
+          <div
+            class="mt-4 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_20px_50px_-20px_rgba(0,0,0,0.18)] md:mt-6"
+          >
+            <div
+              data-part="editor-text"
+              data-size="text-lg leading-8 md:text-2xl md:leading-[2.75rem]"
+              class="p-6 pb-5 md:p-10 md:pb-8"
+            ></div>
+            <div
+              class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:px-5"
+            >
+              <span
+                class="flex items-center gap-2 text-sm font-medium text-red-700"
+                role="status"
+              >
+                <i data-i="XCircleIcon" class="h-4 w-4"></i>Not a palindrome</span
+              >
+              <div class="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  aria-pressed="true"
+                  title="Mirror typing is on"
+                  class="flex cursor-pointer items-center gap-2"
+                >
+                  <span
+                    class="flex h-6 w-11 items-center rounded-full bg-violet-600 p-0.5 shadow-inner"
+                  >
+                    <span
+                      class="ml-auto h-5 w-5 rounded-full bg-white shadow"
+                    ></span>
+                  </span>
+                  <span class="text-sm font-medium text-gray-700"
+                    >Mirror typing</span
+                  >
+                </button>
+                <span class="h-4 w-px bg-gray-200"></span>
+                <button
+                  type="button"
+                  title="Find words"
+                  class="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  <i data-i="MagnifyingGlassIcon" class="h-4 w-4 text-gray-500"></i>Find
+                  words
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            data-part="editor-legend-items"
+            class="mt-5 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 text-xs text-gray-400"
+          ></div>
+        </div>
+      </div>
+      <aside
+        class="absolute z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
+        aria-label="word finder"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5"
+        >
+          <span class="font-semibold text-gray-900">Find words</span>
+          <button
+            type="button"
+            class="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-gray-400 hover:bg-gray-100"
+          >
+            <i data-i="XMarkIcon" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div
+          data-part="finder"
+          data-variant="light"
+          data-rows="12"
+          class="flex min-h-0 flex-1 flex-col pt-3"
+        ></div>
+      </aside>
+    </section>
+
+    <!-- ============ 3 · ZEN BAR TITLE MID INLINE — title left, tagline right on one row ============ -->
+    <section
+      data-layout="zen-bar-title-mid-inline"
+      class="fixed inset-0 z-0 bg-[#faf8f5]"
+      aria-label="layout zen bar title mid inline"
+    >
+      <div
+        class="absolute inset-0 z-0 flex flex-col items-center justify-center px-5 max-md:bottom-[48%] md:right-[27.5rem] xl:right-[30rem]"
+      >
+        <div class="w-full max-w-3xl">
+          <header
+            class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 pb-1 md:pb-2"
+          >
+            <div class="flex items-center gap-2.5">
+              <span
+                class="text-2xl font-bold text-violet-600 md:text-3xl"
+                aria-hidden="true">↔</span
+              >
+              <span
+                class="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl"
+                >Palindromaker</span
+              >
+            </div>
+            <p
+              class="max-w-[24rem] text-right text-sm leading-5 text-gray-600 max-md:max-w-none max-md:text-left max-md:text-xs max-md:leading-4"
+            >
+              Write a phrase. We’ll show where its mirrored letters agree—and
+              where they break.
+            </p>
+          </header>
+          <div
+            class="mt-5 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_20px_50px_-20px_rgba(0,0,0,0.18)] md:mt-8"
+          >
+            <div
+              data-part="editor-text"
+              data-size="text-lg leading-8 md:text-2xl md:leading-[2.75rem]"
+              class="p-6 pb-5 md:p-10 md:pb-8"
+            ></div>
+            <div
+              class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:px-5"
+            >
+              <span
+                class="flex items-center gap-2 text-sm font-medium text-red-700"
+                role="status"
+              >
+                <i data-i="XCircleIcon" class="h-4 w-4"></i>Not a palindrome</span
+              >
+              <div class="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  aria-pressed="true"
+                  title="Mirror typing is on"
+                  class="flex cursor-pointer items-center gap-2"
+                >
+                  <span
+                    class="flex h-6 w-11 items-center rounded-full bg-violet-600 p-0.5 shadow-inner"
+                  >
+                    <span
+                      class="ml-auto h-5 w-5 rounded-full bg-white shadow"
+                    ></span>
+                  </span>
+                  <span class="text-sm font-medium text-gray-700"
+                    >Mirror typing</span
+                  >
+                </button>
+                <span class="h-4 w-px bg-gray-200"></span>
+                <button
+                  type="button"
+                  title="Find words"
+                  class="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  <i data-i="MagnifyingGlassIcon" class="h-4 w-4 text-gray-500"></i>Find
+                  words
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            data-part="editor-legend-items"
+            class="mt-5 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 text-xs text-gray-400"
+          ></div>
+        </div>
+      </div>
+      <aside
+        class="absolute z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
+        aria-label="word finder"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5"
+        >
+          <span class="font-semibold text-gray-900">Find words</span>
+          <button
+            type="button"
+            class="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-gray-400 hover:bg-gray-100"
+          >
+            <i data-i="XMarkIcon" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div
+          data-part="finder"
+          data-variant="light"
+          data-rows="12"
+          class="flex min-h-0 flex-1 flex-col pt-3"
+        ></div>
+      </aside>
+    </section>
+
+    <!-- ============ 4 · ZEN BAR TITLE MID TIGHT — same header, less air ============ -->
+    <section
+      data-layout="zen-bar-title-mid-tight"
+      class="fixed inset-0 z-0 bg-[#faf8f5]"
+      aria-label="layout zen bar title mid tight"
+    >
+      <div
+        class="absolute inset-0 z-0 flex flex-col items-center justify-center px-5 max-md:bottom-[48%] md:right-[27.5rem] xl:right-[30rem]"
+      >
+        <div class="w-full max-w-3xl">
+          <header>
+            <div class="flex items-center gap-2.5">
+              <span
+                class="text-2xl font-bold text-violet-600 md:text-3xl"
+                aria-hidden="true">↔</span
+              >
+              <span
+                class="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl"
+                >Palindromaker</span
+              >
+            </div>
+            <p
+              class="mt-2 max-w-xl text-sm leading-5 text-gray-600 md:mt-2.5 md:text-base md:leading-6"
+            >
+              Write a phrase. We’ll show where its mirrored letters agree—and
+              where they break.
+            </p>
+          </header>
+          <div
+            class="mt-4 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_20px_50px_-20px_rgba(0,0,0,0.18)] md:mt-6"
+          >
+            <div
+              data-part="editor-text"
+              data-size="text-lg leading-8 md:text-2xl md:leading-[2.75rem]"
+              class="p-6 pb-5 md:p-10 md:pb-8"
+            ></div>
+            <div
+              class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:px-5"
+            >
+              <span
+                class="flex items-center gap-2 text-sm font-medium text-red-700"
+                role="status"
+              >
+                <i data-i="XCircleIcon" class="h-4 w-4"></i>Not a palindrome</span
+              >
+              <div class="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  aria-pressed="true"
+                  title="Mirror typing is on"
+                  class="flex cursor-pointer items-center gap-2"
+                >
+                  <span
+                    class="flex h-6 w-11 items-center rounded-full bg-violet-600 p-0.5 shadow-inner"
+                  >
+                    <span
+                      class="ml-auto h-5 w-5 rounded-full bg-white shadow"
+                    ></span>
+                  </span>
+                  <span class="text-sm font-medium text-gray-700"
+                    >Mirror typing</span
+                  >
+                </button>
+                <span class="h-4 w-px bg-gray-200"></span>
+                <button
+                  type="button"
+                  title="Find words"
+                  class="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  <i data-i="MagnifyingGlassIcon" class="h-4 w-4 text-gray-500"></i>Find
+                  words
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            data-part="editor-legend-items"
+            class="mt-5 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 text-xs text-gray-400"
+          ></div>
+        </div>
+      </div>
+      <aside
+        class="absolute z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
+        aria-label="word finder"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5"
+        >
+          <span class="font-semibold text-gray-900">Find words</span>
+          <button
+            type="button"
+            class="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-gray-400 hover:bg-gray-100"
+          >
+            <i data-i="XMarkIcon" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div
+          data-part="finder"
+          data-variant="light"
+          data-rows="12"
+          class="flex min-h-0 flex-1 flex-col pt-3"
+        ></div>
+      </aside>
+    </section>
+
+    <!-- ============ 5 · ZEN BAR TITLE MID AIRY — same header, more air ============ -->
+    <section
+      data-layout="zen-bar-title-mid-airy"
+      class="fixed inset-0 z-0 bg-[#faf8f5]"
+      aria-label="layout zen bar title mid airy"
+    >
+      <div
+        class="absolute inset-0 z-0 flex flex-col items-center justify-center px-5 max-md:bottom-[48%] md:right-[27.5rem] xl:right-[30rem]"
+      >
+        <div class="w-full max-w-3xl">
+          <header>
+            <div class="flex items-center gap-2.5">
+              <span
+                class="text-2xl font-bold text-violet-600 md:text-3xl"
+                aria-hidden="true">↔</span
+              >
+              <span
+                class="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl"
+                >Palindromaker</span
+              >
+            </div>
+            <p
+              class="mt-3 max-w-xl text-sm leading-5 text-gray-600 md:mt-4 md:text-base md:leading-6"
+            >
+              Write a phrase. We’ll show where its mirrored letters agree—and
+              where they break.
+            </p>
+          </header>
+          <div
+            class="mt-6 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_20px_50px_-20px_rgba(0,0,0,0.18)] md:mt-10"
+          >
+            <div
+              data-part="editor-text"
+              data-size="text-lg leading-8 md:text-2xl md:leading-[2.75rem]"
+              class="p-6 pb-5 md:p-10 md:pb-8"
+            ></div>
+            <div
+              class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:px-5"
+            >
+              <span
+                class="flex items-center gap-2 text-sm font-medium text-red-700"
+                role="status"
+              >
+                <i data-i="XCircleIcon" class="h-4 w-4"></i>Not a palindrome</span
+              >
+              <div class="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  aria-pressed="true"
+                  title="Mirror typing is on"
+                  class="flex cursor-pointer items-center gap-2"
+                >
+                  <span
+                    class="flex h-6 w-11 items-center rounded-full bg-violet-600 p-0.5 shadow-inner"
+                  >
+                    <span
+                      class="ml-auto h-5 w-5 rounded-full bg-white shadow"
+                    ></span>
+                  </span>
+                  <span class="text-sm font-medium text-gray-700"
+                    >Mirror typing</span
+                  >
+                </button>
+                <span class="h-4 w-px bg-gray-200"></span>
+                <button
+                  type="button"
+                  title="Find words"
+                  class="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  <i data-i="MagnifyingGlassIcon" class="h-4 w-4 text-gray-500"></i>Find
+                  words
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            data-part="editor-legend-items"
+            class="mt-5 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 text-xs text-gray-400"
+          ></div>
+        </div>
+      </div>
+      <aside
+        class="absolute z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
+        aria-label="word finder"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5"
+        >
+          <span class="font-semibold text-gray-900">Find words</span>
+          <button
+            type="button"
+            class="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-gray-400 hover:bg-gray-100"
+          >
+            <i data-i="XMarkIcon" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div
+          data-part="finder"
+          data-variant="light"
+          data-rows="12"
+          class="flex min-h-0 flex-1 flex-col pt-3"
+        ></div>
+      </aside>
+    </section>
+
+    <script>
+      const ICONS = {
+        ArrowsRightLeftIcon: ["M15.97 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 1 1-1.06-1.06l3.22-3.22H7.5a.75.75 0 0 1 0-1.5h11.69l-3.22-3.22a.75.75 0 0 1 0-1.06Zm-7.94 9a.75.75 0 0 1 0 1.06l-3.22 3.22H16.5a.75.75 0 0 1 0 1.5H4.81l3.22 3.22a.75.75 0 1 1-1.06 1.06l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 0 1 1.06 0Z"],
+        CheckCircleIcon: ["M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"],
+        XCircleIcon: ["M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z"],
+        MagnifyingGlassIcon: ["M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.69 4.69a.75.75 0 1 1-1.06 1.06l-4.69-4.69A8.25 8.25 0 0 1 2.25 10.5Z"],
+        XMarkIcon: ["M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"],
+      };
+
+      const icon = (name, cls) =>
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="${cls}">` +
+        ICONS[name].map((d) => `<path d="${d}"/>`).join("") +
+        `</svg>`;
+
+      document.querySelectorAll("i[data-i]").forEach((el) => {
+        const tpl = document.createElement("template");
+        tpl.innerHTML = icon(el.dataset.i, el.className);
+        el.replaceWith(tpl.content.firstChild);
+      });
+
+      // ---- shared partials -------------------------------------------------
+      // mid-edit sample: purple = mirror of the caret, blue brackets = the
+      // center pair, red = letters that break the palindrome
+      const editorText = (size) => `
+        <p class="font-mono ${size} tracking-wide text-gray-900">
+          <span class="rounded-[3px] bg-purple-200">E</span>va, can I sta<span class="pm-center1">b</span> <span class="pm-center2">b</span>ats in a c<span class="rounded-[3px] bg-red-300">av</span><span class="ml-0.5 inline-block h-[1.35em] w-[2px] translate-y-[0.3em] bg-gray-900"></span>
+        </p>`;
+
+      const words = [
+        ["decaf", "faced", "pair"],
+        ["deer", "reed", "pair"],
+        ["deed", "deed", "palindrome"],
+        ["deified", "deified", "palindrome"],
+        ["dental", "latned", ""],
+        ["deter", "reted", ""],
+        ["decoy", "yoced", ""],
+        ["delta", "atled", ""],
+        ["delve", "evled", ""],
+        ["demo", "omed", ""],
+        ["decor", "roced", ""],
+        ["decal", "laced", "pair"],
+        ["denny", "ynned", ""],
+        ["depth", "htped", ""],
+        ["derby", "ybred", ""],
+        ["delta", "atled", ""],
+      ];
+
+      const rowHTML = ([word, mirror, kind], variant) => {
+        const dark = variant === "dark";
+        const marker =
+          kind === "pair"
+            ? icon("ArrowsRightLeftIcon", "h-4 w-4 shrink-0 text-purple-700")
+            : kind === "palindrome"
+              ? icon("CheckCircleIcon", "h-4 w-4 shrink-0 text-green-700")
+              : "";
+        const mirrorCls =
+          kind === "pair" ? "text-purple-700" : kind === "palindrome" ? "text-green-700" : "text-gray-500";
+        return `<button type="button" class="flex h-8 w-full shrink-0 items-center gap-3 px-4 text-left font-mono text-base ${dark ? "text-gray-200 hover:bg-white/5" : "text-gray-900 hover:bg-white"}">
+          <span class="min-w-0 flex-1 truncate">${word}</span>
+          <span class="min-w-0 truncate ${mirrorCls}">${mirror}</span>
+          ${marker}
+        </button>`;
+      };
+
+      const controlsHTML = (variant) => {
+        const dark = variant === "dark";
+        return `
+        <label class="relative block">
+          ${icon("MagnifyingGlassIcon", `pointer-events-none absolute top-3 left-3 h-5 w-5 ${dark ? "text-gray-500" : "text-gray-400"}`)}
+          <input type="text" value="de" aria-label="search words" class="min-h-11 w-full min-w-0 rounded-lg border py-2 pr-3 pl-10 font-mono text-base outline-none ${dark ? "border-gray-700 bg-gray-800 text-gray-100" : "border-gray-200 bg-white text-gray-900"}">
+        </label>
+        <div class="flex items-center justify-between gap-2">
+          <label class="flex items-center gap-2 text-xs font-medium ${dark ? "text-gray-400" : "text-gray-500"}">Language
+            <select aria-label="dictionary language" class="min-h-10 cursor-pointer rounded-lg border px-2 text-sm ${dark ? "border-gray-700 bg-gray-800 text-gray-300" : "border-gray-200 bg-white text-gray-700"}">
+              <option selected>Português (BR)</option><option>English</option>
+            </select>
+          </label>
+        </div>
+        <div class="grid grid-cols-3 rounded-lg p-1 ${dark ? "bg-gray-800" : "bg-gray-200/70"}" aria-label="match position">
+          <button type="button" class="min-h-9 cursor-pointer rounded-md px-2 py-1 text-xs font-medium ${dark ? "bg-gray-700 text-white shadow-sm" : "bg-white text-violet-700 shadow-sm"}">starts with</button>
+          <button type="button" class="min-h-9 cursor-pointer rounded-md px-2 py-1 text-xs font-medium ${dark ? "text-gray-400" : "text-gray-600"}">ends with</button>
+          <button type="button" class="min-h-9 cursor-pointer rounded-md px-2 py-1 text-xs font-medium ${dark ? "text-gray-400" : "text-gray-600"}">contains</button>
+        </div>`;
+      };
+
+      const editorLegendItems = (variant) => {
+        const dark = variant === "dark";
+        const cls = dark ? "text-gray-400" : "text-gray-500";
+        const sw = "inline-block h-3 w-3 shrink-0 rounded-sm";
+        return `
+          <span class="flex items-center gap-1.5 ${cls}"><span class="${sw} bg-blue-200"></span>center of the palindrome</span>
+          <span class="flex items-center gap-1.5 ${cls}"><span class="${sw} bg-red-300"></span>breaks the palindrome</span>
+          <span class="flex items-center gap-1.5 ${cls}"><span class="${sw} bg-purple-400"></span>mirror of your caret</span>`;
+      };
+
+      const finderLegendItems = (variant) => {
+        const cls = variant === "dark" ? "text-gray-400" : "text-gray-500";
+        return `
+          <span class="flex items-center gap-1.5 ${cls}">${icon("ArrowsRightLeftIcon", `h-3 w-3 shrink-0 text-purple-700`)}mirror is also a word</span>
+          <span class="flex items-center gap-1.5 ${cls}">${icon("CheckCircleIcon", `h-3 w-3 shrink-0 text-green-700`)}palindrome word</span>`;
+      };
+
+      const finderBody = ({ variant = "light", rows = 10, pinLegend = true } = {}) => {
+        const dark = variant === "dark";
+        return `
+        <div class="space-y-3 px-4 pb-4 pt-3">${controlsHTML(variant)}</div>
+        <p class="px-4 pb-3 text-xs ${dark ? "text-gray-400" : "text-gray-500"}">Click a word to insert it at the caret, and its mirror opposite.</p>
+        <div class="flex items-center justify-between border-y px-4 py-2 text-[10px] font-semibold tracking-widest uppercase ${dark ? "border-gray-800 text-gray-400" : "border-gray-200 text-gray-500"}">
+          <span>Word</span><span>Mirror · 128 results</span>
+        </div>
+        <div aria-label="results" class="min-h-0 flex-1 overflow-hidden font-mono">
+          ${words.slice(0, rows).map((w) => rowHTML(w, variant)).join("")}
+        </div>
+        ${pinLegend ? `<div class="mt-auto shrink-0">
+          <footer class="flex flex-wrap gap-x-4 gap-y-1 border-t px-4 py-3 text-xs ${dark ? "border-gray-800" : "border-gray-100"} ${dark ? "text-gray-400" : "text-gray-500"}">
+            ${finderLegendItems(variant)}
+          </footer>
+        </div>` : ""}`;
+      };
+
+      document.querySelectorAll('[data-part="editor-text"]').forEach((el) => {
+        el.innerHTML = editorText(el.dataset.size);
+      });
+      document.querySelectorAll('[data-part="editor-legend-items"]').forEach((el) => {
+        el.innerHTML = editorLegendItems("light");
+      });
+      document.querySelectorAll('[data-part="finder"]').forEach((el) => {
+        el.innerHTML = finderBody({
+          variant: el.dataset.variant || "light",
+          rows: Number(el.dataset.rows || 10),
+          pinLegend: el.dataset.pinLegend !== "false",
+        });
+      });
+
+      // ---- routing -----------------------------------------------------------
+      const show = (id) => {
+        document.querySelectorAll("section[data-layout]").forEach((s) => {
+          s.classList.toggle("active", s.dataset.layout === id);
+        });
+      };
+      const current = () => (location.hash || "#zen-bar-title-mid").slice(1);
+      window.addEventListener("hashchange", () => show(current()));
+      window.addEventListener("keydown", (event) => {
+        const map = {
+          1: "zen-bar-title-mid",
+          2: "zen-bar-title-mid-rule",
+          3: "zen-bar-title-mid-inline",
+          4: "zen-bar-title-mid-tight",
+          5: "zen-bar-title-mid-airy",
+        };
+        if (map[event.key]) location.hash = map[event.key];
+      });
+      show(current());
+    </script>
+  </body>
+</html>

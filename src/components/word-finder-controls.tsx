@@ -37,7 +37,6 @@ export default function WordFinderControls({
           type="text"
           aria-label="search words"
           placeholder="Search words…"
-          autoFocus
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           className="min-h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-white py-2 pr-3 pl-10 font-mono text-base text-gray-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"

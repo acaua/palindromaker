@@ -13,6 +13,12 @@
 .DS_Store
 *.pem
 
+# generated screenshot artifacts (e2e/shoot-*.mjs regenerates them)
+/screenshots
+
+# local agent-harness worktrees
+/.delta
+
 # debug
 npm-debug.log*
 yarn-debug.log*

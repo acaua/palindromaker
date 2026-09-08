@@ -6,8 +6,16 @@ import { SAMPLE_CONTENT } from "@/lib/sample";
 
 const editor = (page: Page) => page.locator('[contenteditable="true"]');
 
-const greenBadge = (page: Page) => page.locator("span.bg-green-100");
-const redBadge = (page: Page) => page.locator("span.bg-red-100");
+// the status line is plain text now: role + color class, scoped apart from
+// the legend swatches and result-row markers that share the color
+const greenStatus = (page: Page) =>
+  page.locator('span[role="status"].text-green-700');
+const redStatus = (page: Page) =>
+  page.locator('span[role="status"].text-red-700');
+
+// the panel is open by default; the trigger toggles it
+const finderTrigger = (page: Page) =>
+  page.getByRole("button", { name: "Find words" });
 
 // decoration spans live inside the editor; scoping keeps them apart from
 // the legend, whose swatches reuse the same classes
@@ -56,16 +64,16 @@ test("loads focused with the default palindrome and a green badge", async ({
   // a palindrome is misspelled by definition; squiggles would underline
   // the whole document
   await expect(editable).toHaveAttribute("spellcheck", "false");
-  await expect(greenBadge(page)).toContainText("Palindrome");
-  await expect(greenBadge(page)).toHaveAttribute("role", "status");
-  await expect(greenBadge(page)).toHaveAttribute("aria-live", "polite");
-  await expect(redBadge(page)).toHaveCount(0);
+  await expect(greenStatus(page)).toContainText("Palindrome");
+  await expect(greenStatus(page)).toHaveAttribute("role", "status");
+  await expect(greenStatus(page)).toHaveAttribute("aria-live", "polite");
+  await expect(redStatus(page)).toHaveCount(0);
 });
 
 test("has no automatically detectable accessibility violations", async ({
   page,
 }) => {
-  await page.locator('button:has-text("find words")').click();
+  // the word finder panel is open by default
   await page.locator('input[aria-label="search words"]').fill("abac");
   await expect(
     page.locator('[aria-label="results"] [role="listitem"]').first(),
@@ -87,7 +95,6 @@ test("shows a legend explaining the highlights", async ({ page }) => {
     await expect(editorLegend).toContainText(label);
   }
 
-  await page.locator('button:has-text("Find words")').click();
   const finderLegend = page.locator('footer[aria-label="word finder legend"]');
   for (const label of ["mirror is also a word", "palindrome word"]) {
     await expect(finderLegend).toContainText(label);
@@ -97,8 +104,8 @@ test("shows a legend explaining the highlights", async ({ page }) => {
 test("shows a red badge for non-palindrome text", async ({ page }) => {
   await replaceAll(page, "hello world");
 
-  await expect(redBadge(page)).toContainText("palindrome");
-  await expect(greenBadge(page)).toHaveCount(0);
+  await expect(redStatus(page)).toContainText("palindrome");
+  await expect(greenStatus(page)).toHaveCount(0);
   // nothing pairs up here, so there is no center: the gap highlight still
   // has to show what breaks the palindrome
   await expect(decoration(page, "bg-red-300")).toBeVisible();
@@ -108,7 +115,7 @@ test("shows a red badge for non-palindrome text", async ({ page }) => {
 test("highlights the center characters of a palindrome", async ({ page }) => {
   await replaceAll(page, "A b, b a");
 
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
   await expect(decoration(page, "bg-blue-200")).toHaveCount(2);
   await expect(decoration(page, "bg-red-300")).toHaveCount(0);
 });
@@ -118,7 +125,7 @@ test("shows the gap highlight when text is not a palindrome", async ({
 }) => {
   await replaceAll(page, "abc a");
 
-  await expect(redBadge(page)).toBeVisible();
+  await expect(redStatus(page)).toBeVisible();
   await expect(decoration(page, "bg-red-300")).toBeVisible();
 });
 
@@ -145,18 +152,18 @@ test("handles multiple paragraphs without crashing", async ({ page }) => {
   await type(page, "ba");
 
   // "ab\nba" is a palindrome once the newline is skipped
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 
   // decorations for the selected mirrored character must not crash
   await page.keyboard.press("Home");
   await page.waitForTimeout(200);
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 });
 
 test("mirror editing duplicates and removes mirrored characters", async ({
   page,
 }) => {
-  // the toolbar button, not the word "mirror" inside result rows
+  // the status bar switch, not the word "mirror" inside result rows
   const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
@@ -166,12 +173,12 @@ test("mirror editing duplicates and removes mirrored characters", async ({
 
   // the first char becomes the center, every next keystroke is duplicated
   await expect(editor(page)).toContainText("cbabc");
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 
   // backspace removes the mirrored pair
   await page.keyboard.press("Backspace");
   await expect(editor(page)).toContainText("bab");
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 
   // toggling off stops the duplication
   await mirrorToggle.click();
@@ -182,7 +189,7 @@ test("mirror editing duplicates and removes mirrored characters", async ({
 
 test("persists editor content across reloads", async ({ page }) => {
   await replaceAll(page, "racecar");
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 
   // the pending debounced save is flushed on unload
   await page.reload();
@@ -190,15 +197,15 @@ test("persists editor content across reloads", async ({ page }) => {
   await expect(editor(page)).toContainText("racecar");
 });
 
-test("persists the mirror toggle and word finder language across reloads", async ({
+test("persists the mirror toggle, the panel, and the language across reloads", async ({
   page,
 }) => {
-  // the toolbar button, not the word "mirror" inside result rows
+  // the status bar switch, not the word "mirror" inside result rows
   const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 
-  await page.locator('button:has-text("find words")').click();
+  // the panel is open by default: the language is there without opening
   await page
     .locator('select[aria-label="dictionary language"]')
     .selectOption("en");
@@ -206,10 +213,42 @@ test("persists the mirror toggle and word finder language across reloads", async
   await page.reload();
 
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
-  await page.locator('button:has-text("find words")').click();
+  await expect(finderTrigger(page)).toHaveAttribute("aria-expanded", "true");
   await expect(
     page.locator('select[aria-label="dictionary language"]'),
   ).toHaveValue("en");
+
+  // closing the panel is remembered too
+  await finderTrigger(page).click();
+  await expect(page.getByLabel("word finder")).toHaveCount(0);
+
+  await page.reload();
+  await expect(finderTrigger(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByLabel("word finder")).toHaveCount(0);
+
+  // and so is reopening it
+  await finderTrigger(page).click();
+  await expect(finderTrigger(page)).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    page.locator('select[aria-label="dictionary language"]'),
+  ).toHaveValue("en");
+});
+
+test("the panel's ✕ closes it and hands focus back to the trigger", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Close word finder" }).click();
+
+  await expect(page.getByLabel("word finder")).toHaveCount(0);
+  await expect(finderTrigger(page)).toHaveAttribute("aria-expanded", "false");
+  // the ✕ vanished under the pointer, so focus must not be lost
+  await expect(finderTrigger(page)).toBeFocused();
+
+  await finderTrigger(page).click();
+  await expect(
+    page.locator('select[aria-label="dictionary language"]'),
+  ).toBeVisible();
+  await expect(finderTrigger(page)).toBeFocused();
 });
 
 test("falls back to the sample palindrome when storage is corrupt", async ({
@@ -276,7 +315,7 @@ test.describe("two tabs", () => {
     // the second tab was never edited, so it has nothing to lose
     await expect(editor(second)).toContainText("racecar");
     await expect(conflictBar(second)).toHaveCount(0);
-    await expect(greenBadge(second)).toBeVisible();
+    await expect(greenStatus(second)).toBeVisible();
   });
 
   test("a tab with its own edits is asked which version to keep", async ({
@@ -352,13 +391,13 @@ test("keeps working when the browser blocks site storage", async ({ page }) => {
   await page.reload();
 
   await expect(editor(page)).toContainText(SAMPLE_CONTENT);
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 
   // editing still works, it just is not remembered
   await replaceAll(page, "hello world");
-  await expect(redBadge(page)).toBeVisible();
+  await expect(redStatus(page)).toBeVisible();
 
-  // the toolbar button, not the word "mirror" inside result rows
+  // the status bar switch, not the word "mirror" inside result rows
   const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
@@ -367,8 +406,6 @@ test("keeps working when the browser blocks site storage", async ({ page }) => {
 test("word finder searches the pt-br dictionary and shows mirrors", async ({
   page,
 }) => {
-  await page.locator('button:has-text("find words")').click();
-
   const searchInput = page.locator('input[aria-label="search words"]');
   await expect(searchInput).toBeVisible();
 
@@ -407,7 +444,6 @@ test("loading a dictionary does not block the page", async ({ page }) => {
     }).observe({ entryTypes: ["longtask"] });
   });
 
-  await page.locator('button:has-text("find words")').click();
   await page
     .locator('select[aria-label="dictionary language"]')
     .selectOption("es");
@@ -425,8 +461,6 @@ test("loading a dictionary does not block the page", async ({ page }) => {
 });
 
 test("word finder recovers from a failed dictionary load", async ({ page }) => {
-  await page.locator('button:has-text("find words")').click();
-
   const searchInput = page.locator('input[aria-label="search words"]');
   const results = page.locator('[aria-label="results"] [role="listitem"]');
   await searchInput.fill("abac");
@@ -458,8 +492,6 @@ test("word finder recovers from a failed dictionary load", async ({ page }) => {
 });
 
 test("word finder marks mirror pairs and palindromes", async ({ page }) => {
-  await page.locator('button:has-text("find words")').click();
-
   const searchInput = page.locator('input[aria-label="search words"]');
   const results = page.locator('[aria-label="results"] [role="listitem"]');
 
@@ -483,12 +515,11 @@ test("word finder marks mirror pairs and palindromes", async ({ page }) => {
 test("clicking a result inserts the word, and its mirror opposite", async ({
   page,
 }) => {
-  // the toolbar button, not the word "mirror" inside result rows
+  // the status bar switch, not the word "mirror" inside result rows
   const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await clearEditor(page);
 
-  await page.locator('button:has-text("find words")').click();
   const searchInput = page.locator('input[aria-label="search words"]');
   const results = page.locator('[aria-label="results"] [role="listitem"]');
   await searchInput.fill("amor");
@@ -500,14 +531,14 @@ test("clicking a result inserts the word, and its mirror opposite", async ({
   await results.first().locator("button").click();
 
   await expect(editor(page)).toHaveText(`${word} ${mirrorWord(word)}`);
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 
   // the caret was left between the word and its mirror, and the editor
   // takes the focus back, so typing goes on mirroring from there
   await expect(editor(page)).toBeFocused();
   await type(page, "x");
   await expect(editor(page)).toHaveText(`${word}x x${mirrorWord(word)}`);
-  await expect(greenBadge(page)).toBeVisible();
+  await expect(greenStatus(page)).toBeVisible();
 
   // with the toggle off a click inserts at the caret alone
   await mirrorToggle.click();
@@ -520,12 +551,10 @@ test("clicking a result inserts the word, and its mirror opposite", async ({
   await expect(editor(page)).toHaveText(
     `${word}x ${second} x${mirrorWord(word)}`,
   );
-  await expect(redBadge(page)).toBeVisible();
+  await expect(redStatus(page)).toBeVisible();
 });
 
 test("word finder virtualizes broad result sets", async ({ page }) => {
-  await page.locator('button:has-text("find words")').click();
-
   const searchInput = page.locator('input[aria-label="search words"]');
   // ~37k words start with "a" in the pt-br dictionary
   await searchInput.fill("a");
