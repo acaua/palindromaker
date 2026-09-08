@@ -9,6 +9,35 @@ export const PREFS_STORAGE_KEY = "palindromaker:prefs:v1";
 
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
+// the browser's localStorage, or null when it cannot be used. Reading
+// window.localStorage *throws* (rather than returning null) when the
+// browser blocks site storage — inside an iframe, or with cookies
+// disabled — so every call site goes through here instead of touching
+// the global and taking the app down before it renders
+export const localStorageOrNull = (): StorageLike | null => {
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
+  } catch {
+    return null;
+  }
+};
+
+// reads and parses a stored value; undefined when storage is unavailable,
+// the key is absent, or the value is not JSON — callers fall back to
+// their own defaults
+const readJson = (
+  storage: Pick<Storage, "getItem"> | null,
+  key: string,
+): unknown => {
+  if (!storage) return undefined;
+  try {
+    const raw = storage.getItem(key);
+    return raw === null ? undefined : JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+};
+
 export interface Prefs {
   lang?: Language;
   mirrorEnabled?: boolean;
@@ -22,7 +51,6 @@ export interface PersistenceEditor {
 
 export interface PersistenceOptions {
   storage: StorageLike | null;
-  key?: string;
   delay?: number;
 }
 
@@ -37,54 +65,42 @@ const isStoredDoc = (value: unknown): value is JSONContent => {
 
 export const readStoredDoc = (
   storage: Pick<Storage, "getItem"> | null,
-  key: string,
-  schema?: Schema,
+  schema: Schema,
 ): JSONContent | null => {
-  if (!storage) return null;
+  const parsed = readJson(storage, DOC_STORAGE_KEY);
+  if (!isStoredDoc(parsed)) return null;
   try {
-    const raw = storage.getItem(key);
-    if (raw === null) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (!isStoredDoc(parsed)) return null;
-    if (schema) {
-      // parseable JSON that the editor's schema cannot represent (unknown
-      // node/mark types, broken structure) would crash nodeFromJSON during
-      // render and take the whole app down on every reload; reject it here
-      schema.nodeFromJSON(parsed).check();
-    }
-    return parsed;
+    // parseable JSON that the editor's schema cannot represent (unknown
+    // node/mark types, broken structure) would crash nodeFromJSON during
+    // render and take the whole app down on every reload; reject it here
+    schema.nodeFromJSON(parsed).check();
   } catch {
     return null;
   }
+  return parsed;
 };
 
 // loads UI preferences, keeping only recognized languages and booleans;
 // anything unexpected falls back to defaults chosen by the callers
 export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
-  if (!storage) return {};
-  try {
-    const raw = storage.getItem(PREFS_STORAGE_KEY);
-    if (raw === null) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return {};
-    const { lang, mirrorEnabled } = parsed as {
-      lang?: unknown;
-      mirrorEnabled?: unknown;
-    };
-    const prefs: Prefs = {};
-    if (
-      typeof lang === "string" &&
-      LANGUAGES.some((info) => info.code === lang)
-    ) {
-      prefs.lang = lang as Language;
-    }
-    if (typeof mirrorEnabled === "boolean") {
-      prefs.mirrorEnabled = mirrorEnabled;
-    }
-    return prefs;
-  } catch {
-    return {};
+  const parsed = readJson(storage, PREFS_STORAGE_KEY);
+  if (typeof parsed !== "object" || parsed === null) return {};
+
+  const { lang, mirrorEnabled } = parsed as {
+    lang?: unknown;
+    mirrorEnabled?: unknown;
+  };
+  const prefs: Prefs = {};
+  if (
+    typeof lang === "string" &&
+    LANGUAGES.some((info) => info.code === lang)
+  ) {
+    prefs.lang = lang as Language;
   }
+  if (typeof mirrorEnabled === "boolean") {
+    prefs.mirrorEnabled = mirrorEnabled;
+  }
+  return prefs;
 };
 
 // merges a patch into the stored UI preferences: best effort, so storage
@@ -104,7 +120,7 @@ export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
 // detach function (flushes any pending save) for React effect cleanup
 export const createPersistence = (
   editor: PersistenceEditor,
-  { storage, key = DOC_STORAGE_KEY, delay = 500 }: PersistenceOptions,
+  { storage, delay = 500 }: PersistenceOptions,
 ): (() => void) => {
   if (!storage) return () => {};
 
@@ -112,7 +128,7 @@ export const createPersistence = (
 
   const save = () => {
     try {
-      storage.setItem(key, JSON.stringify(editor.getJSON()));
+      storage.setItem(DOC_STORAGE_KEY, JSON.stringify(editor.getJSON()));
     } catch {
       // storage full or blocked: best effort, keep editing
     }

@@ -33,10 +33,10 @@ const buildDoc = (text: string) =>
 const docText = (state: EditorState) =>
   state.doc.textBetween(0, state.doc.content.size, "\n", "\n");
 
-const createState = (text: string) =>
+const createState = (text: string, options?: { enabled: boolean }) =>
   EditorState.create({
     doc: buildDoc(text),
-    plugins: [history(), createMirrorPlugin()],
+    plugins: [history(), createMirrorPlugin(options)],
   });
 
 const enableMirror = (state: EditorState) =>
@@ -56,6 +56,16 @@ describe("mirror editing disabled", () => {
     const state = typeChar(createState("aba"), 4, "c");
 
     expect(docText(state)).toBe("abac");
+  });
+});
+
+describe("initial state", () => {
+  test("the plugin can start enabled", () => {
+    // how a toggle remembered from a previous session comes back, without
+    // a toggle transaction after the editor mounts
+    const state = typeChar(createState("aba", { enabled: true }), 4, "c");
+
+    expect(docText(state)).toBe("cabac");
   });
 });
 

@@ -1,15 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getSchema } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { Palindrome } from "@/lib/palindrome-extension";
-import { mirrorPluginKey, MirrorEditing } from "@/lib/mirror-extension";
+import { MirrorEditing } from "@/lib/mirror-extension";
+import type { MirrorEditingOptions } from "@/lib/mirror-extension";
 import {
   createPersistence,
-  DOC_STORAGE_KEY,
+  localStorageOrNull,
   readStoredDoc,
   readStoredPrefs,
+  writePrefs,
 } from "@/lib/persistence";
 import Legend from "@/components/legend";
 import Toolbar from "@/components/toolbar";
@@ -35,22 +37,35 @@ const disabledStarterKitExtensions = {
   underline: false,
 } as const;
 
-const extensions = [
+const SAMPLE_CONTENT = "Eva, can I stab bats in a cave?";
+
+const extensions = (mirror: Partial<MirrorEditingOptions>) => [
   StarterKit.configure(disabledStarterKitExtensions),
   Palindrome,
-  MirrorEditing,
+  MirrorEditing.configure(mirror),
 ];
 
 // lets readStoredDoc reject stored docs this editor cannot represent;
-// without it, corrupt localStorage would crash nodeFromJSON during render
-const schema = getSchema(extensions);
+// without it, corrupt localStorage would crash nodeFromJSON during render.
+// The mirror options play no part in the schema.
+const schema = getSchema(extensions({}));
 
 export default function Editor() {
+  const storage = localStorageOrNull();
+  // the editor keeps the content and the toggle state it was created with,
+  // so storage is read once: re-reading every render would re-validate the
+  // stored doc against the schema on every keystroke
+  const [restored] = useState(() => ({
+    content: readStoredDoc(storage, schema) ?? SAMPLE_CONTENT,
+    mirrorEnabled: readStoredPrefs(storage).mirrorEnabled ?? false,
+  }));
+
   const editor = useEditor({
-    extensions,
-    content:
-      readStoredDoc(localStorage, DOC_STORAGE_KEY, schema) ??
-      "Eva, can I stab bats in a cave?",
+    extensions: extensions({
+      enabled: restored.mirrorEnabled,
+      onChange: (enabled) => writePrefs(storage, { mirrorEnabled: enabled }),
+    }),
+    content: restored.content,
     autofocus: "end",
     editorProps: {
       attributes: {
@@ -67,16 +82,8 @@ export default function Editor() {
 
   useEffect(() => {
     if (!editor) return;
-    // restore the mirror toggle from the previous session; the guard keeps
-    // it idempotent if React runs this effect again on a fresh editor
-    if (
-      readStoredPrefs(localStorage).mirrorEnabled &&
-      !mirrorPluginKey.getState(editor.state)?.enabled
-    ) {
-      editor.commands.toggleMirrorEditing();
-    }
-    return createPersistence(editor, { storage: localStorage });
-  }, [editor]);
+    return createPersistence(editor, { storage });
+  }, [editor, storage]);
 
   if (!editor) return null;
 

@@ -5,6 +5,7 @@ import { Schema } from "@tiptap/pm/model";
 import {
   createPersistence,
   DOC_STORAGE_KEY,
+  localStorageOrNull,
   PREFS_STORAGE_KEY,
   readStoredDoc,
   readStoredPrefs,
@@ -75,13 +76,27 @@ class FakeEditor {
 
 const stored = (storage: MemoryStorage) => storage.getItem(DOC_STORAGE_KEY);
 
+class ThrowingStorage {
+  getItem(): string | null {
+    throw new Error("access denied");
+  }
+
+  setItem(): void {
+    throw new Error("access denied");
+  }
+}
+
 describe("readStoredDoc", () => {
   test("returns null when storage is unavailable", () => {
-    expect(readStoredDoc(null, DOC_STORAGE_KEY)).toBeNull();
+    expect(readStoredDoc(null, schema)).toBeNull();
   });
 
   test("returns null when the key is absent", () => {
-    expect(readStoredDoc(new MemoryStorage(), DOC_STORAGE_KEY)).toBeNull();
+    expect(readStoredDoc(new MemoryStorage(), schema)).toBeNull();
+  });
+
+  test("returns null when storage refuses to be read", () => {
+    expect(readStoredDoc(new ThrowingStorage(), schema)).toBeNull();
   });
 
   test("returns the parsed doc", () => {
@@ -89,21 +104,21 @@ describe("readStoredDoc", () => {
     const doc = { type: "doc", content: [{ type: "paragraph" }] };
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
 
-    expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toEqual(doc);
+    expect(readStoredDoc(storage, schema)).toEqual(doc);
   });
 
   test("returns null for corrupt JSON", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, "not json");
 
-    expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toBeNull();
+    expect(readStoredDoc(storage, schema)).toBeNull();
   });
 
   test("returns null for values that are not a doc", () => {
     const storage = new MemoryStorage();
     for (const value of ["null", '"hello"', "42", '{"type":"paragraph"}']) {
       storage.setItem(DOC_STORAGE_KEY, value);
-      expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toBeNull();
+      expect(readStoredDoc(storage, schema)).toBeNull();
     }
   });
 
@@ -111,7 +126,7 @@ describe("readStoredDoc", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, '{"type":"doc","content":[]}');
 
-    expect(readStoredDoc(storage, DOC_STORAGE_KEY)).toBeNull();
+    expect(readStoredDoc(storage, schema)).toBeNull();
   });
 
   test("accepts schema-valid docs", () => {
@@ -124,7 +139,7 @@ describe("readStoredDoc", () => {
     };
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
 
-    expect(readStoredDoc(storage, DOC_STORAGE_KEY, schema)).toEqual(doc);
+    expect(readStoredDoc(storage, schema)).toEqual(doc);
   });
 
   test("rejects docs the schema cannot represent", () => {
@@ -138,8 +153,43 @@ describe("readStoredDoc", () => {
     ];
     for (const value of invalid) {
       storage.setItem(DOC_STORAGE_KEY, value);
-      expect(readStoredDoc(storage, DOC_STORAGE_KEY, schema)).toBeNull();
+      expect(readStoredDoc(storage, schema)).toBeNull();
     }
+  });
+});
+
+describe("localStorageOrNull", () => {
+  const defineLocalStorage = (descriptor: PropertyDescriptor) =>
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      ...descriptor,
+    });
+
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, "localStorage");
+  });
+
+  test("returns null when there is no localStorage", () => {
+    expect(localStorageOrNull()).toBeNull();
+  });
+
+  test("returns null when the browser blocks site storage", () => {
+    // Chrome and Safari throw on *access* when storage is blocked; without
+    // this guard the exception escapes before the app renders
+    defineLocalStorage({
+      get() {
+        throw new Error("SecurityError");
+      },
+    });
+
+    expect(localStorageOrNull()).toBeNull();
+  });
+
+  test("returns the storage when it is available", () => {
+    const storage = new MemoryStorage();
+    defineLocalStorage({ value: storage });
+
+    expect(localStorageOrNull()).toBe(storage);
   });
 });
 
@@ -277,6 +327,10 @@ describe("readStoredPrefs", () => {
     storage.setItem(PREFS_STORAGE_KEY, "not json");
 
     expect(readStoredPrefs(storage)).toEqual({});
+  });
+
+  test("returns nothing when storage refuses to be read", () => {
+    expect(readStoredPrefs(new ThrowingStorage())).toEqual({});
   });
 });
 

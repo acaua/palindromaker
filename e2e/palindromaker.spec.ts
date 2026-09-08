@@ -232,6 +232,32 @@ test("falls back to the sample palindrome when storage holds unknown nodes", asy
   await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
 });
 
+test("keeps working when the browser blocks site storage", async ({ page }) => {
+  // Chrome and Safari throw on access (not just on read) when storage is
+  // blocked, e.g. in an iframe or with cookies disabled
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new Error("SecurityError: storage is blocked");
+      },
+    });
+  });
+
+  await page.reload();
+
+  await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
+  await expect(greenBadge(page)).toBeVisible();
+
+  // editing still works, it just is not remembered
+  await replaceAll(page, "hello world");
+  await expect(redBadge(page)).toBeVisible();
+
+  const mirrorToggle = page.locator('button:has-text("mirror")');
+  await mirrorToggle.click();
+  await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
+});
+
 test("word finder searches the pt-br dictionary and shows mirrors", async ({
   page,
 }) => {

@@ -54,6 +54,19 @@ const decorationSummaries = (set: DecorationSet) =>
   });
 
 describe("palindrome plugin", () => {
+  test("reports whether the document holds any letters", () => {
+    expect(palindromePluginKey.getState(createState("aba"))?.hasLetters).toBe(
+      true,
+    );
+    // the toolbar shows "Start typing" until a letter shows up
+    expect(palindromePluginKey.getState(createState(""))?.hasLetters).toBe(
+      false,
+    );
+    expect(
+      palindromePluginKey.getState(createState("!?, 12"))?.hasLetters,
+    ).toBe(false);
+  });
+
   test("marks the center characters of a palindrome", () => {
     const pluginState = palindromePluginKey.getState(createState("aba"));
 

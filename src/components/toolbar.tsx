@@ -8,17 +8,18 @@ import {
 
 import { mirrorPluginKey } from "@/lib/mirror-extension";
 import { palindromePluginKey } from "@/lib/palindrome-extension";
-import { writePrefs } from "@/lib/persistence";
 
 export default function Toolbar({ editor }: { editor: Editor }) {
   const { hasLetters, isPalindrome, mirrorEnabled } = useEditorState({
     editor,
-    selector: ({ editor }) => ({
-      hasLetters: /\p{L}/u.test(editor.state.doc.textContent),
-      isPalindrome:
-        palindromePluginKey.getState(editor.state)?.isPalindrome ?? false,
-      mirrorEnabled: mirrorPluginKey.getState(editor.state)?.enabled ?? false,
-    }),
+    selector: ({ editor }) => {
+      const palindrome = palindromePluginKey.getState(editor.state);
+      return {
+        hasLetters: palindrome?.hasLetters ?? false,
+        isPalindrome: palindrome?.isPalindrome ?? false,
+        mirrorEnabled: mirrorPluginKey.getState(editor.state)?.enabled ?? false,
+      };
+    },
   });
 
   return (
@@ -39,11 +40,8 @@ const MirrorEditingToggle = ({
   <button
     type="button"
     aria-pressed={enabled}
-    onClick={() => {
-      editor.commands.toggleMirrorEditing();
-      // remember the new state across reloads
-      writePrefs(localStorage, { mirrorEnabled: !enabled });
-    }}
+    // the extension remembers the new state across reloads
+    onClick={() => editor.commands.toggleMirrorEditing()}
     // keep the editor focus (and caret) when toggling
     onMouseDown={(event) => event.preventDefault()}
     title="Automatically insert and remove the matching letter on the other side"
