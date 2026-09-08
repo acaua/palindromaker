@@ -107,9 +107,34 @@ describe("palindrome plugin", () => {
     const gap = decorationSummaries(pluginState!.decorations).find((deco) =>
       deco.class.includes("bg-red-300"),
     );
-    // the gap covers "bc " between the outer "a" pair
+    // the gap covers "bc" between the outer "a" pair, stopping at the
+    // last unpaired letter rather than running into the trailing space
     expect(gap?.from).toBe(2);
-    expect(gap?.to).toBe(5);
+    expect(gap?.to).toBe(4);
+  });
+
+  test("marks the gap even when no letters pair up", () => {
+    const pluginState = palindromePluginKey.getState(
+      createState("hello world"),
+    );
+
+    expect(pluginState?.isPalindrome).toBe(false);
+    const summaries = decorationSummaries(pluginState!.decorations);
+    // nothing matched, so there is no center: the whole text is the gap
+    expect(
+      summaries.filter((deco) => deco.class.includes("pm-center")),
+    ).toEqual([]);
+    expect(summaries).toContainEqual({ from: 1, to: 12, class: "bg-red-300" });
+  });
+
+  test("marks the gap across paragraphs", () => {
+    const pluginState = palindromePluginKey.getState(createState("ab\ncd"));
+
+    const gap = decorationSummaries(pluginState!.decorations).find((deco) =>
+      deco.class.includes("bg-red-300"),
+    );
+    // "a" and "d" disagree: the gap spans the block separator
+    expect(gap).toEqual({ from: 1, to: 7, class: "bg-red-300" });
   });
 
   test("highlights the mirrored character of the caret position", () => {

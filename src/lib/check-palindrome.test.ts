@@ -85,6 +85,29 @@ test("Mirror", () => {
   ]);
 });
 
+describe("gap", () => {
+  test("a palindrome has no gap", () => {
+    expect(checkPalindrome("A b, b a").gap).toBeUndefined();
+    expect(checkPalindrome("").gap).toBeUndefined();
+    expect(checkPalindrome("!?,.;: 123").gap).toBeUndefined();
+  });
+
+  test("the gap covers the letters left unpaired after a partial mirror", () => {
+    // "s" and "a" pair up, then "l" and "m" disagree
+    expect(checkPalindrome("salamas").gap).toEqual([2, 4]);
+  });
+
+  test("the gap covers the whole text when no letters pair up", () => {
+    expect(checkPalindrome("ab").gap).toEqual([0, 1]);
+    expect(checkPalindrome("hello world").gap).toEqual([0, 10]);
+  });
+
+  test("the gap ends on letters, not on the punctuation between them", () => {
+    // outer "a" pair matches, "b" and "c" disagree; the space is skipped
+    expect(checkPalindrome("abc a").gap).toEqual([1, 2]);
+  });
+});
+
 describe("edge cases", () => {
   test("empty string is a palindrome with no center", () => {
     const result = checkPalindrome("");
@@ -115,6 +138,7 @@ describe("edge cases", () => {
 
     expect(result.isPalindrome).toBe(false);
     expect(result.center).toBeUndefined();
+    expect(result.gap).toEqual([0, 1]);
   });
 
   test("accented characters are normalized before checking", () => {
@@ -146,5 +170,6 @@ describe("edge cases", () => {
 
     expect(result.isPalindrome).toBe(false);
     expect(result.center).toEqual([1, 5]);
+    expect(result.gap).toEqual([2, 4]);
   });
 });
