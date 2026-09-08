@@ -13,6 +13,28 @@ export default defineConfig({
     },
   },
   test: {
-    exclude: [...configDefaults.exclude, "e2e/**"],
+    // Two environments, told apart by the test file's extension: plain
+    // logic runs in node, anything that renders React runs in a DOM.
+    // `exclude` does not cascade from here into the projects, so the
+    // Playwright suite has to be excluded where the files are matched.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["src/**/*.test.ts"],
+          exclude: [...configDefaults.exclude, "e2e/**"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "dom",
+          include: ["src/**/*.test.tsx"],
+          environment: "happy-dom",
+          setupFiles: ["./src/test/setup.ts"],
+        },
+      },
+    ],
   },
 });
