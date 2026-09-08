@@ -46,7 +46,17 @@ type Handler = () => void;
 
 class FakeEditor {
   doc: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
+  // records what persistence pushed back into the editor
+  applied: JSONContent[] = [];
   private listeners = new Map<string, Set<Handler>>();
+
+  commands = {
+    setContent: (content: JSONContent): boolean => {
+      this.doc = content;
+      this.applied.push(content);
+      return true;
+    },
+  };
 
   on(event: string, handler: Handler): this {
     let handlers = this.listeners.get(event);
@@ -75,6 +85,16 @@ class FakeEditor {
 }
 
 const stored = (storage: MemoryStorage) => storage.getItem(DOC_STORAGE_KEY);
+
+// a document the test schema can represent, as another tab would store it
+const otherTabDoc = (text: string): JSONContent => ({
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+});
+
+// what a browser delivers to the *other* tabs after a write
+const storageEvent = (key: string) =>
+  Object.assign(new Event("storage"), { key });
 
 class ThrowingStorage {
   getItem(): string | null {
@@ -205,7 +225,7 @@ describe("createPersistence", () => {
   test("saves the doc after the debounce delay", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    const detach = createPersistence(editor, { storage });
+    const { detach } = createPersistence(editor, { storage, schema });
 
     editor.emit("update");
     expect(stored(storage)).toBeNull();
@@ -219,7 +239,7 @@ describe("createPersistence", () => {
   test("coalesces bursts of updates into one save", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    const detach = createPersistence(editor, { storage });
+    const { detach } = createPersistence(editor, { storage, schema });
 
     editor.emit("update");
     vi.advanceTimersByTime(200);
@@ -243,7 +263,7 @@ describe("createPersistence", () => {
   test("flushes a pending save when the editor is destroyed", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    createPersistence(editor, { storage });
+    createPersistence(editor, { storage, schema });
 
     editor.emit("update");
     editor.emit("destroy");
@@ -259,7 +279,7 @@ describe("createPersistence", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
     const original = editor.doc;
-    const detach = createPersistence(editor, { storage });
+    const { detach } = createPersistence(editor, { storage, schema });
 
     editor.emit("update");
     detach();
@@ -273,8 +293,9 @@ describe("createPersistence", () => {
 
   test("swallows storage failures", () => {
     const editor = new FakeEditor();
-    const detach = createPersistence(editor, {
+    const { detach } = createPersistence(editor, {
       storage: new FailingStorage(),
+      schema,
     });
 
     editor.emit("update");
@@ -285,11 +306,181 @@ describe("createPersistence", () => {
 
   test("does nothing when storage is unavailable", () => {
     const editor = new FakeEditor();
-    const detach = createPersistence(editor, { storage: null });
+    const { detach } = createPersistence(editor, { storage: null, schema });
 
     editor.emit("update");
     vi.advanceTimersByTime(1000);
     expect(() => detach()).not.toThrow();
+  });
+});
+
+// another tab shares the same storage: it writes, and the browser tells
+// this tab about it through a storage event
+describe("createPersistence across tabs", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const setup = () => {
+    const storage = new MemoryStorage();
+    const editor = new FakeEditor();
+    const storageEvents = new EventTarget();
+    const onConflict = vi.fn();
+    const persistence = createPersistence(editor, {
+      storage,
+      schema,
+      storageEvents,
+      onConflict,
+    });
+    // what the other tab does: write, then the event arrives here
+    const otherTabSaves = (text: string) => {
+      storage.setItem(DOC_STORAGE_KEY, JSON.stringify(otherTabDoc(text)));
+      storageEvents.dispatchEvent(storageEvent(DOC_STORAGE_KEY));
+    };
+    return {
+      storage,
+      editor,
+      persistence,
+      onConflict,
+      storageEvents,
+      otherTabSaves,
+    };
+  };
+
+  test("a tab with no edits of its own takes the other version", () => {
+    const { editor, onConflict, otherTabSaves } = setup();
+
+    otherTabSaves("racecar");
+
+    expect(editor.applied).toEqual([otherTabDoc("racecar")]);
+    expect(onConflict).not.toHaveBeenCalled();
+  });
+
+  test("adopting does not look like a local edit", () => {
+    const { storage, editor, otherTabSaves } = setup();
+
+    otherTabSaves("racecar");
+    vi.advanceTimersByTime(1000);
+
+    // no save was scheduled, and a later external write is still adopted
+    expect(stored(storage)).toBe(JSON.stringify(otherTabDoc("racecar")));
+    otherTabSaves("rotator");
+    expect(editor.applied).toHaveLength(2);
+  });
+
+  test("a tab that has been edited is asked instead", () => {
+    const { editor, onConflict, otherTabSaves } = setup();
+
+    editor.doc = otherTabDoc("level");
+    editor.emit("update");
+    otherTabSaves("racecar");
+
+    expect(onConflict).toHaveBeenCalledTimes(1);
+    expect(editor.applied).toEqual([]);
+  });
+
+  test("the question is asked once per conflict", () => {
+    const { editor, onConflict, otherTabSaves } = setup();
+
+    editor.emit("update");
+    otherTabSaves("racecar");
+    otherTabSaves("rotator");
+    vi.advanceTimersByTime(1000);
+
+    expect(onConflict).toHaveBeenCalledTimes(1);
+  });
+
+  test("an unanswered conflict holds off saving", () => {
+    const { storage, editor, otherTabSaves } = setup();
+
+    editor.doc = otherTabDoc("level");
+    editor.emit("update");
+    otherTabSaves("racecar");
+    vi.advanceTimersByTime(1000);
+
+    // the other tab's version is still there: nothing was overwritten
+    expect(stored(storage)).toBe(JSON.stringify(otherTabDoc("racecar")));
+  });
+
+  test('"theirs" loads the other version and resumes adopting', () => {
+    const { storage, editor, persistence, otherTabSaves } = setup();
+
+    editor.doc = otherTabDoc("level");
+    editor.emit("update");
+    otherTabSaves("racecar");
+    persistence.resolveConflict("theirs");
+
+    expect(editor.applied).toEqual([otherTabDoc("racecar")]);
+    // the tab is in sync again, so the next external write is silent
+    otherTabSaves("rotator");
+    expect(editor.applied).toHaveLength(2);
+    expect(stored(storage)).toBe(JSON.stringify(otherTabDoc("rotator")));
+  });
+
+  test('"mine" overwrites the other version', () => {
+    const { storage, editor, persistence, otherTabSaves } = setup();
+
+    editor.doc = otherTabDoc("level");
+    editor.emit("update");
+    otherTabSaves("racecar");
+    persistence.resolveConflict("mine");
+    vi.advanceTimersByTime(500);
+
+    expect(editor.applied).toEqual([]);
+    expect(stored(storage)).toBe(JSON.stringify(otherTabDoc("level")));
+  });
+
+  test("a save never overwrites a version this tab has not seen", () => {
+    const { storage, editor, onConflict } = setup();
+
+    // the other tab writes, but the event never arrives (a frozen or
+    // discarded background tab misses them)
+    storage.setItem(DOC_STORAGE_KEY, JSON.stringify(otherTabDoc("racecar")));
+    editor.doc = otherTabDoc("level");
+    editor.emit("update");
+    vi.advanceTimersByTime(500);
+
+    expect(stored(storage)).toBe(JSON.stringify(otherTabDoc("racecar")));
+    expect(onConflict).toHaveBeenCalledTimes(1);
+  });
+
+  test("writes to other keys are ignored", () => {
+    const { storage, editor, onConflict, storageEvents } = setup();
+
+    // another tab changed the word finder language, not the document
+    storage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ lang: "en" }));
+    storageEvents.dispatchEvent(storageEvent(PREFS_STORAGE_KEY));
+
+    expect(editor.applied).toEqual([]);
+    expect(onConflict).not.toHaveBeenCalled();
+  });
+
+  test("a document the schema cannot represent is ignored", () => {
+    const { storage, editor, onConflict, storageEvents } = setup();
+
+    storage.setItem(
+      DOC_STORAGE_KEY,
+      '{"type":"doc","content":[{"type":"bogus"}]}',
+    );
+    storageEvents.dispatchEvent(storageEvent(DOC_STORAGE_KEY));
+
+    // pushing it into the editor would crash the app, so this tab keeps
+    // the document it has
+    expect(editor.applied).toEqual([]);
+    expect(onConflict).not.toHaveBeenCalled();
+  });
+
+  test("detaching stops listening for other tabs", () => {
+    const { editor, persistence, otherTabSaves } = setup();
+
+    persistence.detach();
+    otherTabSaves("racecar");
+
+    expect(editor.applied).toEqual([]);
   });
 });
 
