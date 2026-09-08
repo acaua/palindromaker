@@ -156,7 +156,8 @@ test("handles multiple paragraphs without crashing", async ({ page }) => {
 test("mirror editing duplicates and removes mirrored characters", async ({
   page,
 }) => {
-  const mirrorToggle = page.locator('button:has-text("mirror")');
+  // the toolbar button, not the word "mirror" inside result rows
+  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 
@@ -192,7 +193,8 @@ test("persists editor content across reloads", async ({ page }) => {
 test("persists the mirror toggle and word finder language across reloads", async ({
   page,
 }) => {
-  const mirrorToggle = page.locator('button:has-text("mirror")');
+  // the toolbar button, not the word "mirror" inside result rows
+  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 
@@ -356,7 +358,8 @@ test("keeps working when the browser blocks site storage", async ({ page }) => {
   await replaceAll(page, "hello world");
   await expect(redBadge(page)).toBeVisible();
 
-  const mirrorToggle = page.locator('button:has-text("mirror")');
+  // the toolbar button, not the word "mirror" inside result rows
+  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 });
@@ -475,6 +478,49 @@ test("word finder marks mirror pairs and palindromes", async ({ page }) => {
   await expect(results.first()).toContainText("abacate");
   await expect(results.first().locator("span.text-purple-700")).toHaveCount(0);
   await expect(results.first().locator("span.text-green-700")).toHaveCount(0);
+});
+
+test("clicking a result inserts the word, and its mirror opposite", async ({
+  page,
+}) => {
+  // the toolbar button, not the word "mirror" inside result rows
+  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
+  await mirrorToggle.click();
+  await clearEditor(page);
+
+  await page.locator('button:has-text("find words")').click();
+  const searchInput = page.locator('input[aria-label="search words"]');
+  const results = page.locator('[aria-label="results"] [role="listitem"]');
+  await searchInput.fill("amor");
+  await expect(results.first()).toContainText("amor");
+
+  // whichever word tops the list: the row inserts what it displays
+  const word =
+    (await results.first().locator("span").first().textContent()) ?? "";
+  await results.first().locator("button").click();
+
+  await expect(editor(page)).toHaveText(`${word} ${mirrorWord(word)}`);
+  await expect(greenBadge(page)).toBeVisible();
+
+  // the caret was left between the word and its mirror, and the editor
+  // takes the focus back, so typing goes on mirroring from there
+  await expect(editor(page)).toBeFocused();
+  await type(page, "x");
+  await expect(editor(page)).toHaveText(`${word}x x${mirrorWord(word)}`);
+  await expect(greenBadge(page)).toBeVisible();
+
+  // with the toggle off a click inserts at the caret alone
+  await mirrorToggle.click();
+  await searchInput.fill("casa");
+  await expect(results.first()).toContainText("casa");
+  const second =
+    (await results.first().locator("span").first().textContent()) ?? "";
+  await results.first().locator("button").click();
+
+  await expect(editor(page)).toHaveText(
+    `${word}x ${second} x${mirrorWord(word)}`,
+  );
+  await expect(redBadge(page)).toBeVisible();
 });
 
 test("word finder virtualizes broad result sets", async ({ page }) => {

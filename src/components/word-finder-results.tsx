@@ -33,12 +33,14 @@ export const ResultRow = ({
   index,
   total,
   offset,
+  onInsert,
 }: {
   word: string;
   match: MirrorMatch;
   index: number;
   total: number;
   offset: number;
+  onInsert: (word: string) => void;
 }) => {
   const mirror = mirrorWord(word);
   const marker = match ? markers[match] : null;
@@ -48,25 +50,34 @@ export const ResultRow = ({
       role="listitem"
       aria-posinset={index + 1}
       aria-setsize={total}
-      className="absolute top-0 left-0 flex h-8 w-full items-center gap-3 px-4 hover:bg-white"
+      className="absolute top-0 left-0 h-8 w-full"
       style={{ transform: `translateY(${offset}px)` }}
     >
-      <span className="min-w-0 flex-1 truncate" title={word}>
-        {word}
-      </span>
-      <span
-        className={`min-w-0 truncate ${marker?.className ?? "text-gray-500"}`}
-        title={marker?.label ?? mirror}
+      <button
+        type="button"
+        onClick={() => onInsert(word)}
+        // the word goes in where the caret was left, so the click must not
+        // take the editor's focus away first
+        onMouseDown={(event) => event.preventDefault()}
+        className="flex h-8 w-full cursor-pointer items-center gap-3 px-4 text-left hover:bg-white"
       >
-        {mirror}
-        {marker && <span className="sr-only"> ({marker.label})</span>}
-      </span>
-      {marker && (
-        <marker.Icon
-          aria-hidden="true"
-          className={`h-4 w-4 shrink-0 ${marker.className}`}
-        />
-      )}
+        <span className="min-w-0 flex-1 truncate" title={word}>
+          {word}
+        </span>
+        <span
+          className={`min-w-0 truncate ${marker?.className ?? "text-gray-500"}`}
+          title={marker?.label ?? mirror}
+        >
+          {mirror}
+          {marker && <span className="sr-only"> ({marker.label})</span>}
+        </span>
+        {marker && (
+          <marker.Icon
+            aria-hidden="true"
+            className={`h-4 w-4 shrink-0 ${marker.className}`}
+          />
+        )}
+      </button>
     </div>
   );
 };
@@ -76,9 +87,11 @@ export const ResultRow = ({
 export default function WordFinderResults({
   words,
   dictionary,
+  onInsert,
 }: {
   words: string[];
   dictionary: Dictionary;
+  onInsert: (word: string) => void;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -125,6 +138,7 @@ export default function WordFinderResults({
               index={row.index}
               total={words.length}
               offset={row.start}
+              onInsert={onInsert}
             />
           ))}
         </div>
