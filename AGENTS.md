@@ -12,7 +12,7 @@ Use **pnpm** (not npm/yarn). Requires Node 20+.
 | `pnpm test`                   | Unit tests (Vitest), single run               |
 | `pnpm test:e2e`               | Playwright (Chromium), auto-starts `pnpm dev` |
 | `pnpm typecheck`              | `tsc` (noEmit) — separate from build/lint     |
-| `pnpm lint`                   | ESLint 9 flat config                          |
+| `pnpm lint`                   | ESLint 10 flat config                         |
 | `pnpm build` / `pnpm preview` | Static build to `dist/` / serve it            |
 
 `pnpm check` runs typecheck + lint + unit tests for a full check. Note `pnpm build` (Vite) does **not** type-check.

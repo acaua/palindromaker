@@ -87,7 +87,7 @@ export default function Editor() {
   // another tab saved a different palindrome while this one had edits of
   // its own; until the user answers, this tab holds off on saving
   const [conflict, setConflict] = useState(false);
-  const persistence = useRef<Persistence | null>(null);
+  const persistenceRef = useRef<Persistence | null>(null);
 
   useEffect(() => {
     if (!editor) return;
@@ -96,15 +96,15 @@ export default function Editor() {
       schema,
       onConflict: () => setConflict(true),
     });
-    persistence.current = handle;
+    persistenceRef.current = handle;
     return () => {
       handle.detach();
-      persistence.current = null;
+      persistenceRef.current = null;
     };
   }, [editor, storage]);
 
   const resolveConflict = useCallback((choice: ConflictChoice) => {
-    persistence.current?.resolveConflict(choice);
+    persistenceRef.current?.resolveConflict(choice);
     setConflict(false);
   }, []);
 
