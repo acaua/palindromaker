@@ -3,18 +3,14 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { ReplaceStep } from "@tiptap/pm/transform";
 
-import checkPalindromeBase, {
-  isLetter,
-  normalizeText,
-} from "@/lib/check-palindrome";
+import { isLetter, normalizeText } from "@/lib/check-palindrome";
+import { analyzeDoc } from "@/lib/doc-analysis";
 import {
   countLettersBefore,
   letterAtDocPos,
-  letterIndices,
   mirrorDeleteDocPos,
   mirrorInsertDocPos,
 } from "@/lib/mirror-edit";
-import { analyzeDoc } from "@/lib/palindrome-extension";
 
 export interface MirrorEditingPluginState {
   enabled: boolean;
@@ -62,12 +58,11 @@ const mirrorEdits = (
   }
 
   // mirroring is only meaningful while the pre-edit text is a palindrome;
-  // positions and letters are computed on the pre-edit document
-  const { text, positions } = analyzeDoc(oldState.doc);
-  if (!checkPalindromeBase(text).isPalindrome) {
+  // letter positions are read from the pre-edit document
+  const { result, letterPositions } = analyzeDoc(oldState.doc);
+  if (!result.isPalindrome) {
     return null;
   }
-  const letterIdxs = letterIndices(text);
 
   // plain typing: a single text character inserted into an empty range
   if (
@@ -85,8 +80,8 @@ const mirrorEdits = (
       return null;
     }
 
-    const pL = countLettersBefore(letterIdxs, positions, step.from);
-    const mirrorPos = mirrorInsertDocPos(letterIdxs, positions, pL);
+    const pL = countLettersBefore(letterPositions, step.from);
+    const mirrorPos = mirrorInsertDocPos(letterPositions, pL);
     if (mirrorPos === undefined) {
       return null;
     }
@@ -106,11 +101,11 @@ const mirrorEdits = (
       return null;
     }
 
-    const dL = letterAtDocPos(letterIdxs, positions, step.from);
+    const dL = letterAtDocPos(letterPositions, step.from);
     if (dL === undefined) {
       return null;
     }
-    const mirrorPos = mirrorDeleteDocPos(letterIdxs, positions, dL);
+    const mirrorPos = mirrorDeleteDocPos(letterPositions, dL);
     if (mirrorPos === undefined) {
       // the center letter keeps the text a palindrome on its own
       return null;

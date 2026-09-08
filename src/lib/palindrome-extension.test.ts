@@ -3,8 +3,8 @@ import { Schema } from "@tiptap/pm/model";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import type { DecorationSet } from "@tiptap/pm/view";
 
+import { analyzeDoc } from "./doc-analysis";
 import {
-  analyzeDoc,
   createPalindromePlugin,
   palindromePluginKey,
 } from "./palindrome-extension";
@@ -52,40 +52,6 @@ const decorationSummaries = (set: DecorationSet) =>
       class: type.attrs.class ?? "",
     };
   });
-
-describe("analyzeDoc", () => {
-  test("maps each character to its doc position", () => {
-    const { text, positions } = analyzeDoc(buildDoc("aé"));
-
-    expect(text).toBe("ae");
-    expect(positions).toEqual([1, 2]);
-  });
-
-  test("separates paragraphs with unmapped newlines", () => {
-    const { text, positions } = analyzeDoc(buildDoc("ab\nba"));
-
-    expect(text).toBe("ab\nba");
-    expect(positions).toEqual([1, 2, undefined, 5, 6]);
-  });
-
-  test("drops characters the normalizer removes", () => {
-    // "e" + combining acute + "a": the mark has no doc position of its own
-    const { text, positions } = analyzeDoc(buildDoc("e\u0301a"));
-
-    expect(text).toBe("ea");
-    expect(positions).toEqual([1, 3]);
-  });
-
-  test("keeps positions aligned when a mark opens the text", () => {
-    // decomposed "éabae" normalizes to the palindrome "eabae"; without
-    // alignment the center would land on the combining mark at doc
-    // position 2 instead of the "b" at 4
-    const { text, positions } = analyzeDoc(buildDoc("e\u0301abae"));
-
-    expect(text).toBe("eabae");
-    expect(positions).toEqual([1, 3, 4, 5, 6]);
-  });
-});
 
 describe("palindrome plugin", () => {
   test("marks the center characters of a palindrome", () => {
@@ -157,6 +123,16 @@ describe("palindrome plugin", () => {
 });
 
 describe("analysis caching", () => {
+  test("the analysis is shared with other readers of the document", () => {
+    const state = createState("aba");
+
+    // mirror editing analyzes the same document on the same keystroke;
+    // memoization in doc-analysis keeps that a single pass
+    expect(palindromePluginKey.getState(state)?.analysis).toBe(
+      analyzeDoc(state.doc),
+    );
+  });
+
   test("selection-only transactions reuse the analysis", () => {
     const base = createState("aba");
     const before = palindromePluginKey.getState(base);

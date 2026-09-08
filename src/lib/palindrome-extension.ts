@@ -4,18 +4,11 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorState } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
-import checkPalindromeBase, { normalizeChar } from "@/lib/check-palindrome";
-import type { PalindromeResult } from "@/lib/check-palindrome";
-
-interface PalindromeAnalysis {
-  result: PalindromeResult;
-  positions: Array<number | undefined>;
-  // doc position -> index in the normalized text
-  posToIndex: Map<number, number>;
-}
+import { analyzeDoc } from "@/lib/doc-analysis";
+import type { DocAnalysis } from "@/lib/doc-analysis";
 
 interface PalindromePluginState {
-  analysis: PalindromeAnalysis;
+  analysis: DocAnalysis;
   isPalindrome: boolean;
   baseDecorations: DecorationSet;
   decorations: DecorationSet;
@@ -24,55 +17,6 @@ interface PalindromePluginState {
 export const palindromePluginKey = new PluginKey<PalindromePluginState>(
   "palindrome",
 );
-
-// map every character of the joined text to its document position; the
-// text is normalized per character so its indexes always line up with the
-// positions array, even for decomposed input ("e" + combining mark);
-// the "\n" separators between blocks have no document position
-export const analyzeDoc = (doc: ProseMirrorNode) => {
-  let text = "";
-  const positions: Array<number | undefined> = [];
-  let isFirstBlock = true;
-
-  doc.descendants((node, pos) => {
-    if (node.isBlock) {
-      if (!isFirstBlock) {
-        text += "\n";
-        positions.push(undefined);
-      }
-      isFirstBlock = false;
-    } else if (node.isText && node.text) {
-      for (let offset = 0; offset < node.text.length; offset++) {
-        const normalized = normalizeChar(node.text[offset]);
-        // characters the checker never sees (e.g. a bare combining mark)
-        // get no text and no position
-        if (normalized === "") continue;
-        text += normalized;
-        positions.push(pos + offset);
-        // normalization can expand one char into several; only the first
-        // keeps a document position
-        for (let extra = 1; extra < normalized.length; extra++) {
-          positions.push(undefined);
-        }
-      }
-    }
-  });
-
-  return { text, positions };
-};
-
-const computeAnalysis = (doc: ProseMirrorNode): PalindromeAnalysis => {
-  const { text, positions } = analyzeDoc(doc);
-  const result = checkPalindromeBase(text);
-  const posToIndex = new Map<number, number>();
-  for (let index = 0; index < positions.length; index++) {
-    const pos = positions[index];
-    if (pos !== undefined) {
-      posToIndex.set(pos, index);
-    }
-  }
-  return { result, positions, posToIndex };
-};
 
 // first and last document position mapped by the text range [from, to];
 // normalization leaves some characters (block separators, expansions)
@@ -104,7 +48,7 @@ const lastMappedPos = (
 // center and gap decorations depend only on the document, not the selection
 const computeBaseDecorations = (
   doc: ProseMirrorNode,
-  analysis: PalindromeAnalysis,
+  analysis: DocAnalysis,
 ): DecorationSet => {
   const { result, positions } = analysis;
   const decorations: Decoration[] = [];
@@ -149,7 +93,7 @@ const computeBaseDecorations = (
 
 const computeCaretDecorations = (
   state: EditorState,
-  analysis: PalindromeAnalysis,
+  analysis: DocAnalysis,
 ): Decoration[] => {
   const anchorIndex = analysis.posToIndex.get(state.selection.from);
   if (anchorIndex === undefined) return [];
@@ -169,7 +113,7 @@ const computeCaretDecorations = (
 
 const buildState = (
   state: EditorState,
-  analysis: PalindromeAnalysis,
+  analysis: DocAnalysis,
   baseDecorations: DecorationSet,
 ): PalindromePluginState => {
   const caretDecorations = computeCaretDecorations(state, analysis);
@@ -188,7 +132,7 @@ export const createPalindromePlugin = () =>
     key: palindromePluginKey,
     state: {
       init: (_, state) => {
-        const analysis = computeAnalysis(state.doc);
+        const analysis = analyzeDoc(state.doc);
         return buildState(
           state,
           analysis,
@@ -203,7 +147,7 @@ export const createPalindromePlugin = () =>
         // the analysis only depends on the document: reuse it for
         // selection-only transactions (caret moves)
         const analysis = tr.docChanged
-          ? computeAnalysis(newState.doc)
+          ? analyzeDoc(newState.doc)
           : prev.analysis;
         const baseDecorations = tr.docChanged
           ? computeBaseDecorations(newState.doc, analysis)
