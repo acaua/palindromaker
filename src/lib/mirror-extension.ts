@@ -12,6 +12,14 @@ import {
   mirrorInsertDocPos,
 } from "@/lib/mirror-edit";
 
+export interface MirrorEditingOptions {
+  // state the toggle starts in, e.g. restored from a previous session
+  enabled: boolean;
+  // called with the new state every time the toggle command runs, so
+  // remembering the choice lives next to restoring it
+  onChange?: (enabled: boolean) => void;
+}
+
 export interface MirrorEditingPluginState {
   enabled: boolean;
 }
@@ -122,11 +130,11 @@ const mirrorEdits = (
   return null;
 };
 
-export const createMirrorPlugin = () =>
+export const createMirrorPlugin = ({ enabled = false } = {}) =>
   new Plugin<MirrorEditingPluginState>({
     key: mirrorPluginKey,
     state: {
-      init: () => ({ enabled: false }),
+      init: () => ({ enabled }),
       apply: (tr, prev) => {
         const meta = tr.getMeta(mirrorPluginKey) as MirrorMeta | undefined;
         if (!meta || "own" in meta) {
@@ -147,17 +155,22 @@ declare module "@tiptap/core" {
   }
 }
 
-export const MirrorEditing = Extension.create({
+export const MirrorEditing = Extension.create<MirrorEditingOptions>({
   name: "mirrorEditing",
+
+  addOptions() {
+    return { enabled: false };
+  },
 
   addCommands() {
     return {
       toggleMirrorEditing:
         () =>
         ({ state, dispatch }) => {
-          const enabled = mirrorPluginKey.getState(state)?.enabled ?? false;
+          const enabled = !(mirrorPluginKey.getState(state)?.enabled ?? false);
           if (dispatch) {
-            dispatch(state.tr.setMeta(mirrorPluginKey, { enabled: !enabled }));
+            dispatch(state.tr.setMeta(mirrorPluginKey, { enabled }));
+            this.options.onChange?.(enabled);
           }
           return true;
         },
@@ -165,6 +178,6 @@ export const MirrorEditing = Extension.create({
   },
 
   addProseMirrorPlugins() {
-    return [createMirrorPlugin()];
+    return [createMirrorPlugin({ enabled: this.options.enabled })];
   },
 });

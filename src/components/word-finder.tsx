@@ -17,7 +17,11 @@ import {
   mirrorWord,
   searchWords,
 } from "@/lib/dictionary";
-import { readStoredPrefs, writePrefs } from "@/lib/persistence";
+import {
+  localStorageOrNull,
+  readStoredPrefs,
+  writePrefs,
+} from "@/lib/persistence";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -31,9 +35,10 @@ const modes: Array<{ value: SearchMode; label: string }> = [
 ];
 
 export default function WordFinder() {
+  const storage = localStorageOrNull();
   const [open, setOpen] = useState(false);
   const [lang, setLang] = useState<Language>(
-    () => readStoredPrefs(localStorage).lang ?? "pt-br",
+    () => readStoredPrefs(storage).lang ?? "pt-br",
   );
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("starts");
@@ -149,7 +154,7 @@ export default function WordFinder() {
                   onChange={(event) => {
                     const code = event.target.value as Language;
                     setLang(code);
-                    writePrefs(localStorage, { lang: code });
+                    writePrefs(storage, { lang: code });
                   }}
                   className="min-h-10 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700"
                 >
