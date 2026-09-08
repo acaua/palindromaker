@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getSchema } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -13,6 +13,8 @@ import {
   readStoredPrefs,
   writePrefs,
 } from "@/lib/persistence";
+import type { ConflictChoice, Persistence } from "@/lib/persistence";
+import ConflictNotice from "@/components/conflict-notice";
 import Legend from "@/components/legend";
 import Toolbar from "@/components/toolbar";
 import WordFinder from "@/components/word-finder";
@@ -80,10 +82,29 @@ export default function Editor() {
     },
   });
 
+  // another tab saved a different palindrome while this one had edits of
+  // its own; until the user answers, this tab holds off on saving
+  const [conflict, setConflict] = useState(false);
+  const persistence = useRef<Persistence | null>(null);
+
   useEffect(() => {
     if (!editor) return;
-    return createPersistence(editor, { storage });
+    const handle = createPersistence(editor, {
+      storage,
+      schema,
+      onConflict: () => setConflict(true),
+    });
+    persistence.current = handle;
+    return () => {
+      handle.detach();
+      persistence.current = null;
+    };
   }, [editor, storage]);
+
+  const resolveConflict = useCallback((choice: ConflictChoice) => {
+    persistence.current?.resolveConflict(choice);
+    setConflict(false);
+  }, []);
 
   if (!editor) return null;
 
@@ -92,6 +113,7 @@ export default function Editor() {
       <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="flex min-w-0 flex-col" aria-label="writing studio">
           <Toolbar editor={editor} />
+          {conflict && <ConflictNotice onResolve={resolveConflict} />}
           <EditorContent editor={editor} className="flex-1" />
           <Legend variant="editor" />
         </section>

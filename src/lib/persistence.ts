@@ -22,17 +22,30 @@ export const localStorageOrNull = (): StorageLike | null => {
   }
 };
 
-// reads and parses a stored value; undefined when storage is unavailable,
-// the key is absent, or the value is not JSON — callers fall back to
-// their own defaults
+// the raw stored string, or null when storage is unavailable, the key is
+// absent, or reading it fails
+const readRaw = (
+  storage: Pick<Storage, "getItem"> | null,
+  key: string,
+): string | null => {
+  if (!storage) return null;
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+// reads and parses a stored value; undefined when there is nothing to read
+// or the value is not JSON — callers fall back to their own defaults
 const readJson = (
   storage: Pick<Storage, "getItem"> | null,
   key: string,
 ): unknown => {
-  if (!storage) return undefined;
+  const raw = readRaw(storage, key);
+  if (raw === null) return undefined;
   try {
-    const raw = storage.getItem(key);
-    return raw === null ? undefined : JSON.parse(raw);
+    return JSON.parse(raw);
   } catch {
     return undefined;
   }
@@ -45,13 +58,37 @@ export interface Prefs {
 
 export interface PersistenceEditor {
   getJSON: () => JSONContent;
+  commands: {
+    setContent: (
+      content: JSONContent,
+      options?: { emitUpdate?: boolean },
+    ) => boolean;
+  };
   on: (event: "update" | "destroy", handler: () => void) => unknown;
   off: (event: "update" | "destroy", handler: () => void) => unknown;
 }
 
+// which version wins when two tabs have both moved on
+export type ConflictChoice = "theirs" | "mine";
+
 export interface PersistenceOptions {
   storage: StorageLike | null;
+  // validates documents written by other tabs, exactly like the initial load
+  schema: Schema;
   delay?: number;
+  // another tab saved a document this one cannot silently take: the app
+  // asks the user and calls resolveConflict(). Fires once per conflict.
+  onConflict?: () => void;
+  // where storage events arrive; injectable like `storage` itself, so tests
+  // can drive them without a browser
+  storageEvents?: EventTarget | null;
+}
+
+export interface Persistence {
+  // flushes any pending save and stops listening (React effect cleanup)
+  detach: () => void;
+  // answers the question raised by onConflict
+  resolveConflict: (choice: ConflictChoice) => void;
 }
 
 // the stored doc is always written by editor.getJSON(), so requiring a
@@ -115,20 +152,65 @@ export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
   }
 };
 
-// saves the editor doc to storage: debounced on updates, flushed when the
-// editor is destroyed, the page unloads, or the tab is hidden; returns a
-// detach function (flushes any pending save) for React effect cleanup
+// Saves the editor doc to storage: debounced on updates, flushed when the
+// editor is destroyed, the page unloads, or the tab is hidden.
+//
+// The stored doc is shared by every tab on this origin, so saving blindly
+// means the last tab to type wins and the other tab's work disappears with
+// no warning. Two rules keep that from happening:
+//
+//   - a tab the user has not edited takes another tab's version silently:
+//     there is nothing of theirs to lose, and a background tab left open
+//     yesterday should not go on showing a stale palindrome;
+//   - a tab the user *has* edited never overwrites a version it has not
+//     seen. Storage events are the fast path; comparing what is in storage
+//     against what we last wrote is the guarantee, since a frozen or
+//     discarded background tab can miss events entirely.
 export const createPersistence = (
   editor: PersistenceEditor,
-  { storage, delay = 500 }: PersistenceOptions,
-): (() => void) => {
-  if (!storage) return () => {};
+  {
+    storage,
+    schema,
+    delay = 500,
+    onConflict,
+    storageEvents = typeof window === "undefined" ? null : window,
+  }: PersistenceOptions,
+): Persistence => {
+  if (!storage) return { detach: () => {}, resolveConflict: () => {} };
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // the exact stored string this tab is in sync with; anything else in
+  // storage means another tab wrote while we were not looking
+  let syncedWith = readRaw(storage, DOC_STORAGE_KEY);
+  // has the user changed the document in *this* tab? stays true once they
+  // have, since adopting another version would discard visible work
+  let editedHere = false;
+  let conflicted = false;
+
+  const raiseConflict = () => {
+    if (conflicted) return; // one question per unresolved conflict
+    conflicted = true;
+    onConflict?.();
+  };
+
+  const adopt = (doc: JSONContent) => {
+    // emitUpdate: false — the content now matches storage, so this must not
+    // look like a local edit and schedule a save of what we just read
+    editor.commands.setContent(doc, { emitUpdate: false });
+    syncedWith = readRaw(storage, DOC_STORAGE_KEY);
+    editedHere = false;
+    conflicted = false;
+  };
 
   const save = () => {
+    if (readRaw(storage, DOC_STORAGE_KEY) !== syncedWith) {
+      raiseConflict();
+      return;
+    }
+    const json = JSON.stringify(editor.getJSON());
     try {
-      storage.setItem(DOC_STORAGE_KEY, JSON.stringify(editor.getJSON()));
+      storage.setItem(DOC_STORAGE_KEY, json);
+      syncedWith = json;
     } catch {
       // storage full or blocked: best effort, keep editing
     }
@@ -142,8 +224,33 @@ export const createPersistence = (
   };
 
   const scheduleSave = () => {
+    editedHere = true;
     if (timer !== undefined) clearTimeout(timer);
     timer = setTimeout(flush, delay);
+  };
+
+  const handleStorage = (event: Event) => {
+    if ((event as StorageEvent).key !== DOC_STORAGE_KEY) return;
+    const incoming = readStoredDoc(storage, schema);
+    // cleared, foreign or unrenderable: leave this tab alone
+    if (!incoming) return;
+    if (editedHere) {
+      raiseConflict();
+      return;
+    }
+    adopt(incoming);
+  };
+
+  const resolveConflict = (choice: ConflictChoice) => {
+    conflicted = false;
+    if (choice === "theirs") {
+      const incoming = readStoredDoc(storage, schema);
+      if (incoming) adopt(incoming);
+      return;
+    }
+    // "mine": treat their version as the one we are knowingly replacing
+    syncedWith = readRaw(storage, DOC_STORAGE_KEY);
+    scheduleSave();
   };
 
   const handleUnload = () => flush();
@@ -153,6 +260,7 @@ export const createPersistence = (
 
   editor.on("update", scheduleSave);
   editor.on("destroy", flush);
+  storageEvents?.addEventListener("storage", handleStorage);
   if (typeof window !== "undefined") {
     window.addEventListener("beforeunload", handleUnload);
   }
@@ -160,15 +268,22 @@ export const createPersistence = (
     document.addEventListener("visibilitychange", handleVisibilityChange);
   }
 
-  return () => {
-    editor.off("update", scheduleSave);
-    editor.off("destroy", flush);
-    if (typeof window !== "undefined") {
-      window.removeEventListener("beforeunload", handleUnload);
-    }
-    if (typeof document !== "undefined") {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    }
-    flush();
+  return {
+    detach: () => {
+      editor.off("update", scheduleSave);
+      editor.off("destroy", flush);
+      storageEvents?.removeEventListener("storage", handleStorage);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("beforeunload", handleUnload);
+      }
+      if (typeof document !== "undefined") {
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
+      }
+      flush();
+    },
+    resolveConflict,
   };
 };

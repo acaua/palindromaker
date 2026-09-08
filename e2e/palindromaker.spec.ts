@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 const editor = (page: Page) => page.locator('[contenteditable="true"]');
 
@@ -230,6 +230,103 @@ test("falls back to the sample palindrome when storage holds unknown nodes", asy
   await page.reload();
 
   await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
+});
+
+test.describe("two tabs", () => {
+  const conflictBar = (page: Page) => page.getByRole("alert");
+
+  const openTab = async (context: BrowserContext) => {
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(editor(page)).toBeVisible();
+    return page;
+  };
+
+  // the debounced save is what the other tab reacts to, so each step waits
+  // for it to land; without that the two tabs race and whichever happens to
+  // be edited first is the one asked about the conflict
+  const saved = async (page: Page, text: string) => {
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => localStorage.getItem(key) ?? "",
+          "palindromaker:doc:v1",
+        ),
+      )
+      .toContain(text);
+  };
+
+  test("an untouched tab picks up what the other tab saved", async ({
+    context,
+  }) => {
+    const first = await openTab(context);
+    const second = await openTab(context);
+
+    await replaceAll(first, "racecar");
+    await saved(first, "racecar");
+
+    // the second tab was never edited, so it has nothing to lose
+    await expect(editor(second)).toContainText("racecar");
+    await expect(conflictBar(second)).toHaveCount(0);
+    await expect(greenBadge(second)).toBeVisible();
+  });
+
+  test("a tab with its own edits is asked which version to keep", async ({
+    context,
+  }) => {
+    const first = await openTab(context);
+    const second = await openTab(context);
+
+    await replaceAll(second, "level");
+    await saved(second, "level");
+    // the first tab has no edits yet, so it takes "level" silently
+    await expect(editor(first)).toContainText("level");
+
+    await replaceAll(first, "racecar");
+    await saved(first, "racecar");
+
+    // now both tabs have been edited: neither version can be thrown away
+    await expect(conflictBar(second)).toContainText("edited in another tab");
+    await expect(editor(second)).toContainText("level");
+
+    await conflictBar(second)
+      .getByRole("button", { name: "Load that version" })
+      .click();
+
+    await expect(editor(second)).toContainText("racecar");
+    await expect(conflictBar(second)).toHaveCount(0);
+  });
+
+  test("keeping this tab's version overwrites the other one", async ({
+    context,
+  }) => {
+    const first = await openTab(context);
+    const second = await openTab(context);
+
+    await replaceAll(second, "level");
+    await saved(second, "level");
+    await expect(editor(first)).toContainText("level");
+
+    await replaceAll(first, "racecar");
+    await saved(first, "racecar");
+    await expect(conflictBar(second)).toBeVisible();
+
+    await conflictBar(second)
+      .getByRole("button", { name: "Keep this one" })
+      .click();
+
+    await expect(conflictBar(second)).toHaveCount(0);
+    await expect(editor(second)).toContainText("level");
+    await saved(second, "level");
+
+    // the first tab has edits of its own, so it is asked rather than
+    // having "racecar" replaced behind the user's back
+    await expect(conflictBar(first)).toBeVisible();
+    await expect(editor(first)).toContainText("racecar");
+
+    await second.reload();
+    await expect(editor(second)).toContainText("level");
+  });
 });
 
 test("keeps working when the browser blocks site storage", async ({ page }) => {
