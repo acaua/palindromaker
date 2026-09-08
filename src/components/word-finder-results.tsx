@@ -25,7 +25,9 @@ const markers = {
   },
 } as const;
 
-const ResultRow = ({
+// exported for its unit test: a virtualizer measures its scroll container,
+// and a headless DOM has no layout, so no row is ever in view there
+export const ResultRow = ({
   word,
   match,
   index,
