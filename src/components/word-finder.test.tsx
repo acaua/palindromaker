@@ -5,6 +5,7 @@ import WordFinder from "@/components/word-finder";
 import { buildDictionary, loadDictionary } from "@/lib/dictionary";
 import type { Dictionary, Language } from "@/lib/dictionary";
 import { PREFS_STORAGE_KEY, readStoredPrefs } from "@/lib/persistence";
+import type { WordInsertMode } from "@/lib/word-insert";
 
 // the real loader fetches megabytes; these dictionaries are a handful of
 // words, and every other export stays real
@@ -20,6 +21,13 @@ const dictionaries: Partial<Record<Language, Dictionary>> = {
 
 // languages the test wants to fail rather than answer
 let failing: Set<Language>;
+
+const onInsertWord = vi.fn();
+
+// the panel as the editor mounts it; the insert mode is whatever the
+// editor's state says a click would do
+const renderPanel = (insertMode: WordInsertMode = "caret") =>
+  render(<WordFinder onInsertWord={onInsertWord} insertMode={insertMode} />);
 
 const open = () =>
   fireEvent.click(screen.getByRole("button", { name: /find words/i }));
@@ -50,6 +58,7 @@ const rowText = () =>
 beforeEach(() => {
   localStorage.clear();
   failing = new Set();
+  onInsertWord.mockReset();
   vi.mocked(loadDictionary).mockReset();
   vi.mocked(loadDictionary).mockImplementation(async (language) => {
     if (failing.has(language)) throw new Error(`cannot load ${language}`);
@@ -61,7 +70,7 @@ beforeEach(() => {
 
 describe("WordFinder", () => {
   test("loads nothing until the panel is opened", async () => {
-    render(<WordFinder />);
+    renderPanel();
 
     expect(screen.queryByLabelText("search words")).toBeNull();
     expect(loadDictionary).not.toHaveBeenCalled();
@@ -76,7 +85,7 @@ describe("WordFinder", () => {
   });
 
   test("a search reports its matches, and says so when there are none", async () => {
-    render(<WordFinder />);
+    renderPanel();
     await openLoaded();
 
     type("ovo");
@@ -89,7 +98,7 @@ describe("WordFinder", () => {
   });
 
   test("a failed load reports the error and keeps no results on screen", async () => {
-    render(<WordFinder />);
+    renderPanel();
     open();
     type("ovo");
     expect(await screen.findByText("Mirror · 1 result")).toBeTruthy();
@@ -104,7 +113,7 @@ describe("WordFinder", () => {
 
   test("retrying a failed language recovers", async () => {
     failing.add("pt-br");
-    render(<WordFinder />);
+    renderPanel();
     open();
     await screen.findByText(/failed to load dictionary/);
 
@@ -119,7 +128,7 @@ describe("WordFinder", () => {
   });
 
   test("the match position picks where the letters have to appear", async () => {
-    render(<WordFinder />);
+    renderPanel();
     await openLoaded();
 
     // of "amor" and "amora", neither starts with "mor", one ends with it
@@ -135,7 +144,7 @@ describe("WordFinder", () => {
   });
 
   test("the chosen language is remembered for the next visit", async () => {
-    const { unmount } = render(<WordFinder />);
+    const { unmount } = renderPanel();
     open();
     chooseLanguage("en");
     await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("en"));
@@ -143,18 +152,31 @@ describe("WordFinder", () => {
     expect(readStoredPrefs(localStorage).lang).toBe("en");
 
     unmount();
-    render(<WordFinder />);
+    renderPanel();
     open();
     expect(languageSelect().value).toBe("en");
   });
 
   test("unreadable stored prefs fall back to the default language", async () => {
     localStorage.setItem(PREFS_STORAGE_KEY, "{ not json");
-    render(<WordFinder />);
+    renderPanel();
     open();
 
     expect(languageSelect().value).toBe("pt-br");
     await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("pt-br"));
+  });
+
+  test("the panel says what clicking a word will do", async () => {
+    const { unmount } = renderPanel("mirrored");
+    open();
+    expect(
+      screen.getByText(/insert it at the caret, and its mirror opposite/),
+    ).toBeTruthy();
+    unmount();
+
+    renderPanel("paused");
+    open();
+    expect(screen.getByText(/Mirroring resumes/)).toBeTruthy();
   });
 
   // Rows come from a virtualizer, which measures its scroll container:
@@ -162,7 +184,7 @@ describe("WordFinder", () => {
   // ever in view. Row rendering is covered directly in
   // word-finder-results.test.tsx, and in the Playwright suite.
   test("renders no rows without layout", async () => {
-    render(<WordFinder />);
+    renderPanel();
     open();
     type("ovo");
     await screen.findByText("Mirror · 1 result");

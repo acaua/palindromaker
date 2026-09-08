@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSchema } from "@tiptap/core";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { Palindrome } from "@/lib/palindrome-extension";
-import { MirrorEditing } from "@/lib/mirror-extension";
+import { MirrorEditing, wordInsertMode } from "@/lib/mirror-extension";
 import type { MirrorEditingOptions } from "@/lib/mirror-extension";
 import {
   createPersistence,
@@ -84,6 +84,21 @@ export default function Editor() {
     },
   });
 
+  // what clicking a word in the finder will do. The selector returns the
+  // answer rather than the state it is derived from, so keystrokes that
+  // leave it unchanged never re-render the finder and its result list.
+  const insertMode = useEditorState({
+    editor,
+    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : "caret"),
+  });
+
+  const insertWord = useCallback(
+    (word: string) => {
+      editor?.chain().insertWord(word).focus().run();
+    },
+    [editor],
+  );
+
   // another tab saved a different palindrome while this one had edits of
   // its own; until the user answers, this tab holds off on saving
   const [conflict, setConflict] = useState(false);
@@ -119,7 +134,10 @@ export default function Editor() {
           <EditorContent editor={editor} className="flex-1" />
           <EditorLegend />
         </section>
-        <WordFinder />
+        <WordFinder
+          onInsertWord={insertWord}
+          insertMode={insertMode ?? "caret"}
+        />
       </div>
     </div>
   );

@@ -13,10 +13,26 @@ import {
   readStoredPrefs,
   writePrefs,
 } from "@/lib/persistence";
+import type { WordInsertMode } from "@/lib/word-insert";
 
 const SEARCH_DELAY = 150;
 
-export default function WordFinder() {
+// what a click on a result will do, said before the click rather than
+// discovered after it
+const insertHints: Record<WordInsertMode, string> = {
+  mirrored: "Click a word to insert it at the caret, and its mirror opposite.",
+  paused:
+    "Click a word to insert it at the caret. Mirroring resumes once the text reads the same both ways.",
+  caret: "Click a word to insert it at the caret.",
+};
+
+export default function WordFinder({
+  onInsertWord,
+  insertMode,
+}: {
+  onInsertWord: (word: string) => void;
+  insertMode: WordInsertMode;
+}) {
   const storage = localStorageOrNull();
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState<Language>(
@@ -80,6 +96,14 @@ export default function WordFinder() {
             onModeChange={setMode}
           />
 
+          <p
+            className={`px-4 pb-3 text-xs ${
+              insertMode === "paused" ? "text-amber-700" : "text-gray-500"
+            }`}
+          >
+            {insertHints[insertMode]}
+          </p>
+
           {state.status === "loading" && (
             <p className="px-4 pb-4 text-sm text-gray-500">
               loading dictionary…
@@ -104,7 +128,11 @@ export default function WordFinder() {
           )}
 
           {dictionary && results.length > 0 && (
-            <WordFinderResults words={results} dictionary={dictionary} />
+            <WordFinderResults
+              words={results}
+              dictionary={dictionary}
+              onInsert={onInsertWord}
+            />
           )}
 
           <div className="mt-auto">

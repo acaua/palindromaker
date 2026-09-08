@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, test, vi } from "vitest";
 
 import { ResultRow } from "@/components/word-finder-results";
 import { buildDictionary, mirrorMatch } from "@/lib/dictionary";
@@ -9,9 +9,18 @@ import type { MirrorMatch } from "@/lib/dictionary";
 // mirrors to nothing
 const dictionary = buildDictionary(["ovo", "amor", "roma", "casa"].join("\n"));
 
+const onInsert = vi.fn();
+
 const renderRow = (word: string, match: MirrorMatch = null) =>
   render(
-    <ResultRow word={word} match={match} index={2} total={9} offset={64} />,
+    <ResultRow
+      word={word}
+      match={match}
+      index={2}
+      total={9}
+      offset={64}
+      onInsert={onInsert}
+    />,
   );
 
 const row = () => screen.getByRole("listitem");
@@ -39,6 +48,15 @@ describe("ResultRow", () => {
     renderRow("ovo", mirrorMatch(dictionary, "ovo"));
 
     expect(row().textContent).toBe("ovoovo (palindrome word)");
+  });
+
+  test("clicking the row asks for the word to be inserted", () => {
+    onInsert.mockClear();
+    renderRow("amor", mirrorMatch(dictionary, "amor"));
+
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(onInsert.mock.calls).toEqual([["amor"]]);
   });
 
   test("places the row in the full result set, not just the rendered slice", () => {

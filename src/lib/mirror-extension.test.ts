@@ -1,11 +1,16 @@
 import { describe, expect, test } from "vitest";
 import { Schema } from "@tiptap/pm/model";
 import { history, undo } from "@tiptap/pm/history";
-import { EditorState } from "@tiptap/pm/state";
+import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { Slice } from "@tiptap/pm/model";
 import { ReplaceStep } from "@tiptap/pm/transform";
 
-import { createMirrorPlugin, mirrorPluginKey } from "./mirror-extension";
+import {
+  createMirrorPlugin,
+  mirrorPluginKey,
+  wordInsertMode,
+  wordInsertTransactionFor,
+} from "./mirror-extension";
 
 const schema = new Schema({
   nodes: {
@@ -50,6 +55,15 @@ const backspaceAt = (state: EditorState, pos: number) =>
 
 const deleteForwardAt = (state: EditorState, pos: number) =>
   state.apply(state.tr.delete(pos, pos + 1));
+
+// a word finder click: the caret sits where the user left it, and the
+// command dispatches one transaction from there
+const insertWord = (state: EditorState, pos: number, word: string) => {
+  const placed = state.apply(
+    state.tr.setSelection(TextSelection.create(state.doc, pos)),
+  );
+  return placed.apply(wordInsertTransactionFor(placed, word));
+};
 
 describe("mirror editing disabled", () => {
   test("typing is not duplicated", () => {
@@ -177,10 +191,61 @@ describe("mirror deletion", () => {
   });
 });
 
+describe("inserting a word", () => {
+  const enabled = (text: string) => enableMirror(createState(text));
+
+  test("the word is inserted with its mirror opposite", () => {
+    const state = insertWord(enabled("aba"), 4, "cd");
+
+    expect(docText(state)).toBe("dc aba cd");
+  });
+
+  test("the word is inserted alone while the toggle is off", () => {
+    const state = insertWord(createState("aba"), 4, "cd");
+
+    expect(docText(state)).toBe("aba cd");
+  });
+
+  test("the word is inserted alone when the text is not a palindrome", () => {
+    const state = insertWord(enabled("abc"), 4, "cd");
+
+    expect(docText(state)).toBe("abc cd");
+  });
+
+  test("a one-letter word is not mirrored twice", () => {
+    // the insertion is a single-character step, which mirror typing would
+    // duplicate if the transaction were not marked as the plugin's own
+    const state = insertWord(enabled("a,,a"), 3, "a");
+
+    expect(docText(state)).toBe("a,a,a");
+  });
+});
+
+describe("word insert mode", () => {
+  test("reports what a word finder click will do", () => {
+    expect(wordInsertMode(createState("aba"))).toBe("caret");
+    expect(wordInsertMode(enableMirror(createState("aba")))).toBe("mirrored");
+    expect(wordInsertMode(enableMirror(createState("abc")))).toBe("paused");
+  });
+});
+
 describe("history", () => {
   test("a mirrored keystroke undoes in a single step", () => {
     let state = typeChar(enableMirror(createState("aba")), 4, "c");
     expect(docText(state)).toBe("cabac");
+
+    let undone: EditorState | undefined;
+    undo(state, (tr) => {
+      undone = state.apply(tr);
+    });
+    state = undone as EditorState;
+
+    expect(docText(state)).toBe("aba");
+  });
+
+  test("an inserted word undoes in a single step", () => {
+    let state = insertWord(enableMirror(createState("aba")), 4, "cd");
+    expect(docText(state)).toBe("dc aba cd");
 
     let undone: EditorState | undefined;
     undo(state, (tr) => {
