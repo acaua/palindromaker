@@ -14,6 +14,7 @@ import {
   writePrefs,
 } from "@/lib/persistence";
 import type { ConflictChoice, Persistence } from "@/lib/persistence";
+import { SAMPLE_CONTENT } from "@/lib/sample";
 import ConflictNotice from "@/components/conflict-notice";
 import { EditorLegend } from "@/components/legend";
 import Toolbar from "@/components/toolbar";
@@ -38,8 +39,6 @@ const disabledStarterKitExtensions = {
   trailingNode: false,
   underline: false,
 } as const;
-
-const SAMPLE_CONTENT = "Eva, can I stab bats in a cave?";
 
 const extensions = (mirror: Partial<MirrorEditingOptions>) => [
   StarterKit.configure(disabledStarterKitExtensions),
@@ -74,6 +73,9 @@ export default function Editor() {
         "aria-label": "Palindrome editor",
         "aria-multiline": "true",
         role: "textbox",
+        // a palindrome is misspelled by definition: the squiggles would
+        // underline the whole document and fight the gap highlight
+        spellcheck: "false",
         class: [
           "min-h-[360px] p-5 outline-none lg:min-h-[500px]",
           "font-mono text-lg leading-8 tracking-wide text-gray-900 sm:text-xl",

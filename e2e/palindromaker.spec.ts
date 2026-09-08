@@ -1,6 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
+import { mirrorWord } from "@/lib/dictionary";
+import { SAMPLE_CONTENT } from "@/lib/sample";
+
 const editor = (page: Page) => page.locator('[contenteditable="true"]');
 
 const greenBadge = (page: Page) => page.locator("span.bg-green-100");
@@ -45,11 +48,14 @@ test("loads focused with the default palindrome and a green badge", async ({
 }) => {
   const editable = editor(page);
 
-  await expect(editable).toContainText("Eva, can I stab bats in a cave?");
+  await expect(editable).toContainText(SAMPLE_CONTENT);
   await expect(
     page.getByRole("textbox", { name: "Palindrome editor" }),
   ).toBeVisible();
   await expect(editable).toHaveAttribute("aria-multiline", "true");
+  // a palindrome is misspelled by definition; squiggles would underline
+  // the whole document
+  await expect(editable).toHaveAttribute("spellcheck", "false");
   await expect(greenBadge(page)).toContainText("Palindrome");
   await expect(greenBadge(page)).toHaveAttribute("role", "status");
   await expect(greenBadge(page)).toHaveAttribute("aria-live", "polite");
@@ -213,7 +219,7 @@ test("falls back to the sample palindrome when storage is corrupt", async ({
 
   await page.reload();
 
-  await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
+  await expect(editor(page)).toContainText(SAMPLE_CONTENT);
 });
 
 test("falls back to the sample palindrome when storage holds unknown nodes", async ({
@@ -229,7 +235,7 @@ test("falls back to the sample palindrome when storage holds unknown nodes", asy
 
   await page.reload();
 
-  await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
+  await expect(editor(page)).toContainText(SAMPLE_CONTENT);
 });
 
 test.describe("two tabs", () => {
@@ -343,7 +349,7 @@ test("keeps working when the browser blocks site storage", async ({ page }) => {
 
   await page.reload();
 
-  await expect(editor(page)).toContainText("Eva, can I stab bats in a cave?");
+  await expect(editor(page)).toContainText(SAMPLE_CONTENT);
   await expect(greenBadge(page)).toBeVisible();
 
   // editing still works, it just is not remembered
@@ -371,7 +377,7 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
   const word =
     (await results.first().locator("span").first().textContent()) ?? "";
   await expect(results.first().locator("span").last()).toHaveText(
-    [...word].reverse().join(""),
+    mirrorWord(word),
   );
 
   await page.locator('button:has-text("ends with")').click();

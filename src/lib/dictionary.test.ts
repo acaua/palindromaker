@@ -98,6 +98,12 @@ describe("searchWords", () => {
     expect(searchWords(dictionary, "   ", "starts")).toEqual([]);
   });
 
+  test("ignores spaces around the query", () => {
+    // entries are single words, so a stray space is a typing artefact
+    expect(searchWords(dictionary, " casa ", "starts")).toEqual(["casa"]);
+    expect(searchWords(dictionary, "asa ", "ends")).toEqual(["casa", "asa"]);
+  });
+
   test("matches words that start with the query", () => {
     expect(searchWords(dictionary, "as", "starts")).toEqual(["asa"]);
   });

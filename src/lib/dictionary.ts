@@ -123,12 +123,14 @@ export const loadDictionary = (language: Language): Promise<Dictionary> => {
   return promise;
 };
 
+// dictionary entries are single words, so surrounding spaces are always a
+// typing artefact rather than something to match on
 export const searchWords = (
   dictionary: Dictionary,
   query: string,
   mode: SearchMode,
 ): string[] => {
-  const needle = normalizeText(query);
+  const needle = normalizeText(query.trim());
   if (needle === "") return [];
 
   const matcher =
