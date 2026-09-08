@@ -74,6 +74,33 @@ const computeAnalysis = (doc: ProseMirrorNode): PalindromeAnalysis => {
   return { result, positions, posToIndex };
 };
 
+// first and last document position mapped by the text range [from, to];
+// normalization leaves some characters (block separators, expansions)
+// without a position of their own, so the ends are scanned inwards
+const firstMappedPos = (
+  positions: Array<number | undefined>,
+  from: number,
+  to: number,
+): number | undefined => {
+  for (let index = from; index <= to; index++) {
+    const pos = positions[index];
+    if (pos !== undefined) return pos;
+  }
+  return undefined;
+};
+
+const lastMappedPos = (
+  positions: Array<number | undefined>,
+  from: number,
+  to: number,
+): number | undefined => {
+  for (let index = to; index >= from; index--) {
+    const pos = positions[index];
+    if (pos !== undefined) return pos;
+  }
+  return undefined;
+};
+
 // center and gap decorations depend only on the document, not the selection
 const computeBaseDecorations = (
   doc: ProseMirrorNode,
@@ -101,20 +128,19 @@ const computeBaseDecorations = (
         }),
       );
     }
+  }
 
-    if (!result.isPalindrome) {
-      const gapStart = positions[centerStart + 1];
+  // the gap exists on its own: text whose outermost letters already differ
+  // ("hello world") breaks without ever producing a center
+  if (result.gap) {
+    const [gapStart, gapEnd] = result.gap;
+    const from = firstMappedPos(positions, gapStart, gapEnd);
+    const to = lastMappedPos(positions, gapStart, gapEnd);
 
-      if (
-        startPos !== undefined &&
-        gapStart !== undefined &&
-        endPos !== undefined &&
-        endPos > gapStart
-      ) {
-        decorations.push(
-          Decoration.inline(gapStart, endPos, { class: "bg-red-300" }),
-        );
-      }
+    if (from !== undefined && to !== undefined) {
+      decorations.push(
+        Decoration.inline(from, to + 1, { class: "bg-red-300" }),
+      );
     }
   }
 

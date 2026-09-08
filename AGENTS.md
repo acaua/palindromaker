@@ -28,7 +28,7 @@ Use **pnpm** (not npm/yarn). Requires Node 20+.
 
 ## Architecture
 
-- `src/lib/check-palindrome.ts` — core algorithm. Normalizes (NFD, strips combining marks, lowercases) and pairs only letters (`\p{L}`). Returns `isPalindrome`, `mirror[]`, `center`.
+- `src/lib/check-palindrome.ts` — core algorithm. Normalizes (NFD, strips combining marks, lowercases) and pairs only letters (`\p{L}`). Returns `isPalindrome`, `mirror[]`, `center` (innermost matching pair) and `gap` (inclusive range of unpaired letters, which exists even when nothing matched).
 - `src/lib/palindrome-extension.ts` — TipTap `Palindrome` extension; `analyzeDoc()` joins doc text normalized per character (keeping text indexes aligned with doc positions; `undefined` for `\n` block separators and chars the normalizer drops) and caches the analysis so caret moves only rebuild the caret decoration. Drives center/gap/caret highlights via ProseMirror decorations.
 - `src/lib/mirror-extension.ts` — TipTap `MirrorEditing` extension; an `appendTransaction` plugin duplicates/deletes mirrored characters. Only reacts to single-step `ReplaceStep`s, ignores its own edits (`{ own: true }` meta) and IME composition. Position math lives in `src/lib/mirror-edit.ts` and counts in "letter space" (punctuation/separators invisible).
 - `src/lib/persistence.ts` — debounced `localStorage` persistence: `readStoredDoc()` loads and validates the stored doc JSON against the editor schema (null on anything unexpected — including parseable-but-unrenderable docs, which would otherwise crash render) for the editor's initial content; `createPersistence()` saves on editor updates and flushes on destroy/unload/tab-hide, returning a detach fn used as React effect cleanup in `editor.tsx`.

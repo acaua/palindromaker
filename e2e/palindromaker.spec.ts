@@ -93,6 +93,10 @@ test("shows a red badge for non-palindrome text", async ({ page }) => {
 
   await expect(redBadge(page)).toContainText("palindrome");
   await expect(greenBadge(page)).toHaveCount(0);
+  // nothing pairs up here, so there is no center: the gap highlight still
+  // has to show what breaks the palindrome
+  await expect(decoration(page, "bg-red-300")).toBeVisible();
+  await expect(decoration(page, "bg-blue-200")).toHaveCount(0);
 });
 
 test("highlights the center characters of a palindrome", async ({ page }) => {
