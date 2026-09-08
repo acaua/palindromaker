@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import checkPalindrome, {
-  normalizeChar,
-  normalizeText,
-} from "./check-palindrome";
+import checkPalindrome, { normalizeText } from "./check-palindrome";
 
 describe("isPalindrome", () => {
   test("A man, a plan... is a palindrome", () => {
@@ -25,32 +22,32 @@ test("Normalize text", () => {
   expect(normalizedText).toEqual("aaaeee :,;?!");
 });
 
-describe("normalizeChar", () => {
+describe("normalizeText", () => {
   test("strips accents from composed characters", () => {
-    expect(normalizeChar("é")).toBe("e");
-    expect(normalizeChar("Ç")).toBe("c");
-    expect(normalizeChar("ã")).toBe("a");
+    expect(normalizeText("é")).toBe("e");
+    expect(normalizeText("Ç")).toBe("c");
+    expect(normalizeText("ã")).toBe("a");
   });
 
   test("strips accents from decomposed characters", () => {
-    expect(normalizeChar("e\u0301")).toBe("e");
+    expect(normalizeText("e\u0301")).toBe("e");
   });
 
   test("strips combining marks outside the Latin-1 accent range", () => {
-    expect(normalizeChar("a\u20d0")).toBe("a"); // combining left arrow above
-    expect(normalizeChar("a\ufe20")).toBe("a"); // combining ligature left half
-    expect(normalizeChar("a\u1ab0")).toBe("a"); // combining digraph rising
+    expect(normalizeText("a\u20d0")).toBe("a"); // combining left arrow above
+    expect(normalizeText("a\ufe20")).toBe("a"); // combining ligature left half
+    expect(normalizeText("a\u1ab0")).toBe("a"); // combining digraph rising
     expect(normalizeText("a\u20d0b")).toBe("ab");
   });
 
   test("drops bare combining marks", () => {
-    expect(normalizeChar("\u0301")).toBe("");
+    expect(normalizeText("\u0301")).toBe("");
   });
 
   test("leaves non-letters untouched", () => {
-    expect(normalizeChar("5")).toBe("5");
-    expect(normalizeChar(",")).toBe(",");
-    expect(normalizeChar(" ")).toBe(" ");
+    expect(normalizeText("5")).toBe("5");
+    expect(normalizeText(",")).toBe(",");
+    expect(normalizeText(" ")).toBe(" ");
   });
 });
 

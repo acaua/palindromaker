@@ -11,9 +11,9 @@ export interface PalindromeResult {
 
 export const isLetter = (char: string): boolean => /^\p{L}/u.test(char);
 
-export const normalizeChar = (char: string): string =>
-  char.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-
+// decomposes, drops combining marks and lowercases; safe to apply one
+// character at a time (analyzeDoc does, to keep text indexes aligned with
+// document positions), where it can also normalize to nothing
 export const normalizeText = (text: string): string =>
   text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
