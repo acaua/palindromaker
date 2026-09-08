@@ -494,12 +494,13 @@ describe("readStoredPrefs", () => {
     const storage = new MemoryStorage();
     storage.setItem(
       PREFS_STORAGE_KEY,
-      JSON.stringify({ lang: "en", mirrorEnabled: true }),
+      JSON.stringify({ lang: "en", mirrorEnabled: true, finderOpen: false }),
     );
 
     expect(readStoredPrefs(storage)).toEqual({
       lang: "en",
       mirrorEnabled: true,
+      finderOpen: false,
     });
   });
 
@@ -507,7 +508,11 @@ describe("readStoredPrefs", () => {
     const storage = new MemoryStorage();
     storage.setItem(
       PREFS_STORAGE_KEY,
-      JSON.stringify({ lang: "xx", mirrorEnabled: "yes" }),
+      JSON.stringify({
+        lang: "xx",
+        mirrorEnabled: "yes",
+        finderOpen: "open",
+      }),
     );
 
     expect(readStoredPrefs(storage)).toEqual({});
@@ -530,10 +535,12 @@ describe("writePrefs", () => {
     const storage = new MemoryStorage();
     writePrefs(storage, { lang: "de" });
     writePrefs(storage, { mirrorEnabled: true });
+    writePrefs(storage, { finderOpen: false });
 
     expect(readStoredPrefs(storage)).toEqual({
       lang: "de",
       mirrorEnabled: true,
+      finderOpen: false,
     });
   });
 

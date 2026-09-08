@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import { XMarkIcon } from "@heroicons/react/24/solid";
 
 import { FinderLegend } from "@/components/legend";
 import WordFinderControls from "@/components/word-finder-controls";
@@ -26,22 +26,29 @@ const insertHints: Record<WordInsertMode, string> = {
   caret: "Click a word to insert it at the caret.",
 };
 
+// A floating panel: docked beside the editor from md up, a bottom sheet on
+// phones. Whether it is shown at all is the editor's finderOpen state —
+// closed here means rendered as nothing, with the full column for the card.
 export default function WordFinder({
+  open,
+  onClose,
   onInsertWord,
   insertMode,
 }: {
+  open: boolean;
+  onClose: () => void;
   onInsertWord: (word: string) => void;
   insertMode: WordInsertMode;
 }) {
   const storage = localStorageOrNull();
-  const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState<Language>(
     () => readStoredPrefs(storage).lang ?? "pt-br",
   );
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("starts");
 
-  // the dictionaries are megabytes, so nothing loads until the panel opens
+  // the dictionaries are megabytes: nothing loads while the panel is closed,
+  // and a load overtaken by closing (or a language switch) is dropped
   const state = useDictionary(language, open);
   const dictionary = state.status === "ready" ? state.dictionary : null;
   // searching every keystroke would scan hundreds of thousands of words
@@ -56,90 +63,80 @@ export default function WordFinder({
 
   const hasQuery = search.trim() !== "";
 
+  if (!open) return null;
+
   return (
     <aside
-      className="flex min-w-0 flex-col border-t border-gray-200 bg-gray-50/70 lg:border-t-0 lg:border-l"
+      id="word-finder-panel"
       aria-label="word finder"
+      className="fixed z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
     >
-      <div className="p-4">
+      <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5">
+        <span className="font-semibold text-gray-900">Find words</span>
         <button
           type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          className="flex min-h-11 w-full cursor-pointer items-center rounded-lg text-left text-gray-900 transition hover:text-violet-700"
+          aria-label="Close word finder"
+          onClick={onClose}
+          className="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-gray-400 hover:bg-gray-100"
         >
-          {open ? (
-            <ChevronDownIcon className="mr-2 inline-block h-5 w-5 text-gray-500" />
-          ) : (
-            <ChevronRightIcon className="mr-2 inline-block h-5 w-5 text-gray-500" />
-          )}
-          <span>
-            <span className="block font-semibold">Find words</span>
-            <span className="block text-xs font-normal text-gray-500">
-              Search by letters and compare spellings
-            </span>
-          </span>
+          <XMarkIcon aria-hidden="true" className="h-4 w-4" />
         </button>
       </div>
 
-      {open && (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <WordFinderControls
-            query={query}
-            onQueryChange={setQuery}
-            language={language}
-            onLanguageChange={(code) => {
-              setLanguage(code);
-              writePrefs(storage, { lang: code });
-            }}
-            mode={mode}
-            onModeChange={setMode}
-          />
+      <div className="flex min-h-0 flex-1 flex-col pt-3">
+        <WordFinderControls
+          query={query}
+          onQueryChange={setQuery}
+          language={language}
+          onLanguageChange={(code) => {
+            setLanguage(code);
+            writePrefs(storage, { lang: code });
+          }}
+          mode={mode}
+          onModeChange={setMode}
+        />
 
-          <p
-            className={`px-4 pb-3 text-xs ${
-              insertMode === "paused" ? "text-amber-700" : "text-gray-500"
-            }`}
-          >
-            {insertHints[insertMode]}
+        <p
+          className={`px-4 pb-3 text-xs ${
+            insertMode === "paused" ? "text-amber-700" : "text-gray-500"
+          }`}
+        >
+          {insertHints[insertMode]}
+        </p>
+
+        {state.status === "loading" && (
+          <p className="px-4 pb-4 text-sm text-gray-500">loading dictionary…</p>
+        )}
+
+        {state.status === "error" && (
+          <p className="px-4 pb-4 text-sm text-red-700">
+            failed to load dictionary{" "}
+            <button
+              type="button"
+              onClick={state.retry}
+              className="cursor-pointer underline"
+            >
+              retry
+            </button>
           </p>
+        )}
 
-          {state.status === "loading" && (
-            <p className="px-4 pb-4 text-sm text-gray-500">
-              loading dictionary…
-            </p>
-          )}
+        {dictionary && hasQuery && results.length === 0 && (
+          <p className="px-4 pb-4 text-sm text-gray-500">No matches</p>
+        )}
 
-          {state.status === "error" && (
-            <p className="px-4 pb-4 text-sm text-red-700">
-              failed to load dictionary{" "}
-              <button
-                type="button"
-                onClick={state.retry}
-                className="cursor-pointer underline"
-              >
-                retry
-              </button>
-            </p>
-          )}
+        {dictionary && results.length > 0 && (
+          <WordFinderResults
+            words={results}
+            dictionary={dictionary}
+            onInsert={onInsertWord}
+          />
+        )}
 
-          {dictionary && hasQuery && results.length === 0 && (
-            <p className="px-4 pb-4 text-sm text-gray-500">No matches</p>
-          )}
-
-          {dictionary && results.length > 0 && (
-            <WordFinderResults
-              words={results}
-              dictionary={dictionary}
-              onInsert={onInsertWord}
-            />
-          )}
-
-          <div className="mt-auto">
-            <FinderLegend />
-          </div>
+        <div className="mt-auto">
+          <FinderLegend />
         </div>
-      )}
+      </div>
     </aside>
   );
 }

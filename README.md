@@ -3,9 +3,9 @@
 A tiny editor for crafting palindromes with live feedback: it highlights the
 center characters, marks the gap that breaks the palindrome, and mirrors your
 caret position against its matching character. The optional mirror mode
-(toggle it in the toolbar) duplicates every character you type — and every
-character you delete — at its mirror position, keeping the text a palindrome
-as you write.
+(toggle it in the card's status bar) duplicates every character you type — and
+every character you delete — at its mirror position, keeping the text a
+palindrome as you write.
 
 ## Stack
 
@@ -42,12 +42,14 @@ Open http://localhost:5173.
 
 ## Word finder
 
-The "find words" panel below the editor searches a dictionary of words — by
-prefix, suffix, or substring, accent-insensitively — and shows each result's
-mirror (the reversed word). The language defaults to pt-BR and can be switched
-to english, español, deutsch, français, or italiano. Dictionaries are bundled
-as plain-text files in `public/dictionary/` and fetched lazily the first time
-they are needed:
+The "find words" panel — docked beside the editor, a bottom sheet on phones,
+open by default (the status bar's "Find words" trigger toggles it) — searches
+a dictionary of words — by prefix, suffix, or substring, accent-insensitively
+— and shows each result's mirror (the reversed word). The language defaults to
+pt-BR and can be switched to english, español, deutsch, français, or italiano.
+Dictionaries are bundled as plain-text files in `public/dictionary/` and
+fetched the first time the panel loads a language (which, with the panel open
+by default, is on page load):
 
 | Language       | File        | Source                                                                               | Words | License         |
 | -------------- | ----------- | ------------------------------------------------------------------------------------ | ----- | --------------- |

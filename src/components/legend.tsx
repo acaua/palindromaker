@@ -32,12 +32,14 @@ export function FinderLegend() {
   );
 }
 
-// the colors the editor highlights characters with
+// the colors the editor highlights characters with, listed under the card
+// (gray-500 rather than the mockup's gray-400: the legend must pass the
+// color-contrast audit on the paper background)
 export function EditorLegend() {
   return (
     <footer
       aria-label="editor legend"
-      className="flex flex-wrap gap-x-4 gap-y-2 border-t border-gray-100 px-5 py-3 text-xs text-gray-500 sm:text-sm"
+      className="mt-5 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 text-xs text-gray-500"
     >
       <span className={item}>
         <span aria-hidden="true" className={`${swatch} bg-blue-200`} />

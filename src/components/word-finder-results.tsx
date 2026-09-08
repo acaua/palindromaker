@@ -114,7 +114,7 @@ export default function WordFinderResults({
 
   return (
     <>
-      <div className="flex items-center justify-between border-y border-gray-200 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+      <div className="flex items-center justify-between border-y border-gray-200 px-4 py-2 text-[10px] font-semibold tracking-widest text-gray-500 uppercase">
         <span>Word</span>
         <span>
           Mirror · {words.length.toLocaleString()} result
@@ -125,7 +125,7 @@ export default function WordFinderResults({
         ref={scrollerRef}
         role="list"
         aria-label="results"
-        className="max-h-80 overflow-y-auto font-mono text-base lg:max-h-[398px]"
+        className="min-h-0 flex-1 overflow-y-auto font-mono text-base"
       >
         <div
           style={{ height: virtualizer.getTotalSize(), position: "relative" }}
