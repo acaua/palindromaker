@@ -15,7 +15,7 @@ import {
 } from "@/lib/persistence";
 import type { ConflictChoice, Persistence } from "@/lib/persistence";
 import ConflictNotice from "@/components/conflict-notice";
-import Legend from "@/components/legend";
+import { EditorLegend } from "@/components/legend";
 import Toolbar from "@/components/toolbar";
 import WordFinder from "@/components/word-finder";
 
@@ -115,7 +115,7 @@ export default function Editor() {
           <Toolbar editor={editor} />
           {conflict && <ConflictNotice onResolve={resolveConflict} />}
           <EditorContent editor={editor} className="flex-1" />
-          <Legend variant="editor" />
+          <EditorLegend />
         </section>
         <WordFinder />
       </div>

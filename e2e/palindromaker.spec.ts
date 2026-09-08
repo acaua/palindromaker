@@ -387,6 +387,39 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
   await expect(results.first().locator("span").last()).toHaveText("olleh");
 });
 
+test("word finder recovers from a failed dictionary load", async ({ page }) => {
+  await page.locator('button:has-text("find words")').click();
+
+  const searchInput = page.locator('input[aria-label="search words"]');
+  const results = page.locator('[aria-label="results"] [role="listitem"]');
+  await searchInput.fill("abac");
+  await expect(results.first()).toContainText("abacate");
+
+  // the next language fails to load
+  let failing = true;
+  await page.route("**/dictionary/en.txt", (route) =>
+    failing ? route.abort() : route.continue(),
+  );
+  await page
+    .locator('select[aria-label="dictionary language"]')
+    .selectOption("en");
+
+  await expect(page.getByText("failed to load dictionary")).toBeVisible();
+
+  // the previous language's words must not linger under the error: search
+  // again and give the debounce time to produce them before checking
+  await searchInput.fill("abacat");
+  await page.waitForTimeout(400);
+  await expect(results).toHaveCount(0);
+
+  failing = false;
+  await page.getByRole("button", { name: "retry" }).click();
+
+  await expect(page.getByText("failed to load dictionary")).toHaveCount(0);
+  await searchInput.fill("hello");
+  await expect(results.first()).toContainText("hello");
+});
+
 test("word finder marks mirror pairs and palindromes", async ({ page }) => {
   await page.locator('button:has-text("find words")').click();
 

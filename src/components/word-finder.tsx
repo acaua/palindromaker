@@ -1,104 +1,44 @@
-import { useEffect, useRef, useState } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  ArrowsRightLeftIcon,
-  CheckCircleIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/solid";
+import { useMemo, useState } from "react";
+import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
-import Legend from "@/components/legend";
-import type { Dictionary, Language, SearchMode } from "@/lib/dictionary";
-import {
-  LANGUAGES,
-  loadDictionary,
-  mirrorMatch,
-  mirrorWord,
-  searchWords,
-} from "@/lib/dictionary";
+import { FinderLegend } from "@/components/legend";
+import WordFinderControls from "@/components/word-finder-controls";
+import WordFinderResults from "@/components/word-finder-results";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useDictionary } from "@/hooks/use-dictionary";
+import type { Language, SearchMode } from "@/lib/dictionary";
+import { searchWords } from "@/lib/dictionary";
 import {
   localStorageOrNull,
   readStoredPrefs,
   writePrefs,
 } from "@/lib/persistence";
 
-type Status = "idle" | "loading" | "ready" | "error";
-
-const ROW_HEIGHT = 32;
-const OVERSCAN = 6;
-
-const modes: Array<{ value: SearchMode; label: string }> = [
-  { value: "starts", label: "starts with" },
-  { value: "ends", label: "ends with" },
-  { value: "contains", label: "contains" },
-];
+const SEARCH_DELAY = 150;
 
 export default function WordFinder() {
   const storage = localStorageOrNull();
   const [open, setOpen] = useState(false);
-  const [lang, setLang] = useState<Language>(
+  const [language, setLanguage] = useState<Language>(
     () => readStoredPrefs(storage).lang ?? "pt-br",
   );
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("starts");
-  const [status, setStatus] = useState<Status>("idle");
-  const [dictionary, setDictionary] = useState<Dictionary | null>(null);
-  const [dictionaryLang, setDictionaryLang] = useState<Language | null>(null);
-  const [results, setResults] = useState<string[]>([]);
-  const requestRef = useRef(0);
-  const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const load = (code: Language) => {
-    const request = ++requestRef.current;
-    setStatus("loading");
-    setResults([]);
-    loadDictionary(code).then(
-      (loaded) => {
-        if (requestRef.current !== request) return;
-        setDictionary(loaded);
-        setDictionaryLang(code);
-        setStatus("ready");
-      },
-      () => {
-        if (requestRef.current !== request) return;
-        setStatus("error");
-      },
-    );
-  };
+  // the dictionaries are megabytes, so nothing loads until the panel opens
+  const state = useDictionary(language, open);
+  const dictionary = state.status === "ready" ? state.dictionary : null;
+  // searching every keystroke would scan hundreds of thousands of words
+  const search = useDebouncedValue(query, SEARCH_DELAY);
 
-  useEffect(() => {
-    if (!open || (dictionaryLang === lang && dictionary)) return;
-    load(lang);
-  }, [open, lang, dictionary, dictionaryLang]);
+  // derived, not stored: a dictionary that is still loading or failed to
+  // load has no results, so another language's words can never linger
+  const results = useMemo(
+    () => (dictionary ? searchWords(dictionary, search, mode) : []),
+    [dictionary, search, mode],
+  );
 
-  useEffect(() => {
-    if (!dictionary) return;
-    const handle = setTimeout(() => {
-      setResults(searchWords(dictionary, query, mode));
-    }, 150);
-    return () => clearTimeout(handle);
-  }, [dictionary, query, mode]);
-
-  // TanStack Virtual's instance is not compiler-memoizable; safe here since
-  // it stays local to this component
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const virtualizer = useVirtualizer({
-    count: results.length,
-    getScrollElement: () => scrollerRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: OVERSCAN,
-    // avoid React 19's "flushSync was called from inside a lifecycle method" warning
-    useFlushSync: false,
-  });
-
-  useEffect(() => {
-    virtualizer.scrollToOffset(0);
-  }, [results, virtualizer]);
-
-  const virtualItems = virtualizer.getVirtualItems();
-
-  const hasQuery = query.trim() !== "";
+  const hasQuery = search.trim() !== "";
 
   return (
     <aside
@@ -128,78 +68,30 @@ export default function WordFinder() {
 
       {open && (
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="space-y-3 px-4 pb-4">
-            <label className="relative block">
-              <span className="sr-only">Search words</span>
-              <MagnifyingGlassIcon
-                aria-hidden="true"
-                className="pointer-events-none absolute top-3 left-3 h-5 w-5 text-gray-400"
-              />
-              <input
-                type="text"
-                aria-label="search words"
-                placeholder="Search words…"
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="min-h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-white py-2 pr-3 pl-10 font-mono text-base text-gray-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              />
-            </label>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="flex items-center gap-2 text-xs font-medium text-gray-500">
-                Language
-                <select
-                  aria-label="dictionary language"
-                  value={lang}
-                  onChange={(event) => {
-                    const code = event.target.value as Language;
-                    setLang(code);
-                    writePrefs(storage, { lang: code });
-                  }}
-                  className="min-h-10 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700"
-                >
-                  {LANGUAGES.map(({ code, label }) => (
-                    <option key={code} value={code}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div
-              className="grid grid-cols-3 rounded-lg bg-gray-200/70 p-1"
-              aria-label="match position"
-            >
-              {modes.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={mode === value}
-                  onClick={() => setMode(value)}
-                  className={`min-h-9 cursor-pointer rounded-md px-2 py-1 text-xs font-medium transition ${
-                    mode === value
-                      ? "bg-white text-violet-700 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <WordFinderControls
+            query={query}
+            onQueryChange={setQuery}
+            language={language}
+            onLanguageChange={(code) => {
+              setLanguage(code);
+              writePrefs(storage, { lang: code });
+            }}
+            mode={mode}
+            onModeChange={setMode}
+          />
 
-          {status === "loading" && (
+          {state.status === "loading" && (
             <p className="px-4 pb-4 text-sm text-gray-500">
               loading dictionary…
             </p>
           )}
 
-          {status === "error" && (
+          {state.status === "error" && (
             <p className="px-4 pb-4 text-sm text-red-700">
               failed to load dictionary{" "}
               <button
                 type="button"
-                onClick={() => load(lang)}
+                onClick={state.retry}
                 className="cursor-pointer underline"
               >
                 retry
@@ -207,97 +99,17 @@ export default function WordFinder() {
             </p>
           )}
 
-          {status === "ready" && hasQuery && results.length === 0 && (
+          {dictionary && hasQuery && results.length === 0 && (
             <p className="px-4 pb-4 text-sm text-gray-500">No matches</p>
           )}
 
-          {results.length > 0 && (
-            <>
-              <div className="flex items-center justify-between border-y border-gray-200 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                <span>Word</span>
-                <span>
-                  Mirror · {results.length.toLocaleString()} result
-                  {results.length === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div
-                ref={scrollerRef}
-                role="list"
-                aria-label="results"
-                className="max-h-80 overflow-y-auto font-mono text-base lg:max-h-[398px]"
-              >
-                <div
-                  style={{
-                    height: virtualizer.getTotalSize(),
-                    position: "relative",
-                  }}
-                >
-                  {virtualItems.map((virtualRow) => {
-                    const word = results[virtualRow.index];
-                    const match = dictionary
-                      ? mirrorMatch(dictionary, word)
-                      : null;
-                    return (
-                      <div
-                        key={word}
-                        role="listitem"
-                        aria-posinset={virtualRow.index + 1}
-                        aria-setsize={results.length}
-                        className="absolute top-0 left-0 flex h-8 w-full items-center gap-3 px-4 hover:bg-white"
-                        style={{
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                      >
-                        <span className="min-w-0 flex-1 truncate" title={word}>
-                          {word}
-                        </span>
-                        <span
-                          className={`min-w-0 truncate ${
-                            match === "pair"
-                              ? "text-purple-700"
-                              : match === "palindrome"
-                                ? "text-green-700"
-                                : "text-gray-500"
-                          }`}
-                          title={
-                            match === "pair"
-                              ? "mirror is also a word"
-                              : match === "palindrome"
-                                ? "palindrome word"
-                                : mirrorWord(word)
-                          }
-                        >
-                          {mirrorWord(word)}
-                          {match === "pair" && (
-                            <span className="sr-only">
-                              {" "}
-                              (mirror is also a word)
-                            </span>
-                          )}
-                          {match === "palindrome" && (
-                            <span className="sr-only"> (palindrome word)</span>
-                          )}
-                        </span>
-                        {match === "pair" && (
-                          <ArrowsRightLeftIcon
-                            aria-hidden="true"
-                            className="h-4 w-4 shrink-0 text-purple-700"
-                          />
-                        )}
-                        {match === "palindrome" && (
-                          <CheckCircleIcon
-                            aria-hidden="true"
-                            className="h-4 w-4 shrink-0 text-green-700"
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
+          {dictionary && results.length > 0 && (
+            <WordFinderResults words={results} dictionary={dictionary} />
           )}
-          <div className="mt-auto">{open && <Legend variant="finder" />}</div>
+
+          <div className="mt-auto">
+            <FinderLegend />
+          </div>
         </div>
       )}
     </aside>
