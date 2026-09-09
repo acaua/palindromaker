@@ -1,6 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Editor from "@/components/editor";
+import LanguageSwitcher from "@/components/language-switcher";
+import { useI18n } from "@/hooks/use-i18n";
+import { initUiLanguage, UI_LANGUAGE_TAGS } from "@/lib/i18n";
 import {
   localStorageOrNull,
   readStoredPrefs,
@@ -9,9 +12,18 @@ import {
 
 export default function App() {
   const storage = localStorageOrNull();
+  // prefs are read once, like the editor's restored content
+  const [restored] = useState(() => readStoredPrefs(storage));
+  // once per page load: the stored UI language, else the browser's
+  initUiLanguage(restored.uiLang);
+  const { lang, t } = useI18n();
+  // screen readers announce per the document language, not the UI's
+  useEffect(() => {
+    document.documentElement.lang = UI_LANGUAGE_TAGS[lang];
+  }, [lang]);
   // open by default; the choice is remembered like the mirror toggle
   const [finderOpen, setFinderOpen] = useState(
-    () => readStoredPrefs(storage).finderOpen ?? true,
+    () => restored.finderOpen ?? true,
   );
   // the status bar's "Find words" trigger; the panel's ✕ returns focus to it
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -54,10 +66,12 @@ export default function App() {
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">
               Palindromaker
             </h1>
+            <div className="ml-auto">
+              <LanguageSwitcher />
+            </div>
           </div>
           <p className="mt-2.5 max-w-xl text-sm leading-5 text-gray-600 md:mt-3 md:text-base md:leading-6">
-            Write a phrase. We’ll show where its mirrored letters agree—and
-            where they break.
+            {t("app.tagline")}
           </p>
         </header>
 

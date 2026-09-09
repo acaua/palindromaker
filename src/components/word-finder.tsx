@@ -6,8 +6,10 @@ import WordFinderControls from "@/components/word-finder-controls";
 import WordFinderResults from "@/components/word-finder-results";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useDictionary } from "@/hooks/use-dictionary";
+import { useI18n } from "@/hooks/use-i18n";
 import type { Language, SearchMode } from "@/lib/dictionary";
 import { searchWords } from "@/lib/dictionary";
+import type { MessageKey } from "@/lib/i18n";
 import {
   localStorageOrNull,
   readStoredPrefs,
@@ -19,11 +21,10 @@ const SEARCH_DELAY = 150;
 
 // what a click on a result will do, said before the click rather than
 // discovered after it
-const insertHints: Record<WordInsertMode, string> = {
-  mirrored: "Click a word to insert it at the caret, and its mirror opposite.",
-  paused:
-    "Click a word to insert it at the caret. Mirroring resumes once the text reads the same both ways.",
-  caret: "Click a word to insert it at the caret.",
+const insertHintKeys: Record<WordInsertMode, MessageKey> = {
+  mirrored: "finder.hintMirrored",
+  paused: "finder.hintPaused",
+  caret: "finder.hintCaret",
 };
 
 // A floating panel: docked beside the editor from md up, a bottom sheet on
@@ -41,6 +42,7 @@ export default function WordFinder({
   insertMode: WordInsertMode;
 }) {
   const storage = localStorageOrNull();
+  const { t } = useI18n();
   const [language, setLanguage] = useState<Language>(
     () => readStoredPrefs(storage).lang ?? "pt-br",
   );
@@ -68,14 +70,14 @@ export default function WordFinder({
   return (
     <aside
       id="word-finder-panel"
-      aria-label="word finder"
+      aria-label={t("finder.aria")}
       className="fixed z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
     >
       <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5">
-        <span className="font-semibold text-gray-900">Find words</span>
+        <span className="font-semibold text-gray-900">{t("findWords")}</span>
         <button
           type="button"
-          aria-label="Close word finder"
+          aria-label={t("finder.close")}
           onClick={onClose}
           className="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-gray-400 hover:bg-gray-100"
         >
@@ -101,28 +103,32 @@ export default function WordFinder({
             insertMode === "paused" ? "text-amber-700" : "text-gray-500"
           }`}
         >
-          {insertHints[insertMode]}
+          {t(insertHintKeys[insertMode])}
         </p>
 
         {state.status === "loading" && (
-          <p className="px-4 pb-4 text-sm text-gray-500">loading dictionary…</p>
+          <p className="px-4 pb-4 text-sm text-gray-500">
+            {t("finder.loading")}
+          </p>
         )}
 
         {state.status === "error" && (
           <p className="px-4 pb-4 text-sm text-red-700">
-            failed to load dictionary{" "}
+            {t("finder.error")}{" "}
             <button
               type="button"
               onClick={state.retry}
               className="cursor-pointer underline"
             >
-              retry
+              {t("finder.retry")}
             </button>
           </p>
         )}
 
         {dictionary && hasQuery && results.length === 0 && (
-          <p className="px-4 pb-4 text-sm text-gray-500">No matches</p>
+          <p className="px-4 pb-4 text-sm text-gray-500">
+            {t("finder.noMatches")}
+          </p>
         )}
 
         {dictionary && results.length > 0 && (

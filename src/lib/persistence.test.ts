@@ -494,11 +494,17 @@ describe("readStoredPrefs", () => {
     const storage = new MemoryStorage();
     storage.setItem(
       PREFS_STORAGE_KEY,
-      JSON.stringify({ lang: "en", mirrorEnabled: true, finderOpen: false }),
+      JSON.stringify({
+        lang: "en",
+        uiLang: "es",
+        mirrorEnabled: true,
+        finderOpen: false,
+      }),
     );
 
     expect(readStoredPrefs(storage)).toEqual({
       lang: "en",
+      uiLang: "es",
       mirrorEnabled: true,
       finderOpen: false,
     });
@@ -510,6 +516,8 @@ describe("readStoredPrefs", () => {
       PREFS_STORAGE_KEY,
       JSON.stringify({
         lang: "xx",
+        // the dictionary's pt code is not a UI language ("pt" is)
+        uiLang: "pt-br",
         mirrorEnabled: "yes",
         finderOpen: "open",
       }),

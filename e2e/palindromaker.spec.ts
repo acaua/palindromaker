@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { mirrorWord } from "@/lib/dictionary";
-import { SAMPLE_CONTENT } from "@/lib/sample";
+import { SAMPLE_CONTENT, SAMPLE_CONTENT_PT } from "@/lib/sample";
 
 const editor = (page: Page) => page.locator('[contenteditable="true"]');
 
@@ -585,4 +585,52 @@ test("word finder virtualizes broad result sets", async ({ page }) => {
     firstRowBefore!,
   );
   expect(await rows.count()).toBeLessThan(100);
+});
+
+// the suite runs with Playwright's default en-US locale everywhere else
+test.describe("pt-BR browser locale", () => {
+  test.use({ locale: "pt-BR" });
+
+  test("detects the browser language: pt UI, pt sample, pt document lang", async ({
+    page,
+  }) => {
+    await expect(page.locator("html")).toHaveAttribute("lang", "pt-BR");
+    await expect(
+      page.getByRole("textbox", { name: "Editor de palíndromos" }),
+    ).toBeVisible();
+    await expect(editor(page)).toContainText(SAMPLE_CONTENT_PT);
+    await expect(greenStatus(page)).toContainText("Palíndromo");
+    // exact: the finder's "idioma do dicionário" select must not match too
+    await expect(
+      page.getByRole("combobox", { name: "Idioma", exact: true }),
+    ).toHaveValue("pt");
+  });
+});
+
+test("the header switch changes the language and remembers it", async ({
+  page,
+}) => {
+  const html = page.locator("html");
+  // exact: the finder's "dictionary language" select must not match too
+  const uiLanguage = page.getByRole("combobox", {
+    name: "Language",
+    exact: true,
+  });
+  await expect(html).toHaveAttribute("lang", "en");
+  await expect(uiLanguage).toHaveValue("en");
+
+  await uiLanguage.selectOption("pt");
+
+  await expect(html).toHaveAttribute("lang", "pt-BR");
+  await expect(greenStatus(page)).toContainText("Palíndromo");
+
+  // the choice survives a reload, like the mirror toggle
+  await page.reload();
+  await expect(html).toHaveAttribute("lang", "pt-BR");
+
+  // the accessible name follows the language, so re-locate in pt
+  await page
+    .getByRole("combobox", { name: "Idioma", exact: true })
+    .selectOption("en");
+  await expect(html).toHaveAttribute("lang", "en");
 });

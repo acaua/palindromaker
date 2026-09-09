@@ -3,6 +3,8 @@ import type { Schema } from "@tiptap/pm/model";
 
 import { LANGUAGES } from "@/lib/dictionary";
 import type { Language } from "@/lib/dictionary";
+import { UI_LANGUAGES } from "@/lib/i18n";
+import type { UiLanguage } from "@/lib/i18n";
 
 export const DOC_STORAGE_KEY = "palindromaker:doc:v1";
 export const PREFS_STORAGE_KEY = "palindromaker:prefs:v1";
@@ -53,6 +55,7 @@ const readJson = (
 
 export interface Prefs {
   lang?: Language;
+  uiLang?: UiLanguage;
   mirrorEnabled?: boolean;
   finderOpen?: boolean;
 }
@@ -124,8 +127,9 @@ export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
   const parsed = readJson(storage, PREFS_STORAGE_KEY);
   if (typeof parsed !== "object" || parsed === null) return {};
 
-  const { lang, mirrorEnabled, finderOpen } = parsed as {
+  const { lang, uiLang, mirrorEnabled, finderOpen } = parsed as {
     lang?: unknown;
+    uiLang?: unknown;
     mirrorEnabled?: unknown;
     finderOpen?: unknown;
   };
@@ -135,6 +139,12 @@ export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
     LANGUAGES.some((info) => info.code === lang)
   ) {
     prefs.lang = lang as Language;
+  }
+  if (
+    typeof uiLang === "string" &&
+    (UI_LANGUAGES as readonly string[]).includes(uiLang)
+  ) {
+    prefs.uiLang = uiLang as UiLanguage;
   }
   if (typeof mirrorEnabled === "boolean") {
     prefs.mirrorEnabled = mirrorEnabled;

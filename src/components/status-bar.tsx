@@ -9,6 +9,7 @@ import {
 
 import { mirrorPluginKey } from "@/lib/mirror-extension";
 import { palindromePluginKey } from "@/lib/palindrome-extension";
+import { useI18n } from "@/hooks/use-i18n";
 
 // the card's footer: what the text is now, and the two controls
 export default function StatusBar({
@@ -58,20 +59,26 @@ const FindWordsTrigger = ({
   ref: RefObject<HTMLButtonElement | null>;
   expanded: boolean;
   onToggle: () => void;
-}) => (
-  <button
-    type="button"
-    ref={ref}
-    aria-expanded={expanded}
-    aria-controls="word-finder-panel"
-    title="Find words"
-    onClick={onToggle}
-    className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-  >
-    <MagnifyingGlassIcon aria-hidden="true" className="h-4 w-4 text-gray-500" />
-    Find words
-  </button>
-);
+}) => {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      ref={ref}
+      aria-expanded={expanded}
+      aria-controls="word-finder-panel"
+      title={t("findWords")}
+      onClick={onToggle}
+      className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+    >
+      <MagnifyingGlassIcon
+        aria-hidden="true"
+        className="h-4 w-4 text-gray-500"
+      />
+      {t("findWords")}
+    </button>
+  );
+};
 
 const MirrorSwitch = ({
   editor,
@@ -79,32 +86,37 @@ const MirrorSwitch = ({
 }: {
   editor: Editor;
   enabled: boolean;
-}) => (
-  <button
-    type="button"
-    aria-pressed={enabled}
-    // the extension remembers the new state across reloads
-    onClick={() => editor.commands.toggleMirrorEditing()}
-    // keep the editor focus (and caret) when toggling
-    onMouseDown={(event) => event.preventDefault()}
-    title={enabled ? "Mirror typing is on" : "Mirror typing is off"}
-    className="flex cursor-pointer items-center gap-2"
-  >
-    <span
-      aria-hidden="true"
-      className={`flex h-6 w-11 items-center rounded-full p-0.5 shadow-inner transition-colors ${
-        enabled ? "bg-violet-600" : "bg-gray-200"
-      }`}
+}) => {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      aria-pressed={enabled}
+      // the extension remembers the new state across reloads
+      onClick={() => editor.commands.toggleMirrorEditing()}
+      // keep the editor focus (and caret) when toggling
+      onMouseDown={(event) => event.preventDefault()}
+      title={enabled ? t("mirror.on") : t("mirror.off")}
+      className="flex cursor-pointer items-center gap-2"
     >
       <span
-        className={`h-5 w-5 rounded-full bg-white shadow transition ${
-          enabled ? "ml-auto" : ""
+        aria-hidden="true"
+        className={`flex h-6 w-11 items-center rounded-full p-0.5 shadow-inner transition-colors ${
+          enabled ? "bg-violet-600" : "bg-gray-200"
         }`}
-      />
-    </span>
-    <span className="text-sm font-medium text-gray-700">Mirror typing</span>
-  </button>
-);
+      >
+        <span
+          className={`h-5 w-5 rounded-full bg-white shadow transition ${
+            enabled ? "ml-auto" : ""
+          }`}
+        />
+      </span>
+      <span className="text-sm font-medium text-gray-700">
+        {t("mirror.typing")}
+      </span>
+    </button>
+  );
+};
 
 const StatusState = ({
   hasLetters,
@@ -113,11 +125,12 @@ const StatusState = ({
   hasLetters: boolean;
   isPalindrome: boolean;
 }) => {
+  const { t } = useI18n();
   const label = !hasLetters
-    ? "Start typing"
+    ? t("status.startTyping")
     : isPalindrome
-      ? "Palindrome"
-      : "Not a palindrome";
+      ? t("status.palindrome")
+      : t("status.notPalindrome");
 
   return (
     <span
