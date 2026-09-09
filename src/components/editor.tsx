@@ -7,6 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Palindrome } from "@/lib/palindrome-extension";
 import { MirrorEditing, wordInsertMode } from "@/lib/mirror-extension";
 import type { MirrorEditingOptions } from "@/lib/mirror-extension";
+import { getUiLanguage, translate } from "@/lib/i18n";
 import {
   createPersistence,
   localStorageOrNull,
@@ -15,7 +16,7 @@ import {
   writePrefs,
 } from "@/lib/persistence";
 import type { ConflictChoice, Persistence } from "@/lib/persistence";
-import { SAMPLE_CONTENT } from "@/lib/sample";
+import { sampleContent } from "@/lib/sample";
 import ConflictNotice from "@/components/conflict-notice";
 import { EditorLegend } from "@/components/legend";
 import StatusBar from "@/components/status-bar";
@@ -66,9 +67,11 @@ export default function Editor({
   const storage = localStorageOrNull();
   // the editor keeps the content and the toggle state it was created with,
   // so storage is read once: re-reading every render would re-validate the
-  // stored doc against the schema on every keystroke
+  // stored doc against the schema on every keystroke. The UI language is
+  // also mount-time: App has run initUiLanguage by now, and the editor is
+  // never recreated, so switching the language mid-session cannot reseed it
   const [restored] = useState(() => ({
-    content: readStoredDoc(storage, schema) ?? SAMPLE_CONTENT,
+    content: readStoredDoc(storage, schema) ?? sampleContent(getUiLanguage()),
     mirrorEnabled: readStoredPrefs(storage).mirrorEnabled ?? false,
   }));
 
@@ -81,7 +84,7 @@ export default function Editor({
     autofocus: "end",
     editorProps: {
       attributes: {
-        "aria-label": "Palindrome editor",
+        "aria-label": translate(getUiLanguage(), "editor.ariaLabel"),
         "aria-multiline": "true",
         role: "textbox",
         // a palindrome is misspelled by definition: the squiggles would

@@ -5,25 +5,31 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/solid";
 
+import { useI18n } from "@/hooks/use-i18n";
 import type { Dictionary, MirrorMatch } from "@/lib/dictionary";
 import { mirrorMatch, mirrorWord } from "@/lib/dictionary";
+import { UI_LANGUAGE_LOCALES } from "@/lib/i18n";
+import type { MessageKey } from "@/lib/i18n";
 
 const ROW_HEIGHT = 32;
 const OVERSCAN = 6;
 
 // how a result's mirror is marked; the same colors the finder legend shows
-const markers = {
+const markers: Record<
+  Exclude<MirrorMatch, null>,
+  { className: string; key: MessageKey; Icon: typeof ArrowsRightLeftIcon }
+> = {
   pair: {
     className: "text-purple-700",
-    label: "mirror is also a word",
+    key: "legend.pair",
     Icon: ArrowsRightLeftIcon,
   },
   palindrome: {
     className: "text-green-700",
-    label: "palindrome word",
+    key: "legend.palindromeWord",
     Icon: CheckCircleIcon,
   },
-} as const;
+};
 
 // exported for its unit test: a virtualizer measures its scroll container,
 // and a headless DOM has no layout, so no row is ever in view there
@@ -42,8 +48,10 @@ export const ResultRow = ({
   offset: number;
   onInsert: (word: string) => void;
 }) => {
+  const { t } = useI18n();
   const mirror = mirrorWord(word);
   const marker = match ? markers[match] : null;
+  const markerLabel = marker ? t(marker.key) : null;
 
   return (
     <div
@@ -66,10 +74,10 @@ export const ResultRow = ({
         </span>
         <span
           className={`min-w-0 truncate ${marker?.className ?? "text-gray-500"}`}
-          title={marker?.label ?? mirror}
+          title={markerLabel ?? mirror}
         >
           {mirror}
-          {marker && <span className="sr-only"> ({marker.label})</span>}
+          {marker && <span className="sr-only"> ({markerLabel})</span>}
         </span>
         {marker && (
           <marker.Icon
@@ -93,6 +101,7 @@ export default function WordFinderResults({
   dictionary: Dictionary;
   onInsert: (word: string) => void;
 }) {
+  const { lang, t } = useI18n();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // TanStack Virtual's instance is not compiler-memoizable; safe here since
@@ -112,19 +121,24 @@ export default function WordFinderResults({
     virtualizer.scrollToOffset(0);
   }, [words, virtualizer]);
 
+  // grouped in the UI language's locale, not the browser's
+  const count = words.length.toLocaleString(UI_LANGUAGE_LOCALES[lang]);
+
   return (
     <>
       <div className="flex items-center justify-between border-y border-gray-200 px-4 py-2 text-[10px] font-semibold tracking-widest text-gray-500 uppercase">
-        <span>Word</span>
+        <span>{t("finder.word")}</span>
         <span>
-          Mirror · {words.length.toLocaleString()} result
-          {words.length === 1 ? "" : "s"}
+          {t("finder.mirror")} ·{" "}
+          {t(words.length === 1 ? "finder.resultOne" : "finder.resultMany", {
+            count,
+          })}
         </span>
       </div>
       <div
         ref={scrollerRef}
         role="list"
-        aria-label="results"
+        aria-label={t("finder.resultsAria")}
         className="min-h-0 flex-1 overflow-y-auto font-mono text-base"
       >
         <div
