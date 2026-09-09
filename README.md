@@ -43,13 +43,14 @@ Open http://localhost:5173.
 ## Word finder
 
 The "find words" panel — docked beside the editor, a bottom sheet on phones,
-open by default (the status bar's "Find words" trigger toggles it) — searches
-a dictionary of words — by prefix, suffix, or substring, accent-insensitively
-— and shows each result's mirror (the reversed word). The language defaults to
-pt-BR and can be switched to english, español, deutsch, français, or italiano.
-Dictionaries are bundled as plain-text files in `public/dictionary/` and
-fetched the first time the panel loads a language (which, with the panel open
-by default, is on page load):
+open on first load, with the choice remembered as a pref (the status bar's
+"Find words" trigger toggles it) — searches a dictionary of words — by prefix,
+suffix, or substring, accent-insensitively — and shows each result's mirror
+(the reversed word). The language defaults to pt-BR and can be switched to
+english, español, deutsch, français, or italiano. Dictionaries are bundled as
+plain-text files in `public/dictionary/` and fetched the first time the panel
+loads a language (which is on page load, unless the panel was closed in a
+previous session):
 
 | Language       | File        | Source                                                                               | Words | License         |
 | -------------- | ----------- | ------------------------------------------------------------------------------------ | ----- | --------------- |
@@ -76,6 +77,10 @@ as a static-asset Worker, with builds triggered by pushes to GitHub:
 
 - **`main`** deploys to production at `palindromaker.<subdomain>.workers.dev`
 - Any other branch gets a preview URL
+
+GitHub Actions CI (`.github/workflows/ci.yml`) runs on every push and pull
+request: a `pnpm check` job (type-check, lint, unit tests on Node 24) followed
+by a Playwright e2e job. It only checks — deploys belong to Workers Builds.
 
 Dictionary files are cached in the browser for a week (then
 stale-while-revalidate for a day) via a `_headers` file shipped from

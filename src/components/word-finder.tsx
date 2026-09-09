@@ -28,7 +28,7 @@ const insertHintKeys: Record<WordInsertMode, MessageKey> = {
 };
 
 // A floating panel: docked beside the editor from md up, a bottom sheet on
-// phones. Whether it is shown at all is the editor's finderOpen state —
+// phones. Whether it is shown at all is the app's finderOpen state —
 // closed here means rendered as nothing, with the full column for the card.
 export default function WordFinder({
   open,

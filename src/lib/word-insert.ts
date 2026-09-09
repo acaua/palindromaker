@@ -21,7 +21,7 @@ import { countLettersBefore, mirrorInsertDocPos } from "@/lib/mirror-edit";
 // same both ways again
 export type WordInsertMode = "mirrored" | "caret" | "paused";
 
-export interface WordInsertion {
+interface WordInsertion {
   // document positions in pre-edit coordinates, ordered so that applying
   // them in sequence leaves the remaining positions valid
   inserts: Array<{ pos: number; text: string }>;
@@ -47,7 +47,7 @@ const hasLetterAt = (analysis: DocAnalysis, pos: number): boolean => {
 const readsTheSameBothWays = (word: string): boolean =>
   normalizeText(mirrorWord(word)) === normalizeText(word);
 
-export const planWordInsert = (
+const planWordInsert = (
   analysis: DocAnalysis,
   caret: number,
   word: string,
