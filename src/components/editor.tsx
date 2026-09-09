@@ -92,8 +92,8 @@ export default function Editor({
         spellcheck: "false",
         class: [
           "min-h-32 p-6 pb-5 outline-none md:min-h-40 md:p-10 md:pb-8",
-          "font-mono text-lg leading-8 tracking-wide text-gray-900",
-          "md:text-2xl md:leading-[2.75rem]",
+          "font-mono text-base leading-7 tracking-wide text-gray-900",
+          "md:text-xl md:leading-10",
         ].join(" "),
       },
     },

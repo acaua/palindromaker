@@ -32,6 +32,19 @@ export default defineConfig({
           name: "dom",
           include: ["src/**/*.test.tsx"],
           environment: "happy-dom",
+          // the goatcounter test injects the count script; happy-dom never
+          // evaluates external scripts, and the default reports that as an
+          // error log per appendChild — disabled loading is instead
+          // reported as success, which also fires the script's "load"
+          // event the analytics lib flushes queued counts on
+          environmentOptions: {
+            happyDOM: {
+              settings: {
+                disableJavaScriptFileLoading: true,
+                handleDisabledFileLoadingAsSuccess: true,
+              },
+            },
+          },
           setupFiles: ["./src/test/setup.ts"],
         },
       },

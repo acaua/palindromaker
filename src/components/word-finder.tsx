@@ -30,6 +30,8 @@ const insertHintKeys: Record<WordInsertMode, MessageKey> = {
 // A floating panel: docked beside the editor from md up, a bottom sheet on
 // phones. Whether it is shown at all is the app's finderOpen state —
 // closed here means rendered as nothing, with the full column for the card.
+// The md top offset clears the site header (h-14 + gap), which is sticky
+// and would otherwise swallow the panel's top edge.
 export default function WordFinder({
   open,
   onClose,
@@ -71,7 +73,7 @@ export default function WordFinder({
     <aside
       id="word-finder-panel"
       aria-label={t("finder.aria")}
-      className="fixed z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-12 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
+      className="fixed z-20 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200/60 max-md:inset-x-3 max-md:bottom-4 max-md:top-[48%] md:top-16 md:right-[4.5rem] md:bottom-12 md:w-[23rem] xl:right-20 xl:w-[25rem]"
     >
       <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3.5">
         <span className="font-semibold text-gray-900">{t("findWords")}</span>
