@@ -7,7 +7,7 @@ import type { UiLanguage } from "@/lib/i18n";
 export const SAMPLE_CONTENT = "Eva, can I stab bats in a cave?";
 export const SAMPLE_CONTENT_PT = "A grama é amarga";
 
-export const SAMPLE_CONTENT_BY_LANG: Record<UiLanguage, string> = {
+const SAMPLE_CONTENT_BY_LANG: Record<UiLanguage, string> = {
   pt: SAMPLE_CONTENT_PT,
   en: SAMPLE_CONTENT,
   es: "Anita lava la tina",

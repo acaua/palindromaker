@@ -22,7 +22,7 @@ export interface MirrorEditingOptions {
   onChange?: (enabled: boolean) => void;
 }
 
-export interface MirrorEditingPluginState {
+interface MirrorEditingPluginState {
   enabled: boolean;
 }
 

@@ -53,14 +53,14 @@ const readJson = (
   }
 };
 
-export interface Prefs {
+interface Prefs {
   lang?: Language;
   uiLang?: UiLanguage;
   mirrorEnabled?: boolean;
   finderOpen?: boolean;
 }
 
-export interface PersistenceEditor {
+interface PersistenceEditor {
   getJSON: () => JSONContent;
   commands: {
     setContent: (
@@ -75,7 +75,7 @@ export interface PersistenceEditor {
 // which version wins when two tabs have both moved on
 export type ConflictChoice = "theirs" | "mine";
 
-export interface PersistenceOptions {
+interface PersistenceOptions {
   storage: StorageLike | null;
   // validates documents written by other tabs, exactly like the initial load
   schema: Schema;

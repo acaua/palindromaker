@@ -7,7 +7,7 @@ import type { Dictionary, Language } from "@/lib/dictionary";
 // dictionary simply does not exist unless it is the loaded one: a language
 // that is still loading or failed cannot leave the previous language's
 // words on screen.
-export type DictionaryState =
+type DictionaryState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "ready"; dictionary: Dictionary }

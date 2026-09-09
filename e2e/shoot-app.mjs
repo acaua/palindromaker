@@ -1,5 +1,4 @@
-// Screenshots the real app at the same three breakpoints as
-// shoot-layouts.mjs, for a chrome-fidelity comparison against the mockup.
+// Screenshots the real app at mobile, tablet and desktop breakpoints.
 // Run the dev server first, then: node e2e/shoot-app.mjs
 import { chromium } from "./resolve-playwright.mjs";
 import { mkdirSync } from "node:fs";

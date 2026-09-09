@@ -2,7 +2,7 @@ import { normalizeText } from "@/lib/check-palindrome";
 
 export type Language = "pt-br" | "en" | "es" | "de" | "fr" | "it";
 
-export interface LanguageInfo {
+interface LanguageInfo {
   code: Language;
   label: string;
   file: string;
