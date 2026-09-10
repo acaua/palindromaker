@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSchema } from "@tiptap/core";
 import type { RefObject } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 
-import { Palindrome } from "@/lib/palindrome-extension";
-import { MirrorEditing, wordInsertMode } from "@/lib/mirror-extension";
-import type { MirrorEditingOptions } from "@/lib/mirror-extension";
+import { wordInsertMode } from "@/lib/mirror-extension";
+import { extensions, schema } from "@/lib/editor-schema";
 import { getUiLanguage, translate } from "@/lib/i18n";
 import {
   createPersistence,
@@ -17,41 +14,11 @@ import {
 } from "@/lib/persistence";
 import type { ConflictChoice, Persistence } from "@/lib/persistence";
 import { sampleContent } from "@/lib/sample";
+import { readShareText, textToDoc } from "@/lib/share-link";
 import ConflictNotice from "@/components/conflict-notice";
 import { EditorLegend } from "@/components/legend";
 import StatusBar from "@/components/status-bar";
 import WordFinder from "@/components/word-finder";
-
-const disabledStarterKitExtensions = {
-  blockquote: false,
-  bold: false,
-  bulletList: false,
-  code: false,
-  codeBlock: false,
-  dropcursor: false,
-  hardBreak: false,
-  heading: false,
-  horizontalRule: false,
-  italic: false,
-  link: false,
-  listKeymap: false,
-  listItem: false,
-  orderedList: false,
-  strike: false,
-  trailingNode: false,
-  underline: false,
-} as const;
-
-const extensions = (mirror: Partial<MirrorEditingOptions>) => [
-  StarterKit.configure(disabledStarterKitExtensions),
-  Palindrome,
-  MirrorEditing.configure(mirror),
-];
-
-// lets readStoredDoc reject stored docs this editor cannot represent;
-// without it, corrupt localStorage would crash nodeFromJSON during render.
-// The mirror options play no part in the schema.
-const schema = getSchema(extensions({}));
 
 export default function Editor({
   finderOpen,
@@ -70,10 +37,30 @@ export default function Editor({
   // stored doc against the schema on every keystroke. The UI language is
   // also mount-time: App has run initUiLanguage by now, and the editor is
   // never recreated, so switching the language mid-session cannot reseed it
-  const [restored] = useState(() => ({
-    content: readStoredDoc(storage, schema) ?? sampleContent(getUiLanguage()),
-    mirrorEnabled: readStoredPrefs(storage).mirrorEnabled ?? false,
-  }));
+  const [restored] = useState(() => {
+    // a shared #t= fragment wins over the stored doc: the /p reader's
+    // "Edit this" lands here carrying one, and editing that shared
+    // palindrome replaces the local doc on the first edit — the hash
+    // content is not saved until then (accepted trade-off; the conflict
+    // rules that then govern saving live in persistence.ts)
+    const shared = readShareText();
+    return {
+      content: shared
+        ? textToDoc(shared)
+        : (readStoredDoc(storage, schema) ?? sampleContent(getUiLanguage())),
+      mirrorEnabled: readStoredPrefs(storage).mirrorEnabled ?? false,
+    };
+  });
+
+  // consume the share fragment once it has been read: without this,
+  // reloading after "Edit this" would load the shared text instead of
+  // whatever was edited and saved. replaceState (no history entry, no
+  // popstate, no scroll jump) keeps the switch invisible to the router
+  useEffect(() => {
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
 
   const editor = useEditor({
     extensions: extensions({

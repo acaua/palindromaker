@@ -19,6 +19,9 @@
 # local agent-harness worktrees
 /.delta
 
+# opencode session config (tool-managed; see AGENTS.md → Commands → prepare)
+/.opencode
+
 # debug
 npm-debug.log*
 yarn-debug.log*

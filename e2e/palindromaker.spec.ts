@@ -1,10 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
+import { editor, clearEditor, replaceAll, saved, typeText } from "./helpers";
 import { mirrorWord } from "@/lib/dictionary";
+import { DOC_STORAGE_KEY } from "@/lib/persistence";
 import { SAMPLE_CONTENT, SAMPLE_CONTENT_PT } from "@/lib/sample";
-
-const editor = (page: Page) => page.locator('[contenteditable="true"]');
 
 // the status line is plain text now: role + color class, scoped apart from
 // the legend swatches and result-row markers that share the color
@@ -17,31 +17,6 @@ const finderTrigger = (page: Page) => page.getByRole("button", { name: "Find wor
 // decoration spans live inside the editor; scoping keeps them apart from
 // the legend, whose swatches reuse the same classes
 const decoration = (page: Page, className: string) => editor(page).locator(`span.${className}`);
-
-// ProseMirror needs realistic keystroke pacing for its selection
-// sync to keep up with synthetic CDP input
-async function clearEditor(page: Page) {
-  const editable = editor(page);
-  await editable.click();
-  await page.keyboard.press("End");
-  await page.waitForTimeout(100);
-  // bound the loop to the current text; textContent drops the "\n"
-  // between blocks, so keep a margin for paragraph separators
-  const length = ((await editable.textContent()) ?? "").length;
-  for (let i = 0; i < length + 5; i++) {
-    await page.keyboard.press("Backspace");
-    await page.waitForTimeout(15);
-  }
-}
-
-async function type(page: Page, text: string) {
-  await page.keyboard.type(text, { delay: 30 });
-}
-
-async function replaceAll(page: Page, text: string) {
-  await clearEditor(page);
-  await type(page, text);
-}
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -131,9 +106,9 @@ test("highlights the mirrored character of the caret position", async ({ page })
 
 test("handles multiple paragraphs without crashing", async ({ page }) => {
   await clearEditor(page);
-  await type(page, "ab");
+  await typeText(page, "ab");
   await page.keyboard.press("Enter");
-  await type(page, "ba");
+  await typeText(page, "ba");
 
   // "ab\nba" is a palindrome once the newline is skipped
   await expect(greenStatus(page)).toBeVisible();
@@ -151,7 +126,7 @@ test("mirror editing duplicates and removes mirrored characters", async ({ page 
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 
   await clearEditor(page);
-  await type(page, "abc");
+  await typeText(page, "abc");
 
   // the first char becomes the center, every next keystroke is duplicated
   await expect(editor(page)).toContainText("cbabc");
@@ -164,7 +139,7 @@ test("mirror editing duplicates and removes mirrored characters", async ({ page 
 
   // toggling off stops the duplication
   await mirrorToggle.click();
-  await type(page, "x");
+  await typeText(page, "x");
   await expect(editor(page)).toContainText("babx");
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "false");
 });
@@ -222,9 +197,9 @@ test("the panel's ✕ closes it and hands focus back to the trigger", async ({ p
 });
 
 test("falls back to the sample palindrome when storage is corrupt", async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem("palindromaker:doc:v1", "not json");
-  });
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, "not json");
+  }, DOC_STORAGE_KEY);
 
   await page.reload();
 
@@ -233,12 +208,9 @@ test("falls back to the sample palindrome when storage is corrupt", async ({ pag
 
 test("falls back to the sample palindrome when storage holds unknown nodes", async ({ page }) => {
   // parseable JSON the editor schema rejects would crash during render
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "palindromaker:doc:v1",
-      JSON.stringify({ type: "doc", content: [{ type: "bogus" }] }),
-    );
-  });
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, JSON.stringify({ type: "doc", content: [{ type: "bogus" }] }));
+  }, DOC_STORAGE_KEY);
 
   await page.reload();
 
@@ -256,13 +228,9 @@ test.describe("two tabs", () => {
   };
 
   // the debounced save is what the other tab reacts to, so each step waits
-  // for it to land; without that the two tabs race and whichever happens to
-  // be edited first is the one asked about the conflict
-  const saved = async (page: Page, text: string) => {
-    await expect
-      .poll(() => page.evaluate((key) => localStorage.getItem(key) ?? "", "palindromaker:doc:v1"))
-      .toContain(text);
-  };
+  // for it (the shared `saved` helper) to land; without that the two tabs
+  // race and whichever happens to be edited first is the one asked about
+  // the conflict
 
   test("an untouched tab picks up what the other tab saved", async ({ context }) => {
     const first = await openTab(context);
@@ -473,7 +441,7 @@ test("clicking a result inserts the word, and its mirror opposite", async ({ pag
   // the caret was left between the word and its mirror, and the editor
   // takes the focus back, so typing goes on mirroring from there
   await expect(editor(page)).toBeFocused();
-  await type(page, "x");
+  await typeText(page, "x");
   await expect(editor(page)).toHaveText(`${word}x x${mirrorWord(word)}`);
   await expect(greenStatus(page)).toBeVisible();
 

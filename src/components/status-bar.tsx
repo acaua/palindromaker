@@ -1,13 +1,20 @@
 import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import type { RefObject } from "react";
-import { CheckCircleIcon, MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import {
+  CheckCircleIcon,
+  LinkIcon,
+  MagnifyingGlassIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/solid";
 
+import CopyButton from "@/components/copy-button";
 import { mirrorPluginKey } from "@/lib/mirror-extension";
 import { palindromePluginKey } from "@/lib/palindrome-extension";
+import { MAX_SHARE_TEXT, buildShareUrl } from "@/lib/share-link";
 import { useI18n } from "@/hooks/use-i18n";
 
-// the card's footer: what the text is now, and the two controls
+// the card's footer: what the text is now, and the three controls
 export default function StatusBar({
   editor,
   finderOpen,
@@ -19,14 +26,22 @@ export default function StatusBar({
   onToggleFinder: () => void;
   triggerRef: RefObject<HTMLButtonElement | null>;
 }) {
-  const { hasLetters, isPalindrome, mirrorEnabled } = useEditorState({
+  const { hasLetters, isPalindrome, mirrorEnabled, shareable, overLimit } = useEditorState({
     editor,
     selector: ({ editor }) => {
       const analysis = palindromePluginKey.getState(editor.state)?.analysis;
+      const hasLetters = (analysis?.letterPositions.length ?? 0) > 0;
+      const isPalindrome = analysis?.result.isPalindrome ?? false;
       return {
-        hasLetters: (analysis?.letterPositions.length ?? 0) > 0,
-        isPalindrome: analysis?.result.isPalindrome ?? false,
+        hasLetters,
+        isPalindrome,
         mirrorEnabled: mirrorPluginKey.getState(editor.state)?.enabled ?? false,
+        // hasLetters, because an empty document is vacuously a palindrome;
+        // the cap rides the analysis's normalized text (already in plugin
+        // state) instead of a second getText walk per keystroke — the
+        // reader's decode cap is the gate that really binds
+        shareable: hasLetters && isPalindrome && (analysis?.text.length ?? 0) <= MAX_SHARE_TEXT,
+        overLimit: (analysis?.text.length ?? 0) > MAX_SHARE_TEXT,
       };
     },
   });
@@ -37,11 +52,35 @@ export default function StatusBar({
       <div className="flex items-center gap-2.5">
         <MirrorSwitch editor={editor} enabled={mirrorEnabled} />
         <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
+        <ShareButton editor={editor} shareable={shareable} overLimit={overLimit} />
+        <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
         <FindWordsTrigger ref={triggerRef} expanded={finderOpen} onToggle={onToggleFinder} />
       </div>
     </div>
   );
 }
+
+const ShareButton = ({
+  editor,
+  shareable,
+  overLimit,
+}: {
+  editor: Editor;
+  shareable: boolean;
+  overLimit: boolean;
+}) => {
+  const { t } = useI18n();
+  return (
+    <CopyButton
+      disabled={!shareable}
+      label={t("share.label")}
+      title={!shareable ? (overLimit ? t("share.tooLong") : t("share.disabled")) : t("share.title")}
+      copiedLabel={t("share.copied")}
+      icon={<LinkIcon aria-hidden="true" className="h-4 w-4 text-gray-500" />}
+      getText={() => buildShareUrl(editor.getText({ blockSeparator: "\n" }), location.origin)}
+    />
+  );
+};
 
 const FindWordsTrigger = ({
   ref,

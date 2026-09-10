@@ -9,6 +9,7 @@ import {
 
 import AboutPage from "@/components/about-page";
 import EditorPage from "@/components/editor-page";
+import ReaderPage from "@/components/reader-page";
 import SiteHeader from "@/components/site-header";
 import { countRoute } from "@/lib/goatcounter";
 
@@ -59,13 +60,21 @@ const indexRoute = createRoute({
   component: EditorPage,
 });
 
+const readerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  // a destination, not a browsable page: it is reached through shared
+  // links, so it stays out of NAV_ENTRIES
+  path: "/p",
+  component: ReaderPage,
+});
+
 const aboutRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/about",
   component: AboutPage,
 });
 
-export const routeTree = rootRoute.addChildren([indexRoute, aboutRoute]);
+export const routeTree = rootRoute.addChildren([indexRoute, readerRoute, aboutRoute]);
 
 export const router = createRouter({ routeTree });
 
