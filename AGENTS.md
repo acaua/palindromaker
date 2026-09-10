@@ -1,34 +1,34 @@
 # AGENTS.md
 
-Palindromaker: a Vite + React 19 + TypeScript (strict) single-page editor for crafting palindromes, built on TipTap 3 (ProseMirror) with two custom extensions.
+Palindromaker: a React 19 + TypeScript (strict) single-page editor for crafting palindromes, built on TipTap 3 (ProseMirror) with two custom extensions, toolchained on Vite+ (Vite 8 + Vitest + Oxlint + Oxfmt via `vp`).
 
 ## Commands
 
-Use **pnpm** (not npm/yarn). Requires Node 20+.
+Toolchain lives in `vp` (installed automatically as a devDependency; scripts run it through pnpm).
 
 | Command                       | Purpose                                       |
 | ----------------------------- | --------------------------------------------- |
 | `pnpm dev`                    | Dev server at http://localhost:5173           |
 | `pnpm test`                   | Unit tests (Vitest), single run               |
 | `pnpm test:e2e`               | Playwright (Chromium), auto-starts `pnpm dev` |
-| `pnpm typecheck`              | `tsc` (noEmit) — separate from build/lint     |
-| `pnpm lint`                   | ESLint 10 flat config                         |
 | `pnpm build` / `pnpm preview` | Static build to `dist/` / serve it            |
 
-`pnpm check` runs typecheck + lint + unit tests for a full check. Note `pnpm build` (Vite) does **not** type-check.
-
-- `pnpm deploy` (`wrangler deploy`) builds via `build.command` in `wrangler.jsonc`, which is `pnpm check && pnpm build` — a failing check or test blocks the deploy.
-- Deploys are Cloudflare Workers Builds on GitHub pushes (main → production, other branches → preview URLs); GitHub Actions (`.github/workflows/ci.yml`) only checks — a `pnpm check` job on Node 24, then a Playwright e2e job that uploads `test-results/` on failure.
+- `pnpm check` = format + lint + typecheck (`vp check`) **plus unit tests** (`vp test run`) — a full check. Type checks run through Vite+'s bundled tsgo because `lint.options.typeCheck` is on in `vite.config.ts`; there is no separate `typecheck` script.
+- `pnpm deploy` (`wrangler deploy`) builds via `build.command` in `wrangler.jsonc`, which is `vp check && vp build` — a failing check or test blocks the deploy.
+- Deploys are Cloudflare Workers Builds on GitHub pushes (main → production, other branches → preview URLs); GitHub Actions (`.github/workflows/ci.yml`) only checks — it uses `voidzero-dev/setup-vp` (which reads the pinned `vite-plus` catalog version and caches dependencies) for a `vp check` + `vp test run` job on Node 24, then a Playwright e2e job that uploads `test-results/` on failure.
 - `e2e/shoot-app.mjs` (manual, dev server running) screenshots the app at three breakpoints into gitignored `screenshots/`; `e2e/resolve-playwright.mjs` re-exports Playwright's chromium because pnpm does not hoist it.
-- Single test: `pnpm vitest run src/lib/mirror-edit.test.ts`
-- One environment: `pnpm vitest run --project unit` (node) or `--project dom` (happy-dom).
-- Pre-commit (husky → lint-staged) runs `prettier --write`, `eslint --cache --fix`, and `vitest related --run` on staged files.
+- Single test: `pnpm test src/lib/mirror-edit.test.ts` (filters are passed through to Vitest).
+- One environment: `pnpm exec vp test run --project unit` (node) or `--project dom` (happy-dom).
+- Pre-commit (`.vite-hooks/pre-commit` → `vp staged`, configured in the `staged` block of `vite.config.ts`) runs Oxfmt, Oxlint `--fix`, and `vitest related --run` on staged files. The `.vite-hooks/_` dispatcher is gitignored and recreated by `vp config` (the `prepare` script) / `vp hooks enable`. `VP_GIT_HOOKS=0` (or `HUSKY=0`) disables hooks per environment.
+- Version policy: `vite-plus`, and the `vite`/`vitest` pins in the `pnpm-workspace.yaml` catalog, stay in lockstep — `vite` is aliased to `@voidzero-dev/vite-plus-core` and `vitest` is pinned to the version `vp test` bundles (`vp toolchain` prints the pair). Don't bump them independently.
 
 ## Conventions
 
-- Path alias `@/*` → `src/*` (configured in both `tsconfig.json` and `vite.config.mjs`).
+- Path alias `@/*` → `src/*` (configured in both `tsconfig.json` and `vite.config.ts`).
 - `verbatimModuleSyntax` + `noUnusedLocals/Parameters` are on: type-only imports must use `import type`.
-- Tests are colocated in `src/`, and the extension picks the environment (two Vitest projects in `vite.config.mjs`): `*.test.ts` is plain logic in node, `*.test.tsx` renders React in happy-dom with Testing Library (`src/test/setup.ts` registers RTL's `cleanup`, which does not self-register without Vitest globals). `e2e/` is Playwright, excluded from Vitest. Note `test.exclude` at the root does not cascade into projects.
+- Tests are colocated in `src/`, and the extension picks the environment (two Vitest projects in `vite.config.ts`): `*.test.ts` is plain logic in node, `*.test.tsx` renders React in happy-dom with Testing Library (`src/test/setup.ts` registers RTL's `cleanup`, which does not self-register without Vitest globals). `e2e/` is Playwright, excluded from Vitest. Note `test.exclude` at the root does not cascade into projects.
+- Tests import from `vite-plus/test` (Vite+ re-exports upstream Vitest); `declare module 'vitest'` augmentations stay on the upstream module.
+- Oxlint lint/format config lives in the `lint`/`fmt` blocks of `vite.config.ts` (the ESLint rules were ported by `vp migrate`; `@eslint-react` runs through Oxlint's JS-plugin bridge).
 - Component tests use Testing Library only; there is no `jest-dom` or `user-event`, so assert on `textContent`/`getAttribute` and drive the UI with `fireEvent`.
 - `src/lib/` is framework-agnostic (no React); React hooks live in `src/hooks/` and components in `src/components/`.
 
@@ -62,6 +62,10 @@ Use **pnpm** (not npm/yarn). Requires Node 20+.
 - The slow keystroke pacing in `e2e/palindromaker.spec.ts` is needed for
   ProseMirror's selection sync to keep up with synthetic CDP input; it is
   relied upon, don't "optimize" it away.
+- Playwright's webServer reuses whatever is already listening on 5173
+  (`reuseExistingServer`): a stale dev server from another toolchain state
+  makes the whole e2e suite fail with render timeouts for no test-visible
+  reason — `lsof -nP -iTCP:5173 -sTCP:LISTEN` and kill it first.
 - Playwright tests need Chromium installed: `pnpm exec playwright install chromium`.
 - Decoration styling mixes inline Tailwind classes (e.g. `bg-blue-200`, `bg-red-300`, `bg-purple-200/400`) with `pm-center1`/`pm-center2` rules in `src/styles/globals.css`; the e2e suite asserts on these class names.
 - Don't move the dictionary build into a Web Worker without measuring first: es is 635k words, and structured-cloning the built dictionary back to the main thread was measured at ~213ms against ~282ms to build it, so a worker buys almost nothing. Slicing the build (above) removed the blocking instead. Loading es still costs ~97MB of heap; cutting that needs a different data structure (one flat string + offset/hash `Uint32Array`s, which _are_ cheap to transfer), not a worker.

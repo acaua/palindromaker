@@ -103,8 +103,7 @@ export const loadDictionary = (language: Language): Promise<Dictionary> => {
   let promise = dictionaryPromises.get(language);
   if (!promise) {
     const file =
-      LANGUAGES.find((info) => info.code === language)?.file ??
-      `/dictionary/${language}.txt`;
+      LANGUAGES.find((info) => info.code === language)?.file ?? `/dictionary/${language}.txt`;
     promise = fetch(file).then(
       async (response) => {
         if (!response.ok) {
@@ -125,11 +124,7 @@ export const loadDictionary = (language: Language): Promise<Dictionary> => {
 
 // dictionary entries are single words, so surrounding spaces are always a
 // typing artefact rather than something to match on
-export const searchWords = (
-  dictionary: Dictionary,
-  query: string,
-  mode: SearchMode,
-): string[] => {
+export const searchWords = (dictionary: Dictionary, query: string, mode: SearchMode): string[] => {
   const needle = normalizeText(query.trim());
   if (needle === "") return [];
 
@@ -149,18 +144,22 @@ export const searchWords = (
   return results;
 };
 
+// segment by grapheme cluster so astral/emoji letters survive the round trip
+// (a plain [...word] split would cut them into unpaired surrogate halves)
+const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+
 export const mirrorWord = (word: string): string =>
-  [...word].reverse().join("");
+  [...graphemes.segment(word)]
+    .reverse()
+    .map((s) => s.segment)
+    .join("");
 
 export type MirrorMatch = "pair" | "palindrome" | null;
 
 // what the word's mirror means for building palindromes: "palindrome"
 // when the word mirrors to itself, "pair" when the mirror is also a
 // dictionary word, null otherwise (accent/case-insensitive)
-export const mirrorMatch = (
-  dictionary: Dictionary,
-  word: string,
-): MirrorMatch => {
+export const mirrorMatch = (dictionary: Dictionary, word: string): MirrorMatch => {
   const normalized = normalizeText(word);
   const mirrored = normalizeText(mirrorWord(word));
   if (mirrored === normalized) return "palindrome";

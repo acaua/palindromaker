@@ -1,14 +1,13 @@
 import { fireEvent } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
+import type { Mock } from "vite-plus/test";
 
 type CountVars = { path: string };
 
 const SITE_URL = "https://code.example.com/count";
 
 // the injected count script
-const script = () =>
-  document.querySelector<HTMLScriptElement>("script[data-goatcounter]");
+const script = () => document.querySelector<HTMLScriptElement>("script[data-goatcounter]");
 
 // the module holds per-load state (enabled, last counted path, pending
 // path), so every test re-imports it fresh
@@ -64,11 +63,7 @@ describe("goatcounter", () => {
     countRoute("/");
     countRoute("/about");
 
-    expect(count.mock.calls.map((call) => call[0].path)).toEqual([
-      "/about",
-      "/",
-      "/about",
-    ]);
+    expect(count.mock.calls.map((call) => call[0].path)).toEqual(["/about", "/", "/about"]);
   });
 
   test("navigations that beat the script load are flushed in order on load", async () => {
@@ -83,9 +78,6 @@ describe("goatcounter", () => {
     window.goatcounter!.count = count;
     fireEvent.load(script()!);
 
-    expect(count.mock.calls.map((call) => call[0].path)).toEqual([
-      "/early",
-      "/late",
-    ]);
+    expect(count.mock.calls.map((call) => call[0].path)).toEqual(["/early", "/late"]);
   });
 });

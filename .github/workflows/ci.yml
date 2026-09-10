@@ -14,18 +14,21 @@ concurrency:
 
 jobs:
   check:
-    name: Typecheck, lint, unit tests
+    name: Format, lint, typecheck, unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      # setup-vp reads the vite-plus version from package.json (catalog: in
+      # pnpm-workspace.yaml) and caches dependencies by pnpm-lock.yaml hash.
+      - uses: voidzero-dev/setup-vp@v1.19.0
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
+          node-version: "24"
+          cache: true
+          run-install: |
+            - args: ["--frozen-lockfile"]
+      - run: vp check
+      - run: vp test run
 
   e2e:
     name: Playwright e2e
@@ -34,12 +37,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: voidzero-dev/setup-vp@v1.19.0
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          node-version: "24"
+          cache: true
+          run-install: |
+            - args: ["--frozen-lockfile"]
       - run: pnpm exec playwright install chromium --with-deps
       - run: pnpm test:e2e
       - uses: actions/upload-artifact@v4

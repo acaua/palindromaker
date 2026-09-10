@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { Schema } from "@tiptap/pm/model";
 import { history, undo } from "@tiptap/pm/history";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
@@ -27,11 +27,7 @@ const buildDoc = (text: string) =>
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node(
-          "paragraph",
-          null,
-          paragraph ? [schema.text(paragraph)] : [],
-        ),
+        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
       ),
   );
 
@@ -50,8 +46,7 @@ const enableMirror = (state: EditorState) =>
 const typeChar = (state: EditorState, pos: number, char: string) =>
   state.apply(state.tr.insertText(char, pos, pos));
 
-const backspaceAt = (state: EditorState, pos: number) =>
-  state.apply(state.tr.delete(pos - 1, pos));
+const backspaceAt = (state: EditorState, pos: number) => state.apply(state.tr.delete(pos - 1, pos));
 
 const deleteForwardAt = (state: EditorState, pos: number) =>
   state.apply(state.tr.delete(pos, pos + 1));
@@ -59,9 +54,7 @@ const deleteForwardAt = (state: EditorState, pos: number) =>
 // a word finder click: the caret sits where the user left it, and the
 // command dispatches one transaction from there
 const insertWord = (state: EditorState, pos: number, word: string) => {
-  const placed = state.apply(
-    state.tr.setSelection(TextSelection.create(state.doc, pos)),
-  );
+  const placed = state.apply(state.tr.setSelection(TextSelection.create(state.doc, pos)));
   return placed.apply(wordInsertTransactionFor(placed, word));
 };
 
@@ -183,9 +176,7 @@ describe("mirror deletion", () => {
   test("joining paragraphs is not mirrored", () => {
     // a paragraph join is a ReplaceStep spanning the block boundary
     const state = enabled("ab\nba");
-    const joined = state.apply(
-      state.tr.step(new ReplaceStep(3, 5, Slice.empty, true)),
-    );
+    const joined = state.apply(state.tr.step(new ReplaceStep(3, 5, Slice.empty, true)));
 
     expect(docText(joined)).toBe("abba");
   });

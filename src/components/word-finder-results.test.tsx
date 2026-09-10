@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import { ResultRow } from "@/components/word-finder-results";
 import { buildDictionary, mirrorMatch } from "@/lib/dictionary";
@@ -13,14 +13,7 @@ const onInsert = vi.fn();
 
 const renderRow = (word: string, match: MirrorMatch = null) =>
   render(
-    <ResultRow
-      word={word}
-      match={match}
-      index={2}
-      total={9}
-      offset={64}
-      onInsert={onInsert}
-    />,
+    <ResultRow word={word} match={match} index={2} total={9} offset={64} onInsert={onInsert} />,
   );
 
 const row = () => screen.getByRole("listitem");
@@ -39,9 +32,7 @@ describe("ResultRow", () => {
     renderRow("amor", mirrorMatch(dictionary, "amor"));
 
     expect(row().textContent).toBe("amorroma (mirror is also a word)");
-    expect(row().querySelector("svg")?.getAttribute("aria-hidden")).toBe(
-      "true",
-    );
+    expect(row().querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   });
 
   test("names the marker for a word that mirrors to itself", () => {

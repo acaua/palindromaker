@@ -7,7 +7,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import SiteHeader from "@/components/site-header";
 import { messages, setUiLanguage, UI_LANGUAGES } from "@/lib/i18n";

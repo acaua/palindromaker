@@ -1,13 +1,10 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import type { DecorationSet } from "@tiptap/pm/view";
 
 import { analyzeDoc } from "./doc-analysis";
-import {
-  createPalindromePlugin,
-  palindromePluginKey,
-} from "./palindrome-extension";
+import { createPalindromePlugin, palindromePluginKey } from "./palindrome-extension";
 
 const schema = new Schema({
   nodes: {
@@ -24,11 +21,7 @@ const buildDoc = (text: string) =>
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node(
-          "paragraph",
-          null,
-          paragraph ? [schema.text(paragraph)] : [],
-        ),
+        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
       ),
   );
 
@@ -55,16 +48,10 @@ const decorationSummaries = (set: DecorationSet) =>
 
 describe("palindrome plugin", () => {
   test("reports whether the document holds any letters", () => {
-    expect(palindromePluginKey.getState(createState("aba"))?.hasLetters).toBe(
-      true,
-    );
+    expect(palindromePluginKey.getState(createState("aba"))?.hasLetters).toBe(true);
     // the toolbar shows "Start typing" until a letter shows up
-    expect(palindromePluginKey.getState(createState(""))?.hasLetters).toBe(
-      false,
-    );
-    expect(
-      palindromePluginKey.getState(createState("!?, 12"))?.hasLetters,
-    ).toBe(false);
+    expect(palindromePluginKey.getState(createState(""))?.hasLetters).toBe(false);
+    expect(palindromePluginKey.getState(createState("!?, 12"))?.hasLetters).toBe(false);
   });
 
   test("marks the center characters of a palindrome", () => {
@@ -93,16 +80,12 @@ describe("palindrome plugin", () => {
   });
 
   test("marks the gap even when no letters pair up", () => {
-    const pluginState = palindromePluginKey.getState(
-      createState("hello world"),
-    );
+    const pluginState = palindromePluginKey.getState(createState("hello world"));
 
     expect(pluginState?.isPalindrome).toBe(false);
     const summaries = decorationSummaries(pluginState!.decorations);
     // nothing matched, so there is no center: the whole text is the gap
-    expect(
-      summaries.filter((deco) => deco.class.includes("pm-center")),
-    ).toEqual([]);
+    expect(summaries.filter((deco) => deco.class.includes("pm-center"))).toEqual([]);
     expect(summaries).toContainEqual({ from: 1, to: 12, class: "bg-red-300" });
   });
 
@@ -118,12 +101,8 @@ describe("palindrome plugin", () => {
 
   test("highlights the mirrored character of the caret position", () => {
     const base = createState("aba");
-    const state = base.apply(
-      base.tr.setSelection(TextSelection.create(base.doc, 1)),
-    );
-    const summaries = decorationSummaries(
-      palindromePluginKey.getState(state)!.decorations,
-    );
+    const state = base.apply(base.tr.setSelection(TextSelection.create(base.doc, 1)));
+    const summaries = decorationSummaries(palindromePluginKey.getState(state)!.decorations);
 
     // the caret on the first "a" is mirrored by the last "a"
     expect(summaries).toEqual(
@@ -141,26 +120,20 @@ describe("analysis caching", () => {
 
     // mirror editing analyzes the same document on the same keystroke;
     // memoization in doc-analysis keeps that a single pass
-    expect(palindromePluginKey.getState(state)?.analysis).toBe(
-      analyzeDoc(state.doc),
-    );
+    expect(palindromePluginKey.getState(state)?.analysis).toBe(analyzeDoc(state.doc));
   });
 
   test("selection-only transactions reuse the analysis", () => {
     const base = createState("aba");
     const before = palindromePluginKey.getState(base);
 
-    const moved = base.apply(
-      base.tr.setSelection(TextSelection.create(base.doc, 2)),
-    );
+    const moved = base.apply(base.tr.setSelection(TextSelection.create(base.doc, 2)));
     const after = palindromePluginKey.getState(moved);
 
     expect(after?.analysis).toBe(before?.analysis);
     // the caret highlight still follows the new selection
     expect(decorationSummaries(after!.decorations)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ from: 2, to: 3, class: "bg-purple-400" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ from: 2, to: 3, class: "bg-purple-400" })]),
     );
   });
 

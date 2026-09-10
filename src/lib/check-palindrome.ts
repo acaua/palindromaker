@@ -30,7 +30,9 @@ const checkPalindrome = (text: string): PalindromeResult => {
   }
 
   let isPalindrome = true;
-  const mirror: Array<number | undefined> = new Array(normalizedText.length);
+  const mirror: Array<number | undefined> = Array.from({
+    length: normalizedText.length,
+  });
   let center: [number, number] | undefined = undefined;
   let gap: [number, number] | undefined = undefined;
 

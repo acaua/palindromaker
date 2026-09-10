@@ -33,4 +33,5 @@ yarn-error.log*
 # cloudflare
 .wrangler
 
-.eslintcache
+# generated dispatcher and shims under .vite-hooks/_ (see AGENTS.md → pre-commit)
+.vite-hooks/_

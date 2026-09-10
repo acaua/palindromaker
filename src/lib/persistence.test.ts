@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 import type { JSONContent } from "@tiptap/core";
 import { Schema } from "@tiptap/pm/model";
 
@@ -78,6 +78,9 @@ class FakeEditor {
   }
 
   emit(event: string): void {
+    // copy so a handler mutating the listener set during emit cannot skip
+    // ones already queued to fire
+    // oxlint-disable-next-line unicorn/no-useless-spread
     for (const handler of [...(this.listeners.get(event) ?? [])]) {
       handler();
     }
@@ -93,8 +96,7 @@ const otherTabDoc = (text: string): JSONContent => ({
 });
 
 // what a browser delivers to the *other* tabs after a write
-const storageEvent = (key: string) =>
-  Object.assign(new Event("storage"), { key });
+const storageEvent = (key: string) => Object.assign(new Event("storage"), { key });
 
 class ThrowingStorage {
   getItem(): string | null {
@@ -153,9 +155,7 @@ describe("readStoredDoc", () => {
     const storage = new MemoryStorage();
     const doc = {
       type: "doc",
-      content: [
-        { type: "paragraph", content: [{ type: "text", text: "aba" }] },
-      ],
+      content: [{ type: "paragraph", content: [{ type: "text", text: "aba" }] }],
     };
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
 
@@ -462,10 +462,7 @@ describe("createPersistence across tabs", () => {
   test("a document the schema cannot represent is ignored", () => {
     const { storage, editor, onConflict, storageEvents } = setup();
 
-    storage.setItem(
-      DOC_STORAGE_KEY,
-      '{"type":"doc","content":[{"type":"bogus"}]}',
-    );
+    storage.setItem(DOC_STORAGE_KEY, '{"type":"doc","content":[{"type":"bogus"}]}');
     storageEvents.dispatchEvent(storageEvent(DOC_STORAGE_KEY));
 
     // pushing it into the editor would crash the app, so this tab keeps
