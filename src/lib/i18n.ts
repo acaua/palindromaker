@@ -47,6 +47,17 @@ export const UI_LANGUAGE_TAGS: Record<UiLanguage, string> = {
 const en = {
   "app.tagline":
     "Write a phrase. We’ll show where its mirrored letters agree—and where they break.",
+  "nav.home": "Home",
+  "nav.about": "About",
+  "nav.aria": "Main navigation",
+  "nav.menu": "Menu",
+  "about.title": "About Palindromaker",
+  "about.body1":
+    "Palindromaker is a small editor for crafting palindromes: phrases that read the same backwards and forwards, ignoring spaces, punctuation and accents.",
+  "about.body2":
+    "As you type, the editor colors the mirror: letters that agree glow blue around the center, and the stretch that still breaks the symmetry is marked in red. With mirror typing on, every letter you write is echoed at its symmetric position, so symmetry is never more than one keystroke away.",
+  "about.body3":
+    "The word finder searches dictionaries in six languages and inserts words straight into the mirror. Everything stays in your browser — nothing is sent anywhere.",
   "editor.ariaLabel": "Palindrome editor",
   "status.startTyping": "Start typing",
   "status.palindrome": "Palindrome",
@@ -99,6 +110,17 @@ type Table = Record<MessageKey, string>;
 const pt: Table = {
   "app.tagline":
     "Escreva uma frase. Mostramos onde as letras espelhadas combinam — e onde se quebram.",
+  "nav.home": "Início",
+  "nav.about": "Sobre",
+  "nav.aria": "Navegação principal",
+  "nav.menu": "Menu",
+  "about.title": "Sobre o Palindromaker",
+  "about.body1":
+    "O Palindromaker é um pequeno editor para criar palíndromos: frases que se leem da mesma forma de trás para frente, ignorando espaços, pontuação e acentos.",
+  "about.body2":
+    "Enquanto você digita, o editor pinta o espelho: as letras que se correspondem brilham em azul ao redor do centro, e o trecho que ainda quebra a simetria fica marcado em vermelho. Com a digitação espelhada ligada, cada letra que você escreve é repetida na sua posição simétrica — a simetria fica a um toque de distância.",
+  "about.body3":
+    "O buscador de palavras consulta dicionários em seis idiomas e insere palavras direto no espelho. Tudo fica no seu navegador — nada é enviado a lugar algum.",
   "editor.ariaLabel": "Editor de palíndromos",
   "status.startTyping": "Comece a digitar",
   "status.palindrome": "Palíndromo",
@@ -147,6 +169,17 @@ const pt: Table = {
 const es: Table = {
   "app.tagline":
     "Escribe una frase. Mostramos dónde coinciden las letras espejadas — y dónde se rompen.",
+  "nav.home": "Inicio",
+  "nav.about": "Acerca de",
+  "nav.aria": "Navegación principal",
+  "nav.menu": "Menú",
+  "about.title": "Sobre Palindromaker",
+  "about.body1":
+    "Palindromaker es un pequeño editor para crear palíndromos: frases que se leen igual al derecho y al revés, ignorando espacios, puntuación y acentos.",
+  "about.body2":
+    "Mientras escribes, el editor pinta el espejo: las letras que coinciden brillan en azul alrededor del centro, y el tramo que aún rompe la simetría queda marcado en rojo. Con la escritura en espejo activada, cada letra que escribes se repite en su posición simétrica — la simetría queda a una tecla de distancia.",
+  "about.body3":
+    "El buscador de palabras consulta diccionarios en seis idiomas e inserta palabras directamente en el espejo. Todo queda en tu navegador — nada se envía a ningún lado.",
   "editor.ariaLabel": "Editor de palíndromos",
   "status.startTyping": "Empieza a escribir",
   "status.palindrome": "Palíndromo",
@@ -195,6 +228,17 @@ const es: Table = {
 const de: Table = {
   "app.tagline":
     "Schreibe einen Satz. Wir zeigen, wo gespiegelte Buchstaben zusammenpassen — und wo sie zerbrechen.",
+  "nav.home": "Start",
+  "nav.about": "Über",
+  "nav.aria": "Hauptnavigation",
+  "nav.menu": "Menü",
+  "about.title": "Über Palindromaker",
+  "about.body1":
+    "Palindromaker ist ein kleiner Editor für Palindrome: Sätze, die vorwärts wie rückwärts gleich lauten — Leerzeichen, Satzzeichen und Akzente bleiben dabei außer Acht.",
+  "about.body2":
+    "Während du tippst, färbt der Editor den Spiegel: übereinstimmende Buchstaben leuchten um den Mittelpunkt blau auf, und der Abschnitt, der die Symmetrie noch bricht, ist rot markiert. Mit eingeschaltetem gespiegeltem Tippen wiederholt sich jeder Buchstabe an seiner symmetrischen Stelle — die Symmetrie ist nie mehr als einen Tastenschlag entfernt.",
+  "about.body3":
+    "Die Wortsuche durchsucht Wörterbücher in sechs Sprachen und fügt Wörter direkt in den Spiegel ein. Alles bleibt in deinem Browser — nichts wird irgendwohin gesendet.",
   "editor.ariaLabel": "Palindrom-Editor",
   "status.startTyping": "Fang an zu tippen",
   "status.palindrome": "Palindrom",
@@ -244,6 +288,17 @@ const de: Table = {
 const fr: Table = {
   "app.tagline":
     "Écrivez une phrase. Nous montrons où les lettres en miroir se correspondent — et où elles se brisent.",
+  "nav.home": "Accueil",
+  "nav.about": "À propos",
+  "nav.aria": "Navigation principale",
+  "nav.menu": "Menu",
+  "about.title": "À propos de Palindromaker",
+  "about.body1":
+    "Palindromaker est un petit éditeur pour composer des palindromes : des phrases qui se lisent de la même façon dans les deux sens, en ignorant espaces, ponctuation et accents.",
+  "about.body2":
+    "Pendant que vous tapez, l’éditeur colorie le miroir : les lettres qui se répondent s’illuminent en bleu autour du centre, et le passage qui brise encore la symétrie est marqué en rouge. Avec l’écriture en miroir activée, chaque lettre tapée se reflète à sa position symétrique — la symétrie n’est jamais à plus d’une touche.",
+  "about.body3":
+    "La recherche de mots interroge des dictionnaires en six langues et insère les mots directement dans le miroir. Tout reste dans votre navigateur — rien n’est envoyé nulle part.",
   "editor.ariaLabel": "Éditeur de palindromes",
   "status.startTyping": "Commencez à écrire",
   "status.palindrome": "Palindrome",
@@ -292,6 +347,17 @@ const fr: Table = {
 const it: Table = {
   "app.tagline":
     "Scrivi una frase. Mostriamo dove le lettere speculari corrispondono — e dove si rompono.",
+  "nav.home": "Home",
+  "nav.about": "Info",
+  "nav.aria": "Navigazione principale",
+  "nav.menu": "Menu",
+  "about.title": "Informazioni su Palindromaker",
+  "about.body1":
+    "Palindromaker è un piccolo editor per comporre palindromi: frasi che si leggono allo stesso modo in entrambe le direzioni, ignorando spazi, punteggiatura e accenti.",
+  "about.body2":
+    "Mentre scrivi, l’editor colora lo specchio: le lettere che si corrispondono brillano di blu attorno al centro, e il tratto che ancora rompe la simmetria è evidenziato in rosso. Con la digitazione speculare attiva, ogni lettera scritta viene ripetuta nella sua posizione simmetrica — la simmetria è sempre a un tasto di distanza.",
+  "about.body3":
+    "Il cercatore di parole interroga dizionari in sei lingue e inserisce le parole direttamente nello specchio. Tutto resta nel tuo browser — nulla viene inviato altrove.",
   "editor.ariaLabel": "Editor di palindromi",
   "status.startTyping": "Inizia a scrivere",
   "status.palindrome": "Palindromo",
