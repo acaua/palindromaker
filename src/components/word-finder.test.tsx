@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import WordFinder from "@/components/word-finder";
 import { buildDictionary, loadDictionary } from "@/lib/dictionary";
@@ -45,9 +45,7 @@ const renderPanel = ({
 // "loaded" is the loading line going away rather than results appearing
 const openLoaded = async () => {
   renderPanel();
-  await waitFor(() =>
-    expect(screen.queryByText("loading dictionary…")).toBeNull(),
-  );
+  await waitFor(() => expect(screen.queryByText("loading dictionary…")).toBeNull());
 };
 
 const type = (query: string) =>
@@ -55,14 +53,12 @@ const type = (query: string) =>
     target: { value: query },
   });
 
-const languageSelect = () =>
-  screen.getByLabelText<HTMLSelectElement>("dictionary language");
+const languageSelect = () => screen.getByLabelText<HTMLSelectElement>("dictionary language");
 
 const chooseLanguage = (language: Language) =>
   fireEvent.change(languageSelect(), { target: { value: language } });
 
-const rowText = () =>
-  screen.queryAllByRole("listitem").map((row) => row.textContent);
+const rowText = () => screen.queryAllByRole("listitem").map((row) => row.textContent);
 
 beforeEach(() => {
   localStorage.clear();
@@ -127,9 +123,7 @@ describe("WordFinder", () => {
     failing.delete("pt-br");
     fireEvent.click(screen.getByRole("button", { name: "retry" }));
 
-    await waitFor(() =>
-      expect(screen.queryByText(/failed to load dictionary/)).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByText(/failed to load dictionary/)).toBeNull());
     type("ovo");
     expect(await screen.findByText("Mirror · 1 result")).toBeTruthy();
   });
@@ -171,9 +165,7 @@ describe("WordFinder", () => {
 
   test("the panel says what clicking a word will do", async () => {
     const { unmount } = renderPanel({ insertMode: "mirrored" });
-    expect(
-      screen.getByText(/insert it at the caret, and its mirror opposite/),
-    ).toBeTruthy();
+    expect(screen.getByText(/insert it at the caret, and its mirror opposite/)).toBeTruthy();
     unmount();
 
     renderPanel({ insertMode: "paused" });

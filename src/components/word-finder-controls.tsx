@@ -51,9 +51,7 @@ export default function WordFinderControls({
           <select
             aria-label={t("finder.languageAria")}
             value={language}
-            onChange={(event) =>
-              onLanguageChange(event.target.value as Language)
-            }
+            onChange={(event) => onLanguageChange(event.target.value as Language)}
             className="min-h-10 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700"
           >
             {LANGUAGES.map(({ code, label }) => (

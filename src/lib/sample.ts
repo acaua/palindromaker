@@ -19,5 +19,4 @@ const SAMPLE_CONTENT_BY_LANG: Record<UiLanguage, string> = {
 // the e2e suite runs with Playwright's default en-US locale, so its
 // SAMPLE_CONTENT assertions hold wherever the UI language resolves to en;
 // the pt path is covered by the pt-BR locale describe
-export const sampleContent = (lang: UiLanguage): string =>
-  SAMPLE_CONTENT_BY_LANG[lang];
+export const sampleContent = (lang: UiLanguage): string => SAMPLE_CONTENT_BY_LANG[lang];

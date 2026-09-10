@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { Schema } from "@tiptap/pm/model";
 
 import { analyzeDoc } from "./doc-analysis";
@@ -19,11 +19,7 @@ const buildDoc = (text: string) =>
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node(
-          "paragraph",
-          null,
-          paragraph ? [schema.text(paragraph)] : [],
-        ),
+        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
       ),
   );
 
@@ -90,9 +86,7 @@ describe("posToIndex", () => {
 describe("letterPositions", () => {
   test("skips punctuation and separators", () => {
     expect(analyzeDoc(buildDoc("a, a!")).letterPositions).toEqual([1, 4]);
-    expect(analyzeDoc(buildDoc("ab\nba")).letterPositions).toEqual([
-      1, 2, 5, 6,
-    ]);
+    expect(analyzeDoc(buildDoc("ab\nba")).letterPositions).toEqual([1, 2, 5, 6]);
   });
 
   test("an empty document has no letters", () => {

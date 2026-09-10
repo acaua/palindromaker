@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 
@@ -21,11 +21,7 @@ const buildDoc = (text: string) =>
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node(
-          "paragraph",
-          null,
-          paragraph ? [schema.text(paragraph)] : [],
-        ),
+        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
       ),
   );
 
@@ -79,9 +75,7 @@ describe("inserting a word with mirroring", () => {
     // a palindrome; anywhere else the word still needs its mirror
     expect(insert("", 1, "ovo").text).toBe("ovo|");
     expect(insert("abba", 3, "ovo").text).toBe("ab ovo| ba");
-    expect(insert("amor ovo roma", 6, "arara").text).toBe(
-      "amor arara| ovo arara roma",
-    );
+    expect(insert("amor ovo roma", 6, "arara").text).toBe("amor arara| ovo arara roma");
   });
 
   test("a one-letter word at the center goes in once", () => {

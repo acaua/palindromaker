@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 
 import checkPalindrome, { normalizeText } from "./check-palindrome";
 
@@ -68,18 +68,7 @@ describe("center", () => {
 test("Mirror", () => {
   const { mirror } = checkPalindrome("A b, cb a!");
 
-  expect(mirror).toEqual([
-    8,
-    undefined,
-    6,
-    undefined,
-    undefined,
-    5,
-    2,
-    undefined,
-    0,
-    undefined,
-  ]);
+  expect(mirror).toEqual([8, undefined, 6, undefined, undefined, 5, 2, undefined, 0, undefined]);
 });
 
 describe("gap", () => {

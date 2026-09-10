@@ -1,9 +1,6 @@
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
-import checkPalindrome, {
-  isLetter,
-  normalizeText,
-} from "@/lib/check-palindrome";
+import checkPalindrome, { isLetter, normalizeText } from "@/lib/check-palindrome";
 import type { PalindromeResult } from "@/lib/check-palindrome";
 
 // A document seen the way the palindrome checker sees it: one normalized

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 
 import { NAV_ENTRIES } from "@/lib/navigation";
 import { messages, UI_LANGUAGES } from "@/lib/i18n";

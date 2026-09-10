@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 
 import {
   buildDictionary,
@@ -10,31 +10,15 @@ import {
   searchWords,
 } from "./dictionary";
 
-const dictionary = buildDictionary(
-  ["casa", "saúde", "asa", "Azul", "massa", "abacate"].join("\n"),
-);
+const dictionary = buildDictionary(["casa", "saúde", "asa", "Azul", "massa", "abacate"].join("\n"));
 
 describe("buildDictionary", () => {
   test("splits lines and skips empty ones", () => {
-    expect(dictionary.words).toEqual([
-      "casa",
-      "saúde",
-      "asa",
-      "Azul",
-      "massa",
-      "abacate",
-    ]);
+    expect(dictionary.words).toEqual(["casa", "saúde", "asa", "Azul", "massa", "abacate"]);
   });
 
   test("builds normalized forms for matching", () => {
-    expect(dictionary.normalized).toEqual([
-      "casa",
-      "saude",
-      "asa",
-      "azul",
-      "massa",
-      "abacate",
-    ]);
+    expect(dictionary.normalized).toEqual(["casa", "saude", "asa", "azul", "massa", "abacate"]);
   });
 
   test("builds a set of normalized forms for mirror lookups", () => {
@@ -65,9 +49,7 @@ describe("buildDictionaryIncrementally", () => {
   const immediately = () => Promise.resolve();
 
   test("produces the same dictionary as the blocking build", async () => {
-    expect(await buildDictionaryIncrementally(many, immediately)).toEqual(
-      buildDictionary(many),
-    );
+    expect(await buildDictionaryIncrementally(many, immediately)).toEqual(buildDictionary(many));
   });
 
   test("hands control back between slices", async () => {
@@ -113,12 +95,7 @@ describe("searchWords", () => {
   });
 
   test("matches words that contain the query", () => {
-    expect(searchWords(dictionary, "s", "contains")).toEqual([
-      "casa",
-      "saúde",
-      "asa",
-      "massa",
-    ]);
+    expect(searchWords(dictionary, "s", "contains")).toEqual(["casa", "saúde", "asa", "massa"]);
   });
 
   test("is accent-insensitive", () => {
@@ -168,14 +145,7 @@ describe("mirrorMatch", () => {
 
 describe("LANGUAGES", () => {
   test("lists all supported dictionaries with pt-br first", () => {
-    expect(LANGUAGES.map((info) => info.code)).toEqual([
-      "pt-br",
-      "en",
-      "es",
-      "de",
-      "fr",
-      "it",
-    ]);
+    expect(LANGUAGES.map((info) => info.code)).toEqual(["pt-br", "en", "es", "de", "fr", "it"]);
   });
 
   test("has unique dictionary files", () => {
@@ -200,9 +170,7 @@ describe("loadDictionary", () => {
   });
 
   test("caches the dictionary per language", async () => {
-    const fetchMock = vi.fn(
-      async () => new Response("a\nb\n", { status: 200 }),
-    );
+    const fetchMock = vi.fn(async () => new Response("a\nb\n", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const first = await loadDictionary("en");

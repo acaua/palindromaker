@@ -9,7 +9,8 @@ palindrome as you write.
 
 ## Stack
 
-- [Vite](https://vite.dev/) + [React 19](https://react.dev/) + TypeScript (strict)
+- [Vite+](https://viteplus.dev/) (Vite 8 + Vitest + Oxlint + Oxfmt through the
+  `vp` CLI) + [React 19](https://react.dev/) + TypeScript (strict)
 - [TipTap 3](https://tiptap.dev/) (ProseMirror) with a custom `Palindrome`
   extension that drives the highlighting via ProseMirror decorations
 - [Tailwind CSS 4](https://tailwindcss.com/)
@@ -28,17 +29,15 @@ Open http://localhost:5173.
 
 ## Scripts
 
-| Script           | What it does                         |
-| ---------------- | ------------------------------------ |
-| `pnpm dev`       | Start the dev server                 |
-| `pnpm build`     | Production build to `dist/`          |
-| `pnpm preview`   | Serve the production build           |
-| `pnpm deploy`    | Build and deploy to Cloudflare       |
-| `pnpm test`      | Unit tests (Vitest)                  |
-| `pnpm test:e2e`  | Browser tests (Playwright, Chromium) |
-| `pnpm typecheck` | Type-check with `tsc`                |
-| `pnpm lint`      | Lint with ESLint 10                  |
-| `pnpm check`     | Type-check, lint, and unit tests     |
+| Script          | What it does                         |
+| --------------- | ------------------------------------ |
+| `pnpm dev`      | Start the dev server                 |
+| `pnpm build`    | Production build to `dist/`          |
+| `pnpm preview`  | Serve the production build           |
+| `pnpm deploy`   | Build and deploy to Cloudflare       |
+| `pnpm test`     | Unit tests (Vitest)                  |
+| `pnpm test:e2e` | Browser tests (Playwright, Chromium) |
+| `pnpm check`    | Format, lint, type-check, unit tests |
 
 ## Word finder
 
@@ -79,8 +78,9 @@ as a static-asset Worker, with builds triggered by pushes to GitHub:
 - Any other branch gets a preview URL
 
 GitHub Actions CI (`.github/workflows/ci.yml`) runs on every push and pull
-request: a `pnpm check` job (type-check, lint, unit tests on Node 24) followed
-by a Playwright e2e job. It only checks — deploys belong to Workers Builds.
+request: a check job (`vp check` + unit tests on Node 24, via
+`voidzero-dev/setup-vp`) followed by a Playwright e2e job. It only checks —
+deploys belong to Workers Builds.
 
 Dictionary files are cached in the browser for a week (then
 stale-while-revalidate for a day) via a `_headers` file shipped from

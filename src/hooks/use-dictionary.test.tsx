@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import { useDictionary } from "@/hooks/use-dictionary";
 import { buildDictionary, loadDictionary } from "@/lib/dictionary";
@@ -42,10 +42,9 @@ beforeEach(() => {
 
 describe("useDictionary", () => {
   test("loads nothing until enabled", async () => {
-    const { result, rerender } = renderHook(
-      ({ enabled }) => useDictionary("en", enabled),
-      { initialProps: { enabled: false } },
-    );
+    const { result, rerender } = renderHook(({ enabled }) => useDictionary("en", enabled), {
+      initialProps: { enabled: false },
+    });
 
     expect(result.current).toEqual({ status: "idle" });
     expect(loadDictionary).not.toHaveBeenCalled();
@@ -58,10 +57,9 @@ describe("useDictionary", () => {
   });
 
   test("closing the panel goes back to idle without dropping the load", async () => {
-    const { result, rerender } = renderHook(
-      ({ enabled }) => useDictionary("en", enabled),
-      { initialProps: { enabled: true } },
-    );
+    const { result, rerender } = renderHook(({ enabled }) => useDictionary("en", enabled), {
+      initialProps: { enabled: true },
+    });
 
     await act(async () => loadOf("en").resolve(buildDictionary("hello")));
     expect(result.current.status).toBe("ready");

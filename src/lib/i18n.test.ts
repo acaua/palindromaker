@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import {
   DEFAULT_UI_LANGUAGE,
@@ -36,9 +36,7 @@ describe("resolveUiLanguage", () => {
   });
 
   test("defaults to pt when detection finds no supported language", () => {
-    expect(resolveUiLanguage(undefined, ["ja", "zh"])).toBe(
-      DEFAULT_UI_LANGUAGE,
-    );
+    expect(resolveUiLanguage(undefined, ["ja", "zh"])).toBe(DEFAULT_UI_LANGUAGE);
     expect(resolveUiLanguage(undefined, null)).toBe(DEFAULT_UI_LANGUAGE);
     expect(DEFAULT_UI_LANGUAGE).toBe("pt");
   });
@@ -72,21 +70,13 @@ describe("translate", () => {
   });
 
   test("fills {count} placeholders", () => {
-    expect(translate("en", "finder.resultMany", { count: "1.234" })).toBe(
-      "1.234 results",
-    );
-    expect(translate("pt", "finder.resultOne", { count: "1" })).toBe(
-      "1 resultado",
-    );
-    expect(translate("de", "finder.resultMany", { count: "12" })).toBe(
-      "12 Ergebnisse",
-    );
+    expect(translate("en", "finder.resultMany", { count: "1.234" })).toBe("1.234 results");
+    expect(translate("pt", "finder.resultOne", { count: "1" })).toBe("1 resultado");
+    expect(translate("de", "finder.resultMany", { count: "12" })).toBe("12 Ergebnisse");
   });
 
   test("an unknown placeholder passes through instead of vanishing", () => {
-    expect(translate("en", "finder.resultMany", { other: "x" })).toBe(
-      "{count} results",
-    );
+    expect(translate("en", "finder.resultMany", { other: "x" })).toBe("{count} results");
   });
 });
 

@@ -28,9 +28,7 @@ interface MirrorEditingPluginState {
 
 type MirrorMeta = { enabled: boolean } | { own: true };
 
-export const mirrorPluginKey = new PluginKey<MirrorEditingPluginState>(
-  "mirrorEditing",
-);
+export const mirrorPluginKey = new PluginKey<MirrorEditingPluginState>("mirrorEditing");
 
 // decides where a single-character edit has to be duplicated so the text
 // stays a palindrome; returns null when the edit must be left untouched
@@ -47,9 +45,7 @@ const mirrorEdits = (
   if (
     transactions.some((tr) => {
       const meta = tr.getMeta(mirrorPluginKey) as MirrorMeta | undefined;
-      return (
-        (meta !== undefined && "own" in meta) || !!tr.getMeta("composition")
-      );
+      return (meta !== undefined && "own" in meta) || !!tr.getMeta("composition");
     })
   ) {
     return null;
@@ -99,9 +95,7 @@ const mirrorEdits = (
     // the typed character is already part of newState: positions at or after
     // the insertion point shifted by one
     const adjusted = mirrorPos >= step.from ? mirrorPos + 1 : mirrorPos;
-    return newState.tr
-      .insert(adjusted, typed)
-      .setMeta(mirrorPluginKey, { own: true });
+    return newState.tr.insert(adjusted, typed).setMeta(mirrorPluginKey, { own: true });
   }
 
   // plain deletion: a single character removed from an empty slice
@@ -124,9 +118,7 @@ const mirrorEdits = (
     // the deleted character is already gone in newState: positions after the
     // deletion point shifted back by one
     const adjusted = mirrorPos > step.from ? mirrorPos - 1 : mirrorPos;
-    return newState.tr
-      .delete(adjusted, adjusted + 1)
-      .setMeta(mirrorPluginKey, { own: true });
+    return newState.tr.delete(adjusted, adjusted + 1).setMeta(mirrorPluginKey, { own: true });
   }
 
   return null;
@@ -146,14 +138,8 @@ export const wordInsertMode = (state: EditorState): WordInsertMode => {
 // word and the caret between them, marked as this plugin's own edit. The
 // mark matters — a one-letter word is a single-character insert, which
 // appendTransaction would otherwise mirror a second time.
-export const wordInsertTransactionFor = (
-  state: EditorState,
-  word: string,
-): Transaction =>
-  wordInsertTransaction(state, word, wordInsertMode(state)).setMeta(
-    mirrorPluginKey,
-    { own: true },
-  );
+export const wordInsertTransactionFor = (state: EditorState, word: string): Transaction =>
+  wordInsertTransaction(state, word, wordInsertMode(state)).setMeta(mirrorPluginKey, { own: true });
 
 export const createMirrorPlugin = ({ enabled = false } = {}) =>
   new Plugin<MirrorEditingPluginState>({
