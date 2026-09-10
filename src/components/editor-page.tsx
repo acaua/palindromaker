@@ -18,16 +18,20 @@ export default function EditorPage() {
   // the status bar's "Find words" trigger; the panel's ✕ returns focus to it
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const toggleFinder = useCallback(() => {
-    setFinderOpen(!finderOpen);
-    writePrefs(storage, { finderOpen: !finderOpen });
-  }, [finderOpen, storage]);
+  // shown and remembered together: the panel's state and its pref
+  const setFinder = useCallback(
+    (open: boolean) => {
+      setFinderOpen(open);
+      writePrefs(storage, { finderOpen: open });
+    },
+    [storage],
+  );
+  const toggleFinder = useCallback(() => setFinder(!finderOpen), [setFinder, finderOpen]);
 
   const closeFinder = useCallback(() => {
-    setFinderOpen(false);
-    writePrefs(storage, { finderOpen: false });
+    setFinder(false);
     triggerRef.current?.focus();
-  }, [storage]);
+  }, [setFinder]);
 
   return (
     // the word finder is a fixed panel: on md+ the column keeps out of its

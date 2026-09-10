@@ -67,8 +67,10 @@ const MobileMenu = ({ pathname }: { pathname: string }) => {
   const navRef = useRef<HTMLElement | null>(null);
   const panelId = useId();
 
-  // Esc closes and hands focus back to the button, per the disclosure
-  // pattern — keyboard users are not dropped where the panel used to be
+  // while open: Esc closes and hands focus back to the button, per the
+  // disclosure pattern — keyboard users are not dropped where the panel
+  // used to be; a click outside the nav closes it, where focus landing is
+  // the click's business, so nothing is refocused there
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -77,14 +79,6 @@ const MobileMenu = ({ pathname }: { pathname: string }) => {
         buttonRef.current?.focus();
       }
     };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
-
-  // a click outside the nav closes it; where focus lands is the click's
-  // business, so nothing is refocused here
-  useEffect(() => {
-    if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
       if (
         navRef.current &&
@@ -94,8 +88,12 @@ const MobileMenu = ({ pathname }: { pathname: string }) => {
         setOpen(false);
       }
     };
+    document.addEventListener("keydown", onKeyDown);
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [open]);
 
   return (

@@ -10,6 +10,7 @@ import {
   initUiLanguage,
   messages,
   resolveUiLanguage,
+  resultCount,
   setUiLanguage,
   subscribeUiLanguage,
   translate,
@@ -69,14 +70,11 @@ describe("translate", () => {
     expect(translate("it", "status.palindrome")).toBe("Palindromo");
   });
 
-  test("fills {count} placeholders", () => {
-    expect(translate("en", "finder.resultMany", { count: "1.234" })).toBe("1.234 results");
-    expect(translate("pt", "finder.resultOne", { count: "1" })).toBe("1 resultado");
-    expect(translate("de", "finder.resultMany", { count: "12" })).toBe("12 Ergebnisse");
-  });
-
-  test("an unknown placeholder passes through instead of vanishing", () => {
-    expect(translate("en", "finder.resultMany", { other: "x" })).toBe("{count} results");
+  test("pluralizes and formats the result count by language", () => {
+    expect(resultCount("en", 1)).toBe("1 result");
+    expect(resultCount("en", 1234)).toBe("1,234 results");
+    expect(resultCount("pt", 1)).toBe("1 resultado");
+    expect(resultCount("de", 1234)).toBe("1.234 Ergebnisse");
   });
 });
 

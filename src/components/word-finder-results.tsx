@@ -5,7 +5,7 @@ import { ArrowsRightLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid"
 import { useI18n } from "@/hooks/use-i18n";
 import type { Dictionary, MirrorMatch } from "@/lib/dictionary";
 import { mirrorMatch, mirrorWord } from "@/lib/dictionary";
-import { UI_LANGUAGE_LOCALES } from "@/lib/i18n";
+import { resultCount } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/i18n";
 
 const ROW_HEIGHT = 32;
@@ -116,17 +116,12 @@ export default function WordFinderResults({
   }, [words, virtualizer]);
 
   // grouped in the UI language's locale, not the browser's
-  const count = words.length.toLocaleString(UI_LANGUAGE_LOCALES[lang]);
-
   return (
     <>
       <div className="flex items-center justify-between border-y border-gray-200 px-4 py-2 text-[10px] font-semibold tracking-widest text-gray-500 uppercase">
         <span>{t("finder.word")}</span>
         <span>
-          {t("finder.mirror")} ·{" "}
-          {t(words.length === 1 ? "finder.resultOne" : "finder.resultMany", {
-            count,
-          })}
+          {t("finder.mirror")} · {resultCount(lang, words.length)}
         </span>
       </div>
       <div

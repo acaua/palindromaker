@@ -19,16 +19,6 @@ export const normalizeText = (text: string): string =>
 
 const checkPalindrome = (text: string): PalindromeResult => {
   const normalizedText = normalizeText(text);
-  if (normalizedText === "") {
-    return {
-      isPalindrome: true,
-      mirror: [],
-      center: undefined,
-      gap: undefined,
-      normalizedText,
-    };
-  }
-
   let isPalindrome = true;
   const mirror: Array<number | undefined> = Array.from({
     length: normalizedText.length,

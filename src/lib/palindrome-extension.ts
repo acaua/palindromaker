@@ -9,10 +9,6 @@ import type { DocAnalysis } from "@/lib/doc-analysis";
 
 interface PalindromePluginState {
   analysis: DocAnalysis;
-  // what the toolbar needs to know about the document, so it does not have
-  // to re-derive it from the doc on every transaction
-  hasLetters: boolean;
-  isPalindrome: boolean;
   baseDecorations: DecorationSet;
   decorations: DecorationSet;
 }
@@ -111,8 +107,6 @@ const buildState = (
   const caretDecorations = computeCaretDecorations(state, analysis);
   return {
     analysis,
-    hasLetters: analysis.letterPositions.length > 0,
-    isPalindrome: analysis.result.isPalindrome,
     baseDecorations,
     decorations: caretDecorations.length
       ? baseDecorations.add(state.doc, caretDecorations)

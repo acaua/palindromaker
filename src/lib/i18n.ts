@@ -403,18 +403,17 @@ const it: Table = {
 
 export const messages: Record<UiLanguage, Table> = { en, pt, es, de, fr, it };
 
-// replaces {name} placeholders; an unknown name passes through so a typo
-// is visible rather than silently empty
-const formatMessage = (template: string, vars: Record<string, string> | undefined): string =>
-  vars === undefined
-    ? template
-    : template.replace(/\{(\w+)\}/g, (match, name: string) => vars[name] ?? match);
+export const translate = (lang: UiLanguage, key: MessageKey): string => messages[lang][key];
 
-export const translate = (
-  lang: UiLanguage,
-  key: MessageKey,
-  vars?: Record<string, string>,
-): string => formatMessage(messages[lang][key], vars);
+// "{count} results" / "{count} resultados": the wording is per-language
+// data (finder.resultOne/finder.resultMany, pluralized by count), the
+// number follows the result language's locale; the "{count}" placeholder
+// is substituted here
+export const resultCount = (lang: UiLanguage, count: number): string =>
+  messages[lang][count === 1 ? "finder.resultOne" : "finder.resultMany"].replace(
+    "{count}",
+    count.toLocaleString(UI_LANGUAGE_LOCALES[lang]),
+  );
 
 const isUiLanguage = (value: unknown): value is UiLanguage =>
   typeof value === "string" && (UI_LANGUAGES as readonly string[]).includes(value);
