@@ -71,3 +71,17 @@ Toolchain lives in `vp` (installed automatically as a devDependency; scripts run
 - Decoration styling mixes inline Tailwind classes (e.g. `bg-blue-200`, `bg-red-300`, `bg-purple-200/400`) with `pm-center1`/`pm-center2` rules in `src/styles/globals.css`; the e2e suite asserts on these class names.
 - `e2e/navigation.spec.ts` opens `/about` directly and expects it to render; that relies on `not_found_handling: "single-page-application"` in `wrangler.jsonc` (the static host serves the SPA for every path) — a local preview that lacks the fallback will fail this test.
 - Don't move the dictionary build into a Web Worker without measuring first: es is 635k words, and structured-cloning the built dictionary back to the main thread was measured at ~213ms against ~282ms to build it, so a worker buys almost nothing. Slicing the build (above) removed the blocking instead. Loading es still costs ~97MB of heap; cutting that needs a different data structure (one flat string + offset/hash `Uint32Array`s, which _are_ cheap to transfer), not a worker.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles; label string equals the role name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
