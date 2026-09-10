@@ -27,8 +27,7 @@ for (const [name, width, height] of breakpoints) {
   await page.getByRole("button", { name: "Find words" }).click();
   await page.waitForTimeout(300);
   await page.screenshot({
-    path: new URL(`../screenshots/app-${name}-closed.png`, import.meta.url)
-      .pathname,
+    path: new URL(`../screenshots/app-${name}-closed.png`, import.meta.url).pathname,
   });
   await context.close();
 }

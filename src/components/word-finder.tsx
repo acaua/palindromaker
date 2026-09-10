@@ -10,11 +10,7 @@ import { useI18n } from "@/hooks/use-i18n";
 import type { Language, SearchMode } from "@/lib/dictionary";
 import { searchWords } from "@/lib/dictionary";
 import type { MessageKey } from "@/lib/i18n";
-import {
-  localStorageOrNull,
-  readStoredPrefs,
-  writePrefs,
-} from "@/lib/persistence";
+import { localStorageOrNull, readStoredPrefs, writePrefs } from "@/lib/persistence";
 import type { WordInsertMode } from "@/lib/word-insert";
 
 const SEARCH_DELAY = 150;
@@ -109,36 +105,24 @@ export default function WordFinder({
         </p>
 
         {state.status === "loading" && (
-          <p className="px-4 pb-4 text-sm text-gray-500">
-            {t("finder.loading")}
-          </p>
+          <p className="px-4 pb-4 text-sm text-gray-500">{t("finder.loading")}</p>
         )}
 
         {state.status === "error" && (
           <p className="px-4 pb-4 text-sm text-red-700">
             {t("finder.error")}{" "}
-            <button
-              type="button"
-              onClick={state.retry}
-              className="cursor-pointer underline"
-            >
+            <button type="button" onClick={state.retry} className="cursor-pointer underline">
               {t("finder.retry")}
             </button>
           </p>
         )}
 
         {dictionary && hasQuery && results.length === 0 && (
-          <p className="px-4 pb-4 text-sm text-gray-500">
-            {t("finder.noMatches")}
-          </p>
+          <p className="px-4 pb-4 text-sm text-gray-500">{t("finder.noMatches")}</p>
         )}
 
         {dictionary && results.length > 0 && (
-          <WordFinderResults
-            words={results}
-            dictionary={dictionary}
-            onInsert={onInsertWord}
-          />
+          <WordFinderResults words={results} dictionary={dictionary} onInsert={onInsertWord} />
         )}
 
         <div className="mt-auto">

@@ -70,8 +70,7 @@ const en = {
   "finder.error": "failed to load dictionary",
   "finder.retry": "retry",
   "finder.noMatches": "No matches",
-  "finder.hintMirrored":
-    "Click a word to insert it at the caret, and its mirror opposite.",
+  "finder.hintMirrored": "Click a word to insert it at the caret, and its mirror opposite.",
   "finder.hintPaused":
     "Click a word to insert it at the caret. Mirroring resumes once the text reads the same both ways.",
   "finder.hintCaret": "Click a word to insert it at the caret.",
@@ -255,8 +254,7 @@ const de: Table = {
     "Klicke auf ein Wort, um es an der Einfügemarke einzufügen – mit seinem Spiegel auf der anderen Seite.",
   "finder.hintPaused":
     "Klicke auf ein Wort, um es an der Einfügemarke einzufügen. Das gespiegelte Tippen setzt wieder ein, sobald der Text in beide Richtungen gleich liest.",
-  "finder.hintCaret":
-    "Klicke auf ein Wort, um es an der Einfügemarke einzufügen.",
+  "finder.hintCaret": "Klicke auf ein Wort, um es an der Einfügemarke einzufügen.",
   "finder.searchSr": "Wörter suchen",
   "finder.searchAria": "wörter suchen",
   "finder.searchPlaceholder": "Wörter suchen…",
@@ -398,8 +396,7 @@ const it: Table = {
   "mirror.typing": "Digitazione speculare",
   "mirror.on": "La digitazione speculare è attiva",
   "mirror.off": "La digitazione speculare è disattivata",
-  "conflict.message":
-    "Questo palindromo è stato modificato in un’altra scheda.",
+  "conflict.message": "Questo palindromo è stato modificato in un’altra scheda.",
   "conflict.loadTheirs": "Carica quella versione",
   "conflict.keepMine": "Mantieni questa",
 };
@@ -408,16 +405,10 @@ export const messages: Record<UiLanguage, Table> = { en, pt, es, de, fr, it };
 
 // replaces {name} placeholders; an unknown name passes through so a typo
 // is visible rather than silently empty
-const formatMessage = (
-  template: string,
-  vars: Record<string, string> | undefined,
-): string =>
+const formatMessage = (template: string, vars: Record<string, string> | undefined): string =>
   vars === undefined
     ? template
-    : template.replace(
-        /\{(\w+)\}/g,
-        (match, name: string) => vars[name] ?? match,
-      );
+    : template.replace(/\{(\w+)\}/g, (match, name: string) => vars[name] ?? match);
 
 export const translate = (
   lang: UiLanguage,
@@ -426,8 +417,7 @@ export const translate = (
 ): string => formatMessage(messages[lang][key], vars);
 
 const isUiLanguage = (value: unknown): value is UiLanguage =>
-  typeof value === "string" &&
-  (UI_LANGUAGES as readonly string[]).includes(value);
+  typeof value === "string" && (UI_LANGUAGES as readonly string[]).includes(value);
 
 // pure so tests can drive it: the stored pref wins, then the browser's
 // BCP-47 tags matched on the primary subtag, then the default
@@ -446,8 +436,7 @@ export const resolveUiLanguage = (
 // the browser's language list, or null where there is none (node, tests)
 const navigatorLanguages = (): readonly string[] | null => {
   if (typeof navigator === "undefined") return null;
-  if (navigator.languages && navigator.languages.length > 0)
-    return navigator.languages;
+  if (navigator.languages && navigator.languages.length > 0) return navigator.languages;
   if (navigator.language) return [navigator.language];
   return null;
 };

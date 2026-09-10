@@ -8,19 +8,15 @@ const editor = (page: Page) => page.locator('[contenteditable="true"]');
 
 // the status line is plain text now: role + color class, scoped apart from
 // the legend swatches and result-row markers that share the color
-const greenStatus = (page: Page) =>
-  page.locator('span[role="status"].text-green-700');
-const redStatus = (page: Page) =>
-  page.locator('span[role="status"].text-red-700');
+const greenStatus = (page: Page) => page.locator('span[role="status"].text-green-700');
+const redStatus = (page: Page) => page.locator('span[role="status"].text-red-700');
 
 // the panel is open by default; the trigger toggles it
-const finderTrigger = (page: Page) =>
-  page.getByRole("button", { name: "Find words" });
+const finderTrigger = (page: Page) => page.getByRole("button", { name: "Find words" });
 
 // decoration spans live inside the editor; scoping keeps them apart from
 // the legend, whose swatches reuse the same classes
-const decoration = (page: Page, className: string) =>
-  editor(page).locator(`span.${className}`);
+const decoration = (page: Page, className: string) => editor(page).locator(`span.${className}`);
 
 // ProseMirror needs realistic keystroke pacing for its selection
 // sync to keep up with synthetic CDP input
@@ -51,15 +47,11 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-test("loads focused with the default palindrome and a green badge", async ({
-  page,
-}) => {
+test("loads focused with the default palindrome and a green badge", async ({ page }) => {
   const editable = editor(page);
 
   await expect(editable).toContainText(SAMPLE_CONTENT);
-  await expect(
-    page.getByRole("textbox", { name: "Palindrome editor" }),
-  ).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Palindrome editor" })).toBeVisible();
   await expect(editable).toHaveAttribute("aria-multiline", "true");
   // a palindrome is misspelled by definition; squiggles would underline
   // the whole document
@@ -70,14 +62,10 @@ test("loads focused with the default palindrome and a green badge", async ({
   await expect(redStatus(page)).toHaveCount(0);
 });
 
-test("has no automatically detectable accessibility violations", async ({
-  page,
-}) => {
+test("has no automatically detectable accessibility violations", async ({ page }) => {
   // the word finder panel is open by default
   await page.locator('input[aria-label="search words"]').fill("abac");
-  await expect(
-    page.locator('[aria-label="results"] [role="listitem"]').first(),
-  ).toBeVisible();
+  await expect(page.locator('[aria-label="results"] [role="listitem"]').first()).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();
 
@@ -120,18 +108,14 @@ test("highlights the center characters of a palindrome", async ({ page }) => {
   await expect(decoration(page, "bg-red-300")).toHaveCount(0);
 });
 
-test("shows the gap highlight when text is not a palindrome", async ({
-  page,
-}) => {
+test("shows the gap highlight when text is not a palindrome", async ({ page }) => {
   await replaceAll(page, "abc a");
 
   await expect(redStatus(page)).toBeVisible();
   await expect(decoration(page, "bg-red-300")).toBeVisible();
 });
 
-test("highlights the mirrored character of the caret position", async ({
-  page,
-}) => {
+test("highlights the mirrored character of the caret position", async ({ page }) => {
   await replaceAll(page, "A b, b a");
   // Move from the end to the first "b". Unlike Home, ArrowLeft does not
   // become a page-scrolling command when the responsive workspace is taller
@@ -160,9 +144,7 @@ test("handles multiple paragraphs without crashing", async ({ page }) => {
   await expect(greenStatus(page)).toBeVisible();
 });
 
-test("mirror editing duplicates and removes mirrored characters", async ({
-  page,
-}) => {
+test("mirror editing duplicates and removes mirrored characters", async ({ page }) => {
   // the status bar switch, not the word "mirror" inside result rows
   const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
@@ -197,26 +179,20 @@ test("persists editor content across reloads", async ({ page }) => {
   await expect(editor(page)).toContainText("racecar");
 });
 
-test("persists the mirror toggle, the panel, and the language across reloads", async ({
-  page,
-}) => {
+test("persists the mirror toggle, the panel, and the language across reloads", async ({ page }) => {
   // the status bar switch, not the word "mirror" inside result rows
   const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 
   // the panel is open by default: the language is there without opening
-  await page
-    .locator('select[aria-label="dictionary language"]')
-    .selectOption("en");
+  await page.locator('select[aria-label="dictionary language"]').selectOption("en");
 
   await page.reload();
 
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
   await expect(finderTrigger(page)).toHaveAttribute("aria-expanded", "true");
-  await expect(
-    page.locator('select[aria-label="dictionary language"]'),
-  ).toHaveValue("en");
+  await expect(page.locator('select[aria-label="dictionary language"]')).toHaveValue("en");
 
   // closing the panel is remembered too
   await finderTrigger(page).click();
@@ -229,14 +205,10 @@ test("persists the mirror toggle, the panel, and the language across reloads", a
   // and so is reopening it
   await finderTrigger(page).click();
   await expect(finderTrigger(page)).toHaveAttribute("aria-expanded", "true");
-  await expect(
-    page.locator('select[aria-label="dictionary language"]'),
-  ).toHaveValue("en");
+  await expect(page.locator('select[aria-label="dictionary language"]')).toHaveValue("en");
 });
 
-test("the panel's ✕ closes it and hands focus back to the trigger", async ({
-  page,
-}) => {
+test("the panel's ✕ closes it and hands focus back to the trigger", async ({ page }) => {
   await page.getByRole("button", { name: "Close word finder" }).click();
 
   await expect(page.getByLabel("word finder")).toHaveCount(0);
@@ -245,15 +217,11 @@ test("the panel's ✕ closes it and hands focus back to the trigger", async ({
   await expect(finderTrigger(page)).toBeFocused();
 
   await finderTrigger(page).click();
-  await expect(
-    page.locator('select[aria-label="dictionary language"]'),
-  ).toBeVisible();
+  await expect(page.locator('select[aria-label="dictionary language"]')).toBeVisible();
   await expect(finderTrigger(page)).toBeFocused();
 });
 
-test("falls back to the sample palindrome when storage is corrupt", async ({
-  page,
-}) => {
+test("falls back to the sample palindrome when storage is corrupt", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("palindromaker:doc:v1", "not json");
   });
@@ -263,9 +231,7 @@ test("falls back to the sample palindrome when storage is corrupt", async ({
   await expect(editor(page)).toContainText(SAMPLE_CONTENT);
 });
 
-test("falls back to the sample palindrome when storage holds unknown nodes", async ({
-  page,
-}) => {
+test("falls back to the sample palindrome when storage holds unknown nodes", async ({ page }) => {
   // parseable JSON the editor schema rejects would crash during render
   await page.addInitScript(() => {
     localStorage.setItem(
@@ -294,18 +260,11 @@ test.describe("two tabs", () => {
   // be edited first is the one asked about the conflict
   const saved = async (page: Page, text: string) => {
     await expect
-      .poll(() =>
-        page.evaluate(
-          (key) => localStorage.getItem(key) ?? "",
-          "palindromaker:doc:v1",
-        ),
-      )
+      .poll(() => page.evaluate((key) => localStorage.getItem(key) ?? "", "palindromaker:doc:v1"))
       .toContain(text);
   };
 
-  test("an untouched tab picks up what the other tab saved", async ({
-    context,
-  }) => {
+  test("an untouched tab picks up what the other tab saved", async ({ context }) => {
     const first = await openTab(context);
     const second = await openTab(context);
 
@@ -318,9 +277,7 @@ test.describe("two tabs", () => {
     await expect(greenStatus(second)).toBeVisible();
   });
 
-  test("a tab with its own edits is asked which version to keep", async ({
-    context,
-  }) => {
+  test("a tab with its own edits is asked which version to keep", async ({ context }) => {
     const first = await openTab(context);
     const second = await openTab(context);
 
@@ -336,17 +293,13 @@ test.describe("two tabs", () => {
     await expect(conflictBar(second)).toContainText("edited in another tab");
     await expect(editor(second)).toContainText("level");
 
-    await conflictBar(second)
-      .getByRole("button", { name: "Load that version" })
-      .click();
+    await conflictBar(second).getByRole("button", { name: "Load that version" }).click();
 
     await expect(editor(second)).toContainText("racecar");
     await expect(conflictBar(second)).toHaveCount(0);
   });
 
-  test("keeping this tab's version overwrites the other one", async ({
-    context,
-  }) => {
+  test("keeping this tab's version overwrites the other one", async ({ context }) => {
     const first = await openTab(context);
     const second = await openTab(context);
 
@@ -358,9 +311,7 @@ test.describe("two tabs", () => {
     await saved(first, "racecar");
     await expect(conflictBar(second)).toBeVisible();
 
-    await conflictBar(second)
-      .getByRole("button", { name: "Keep this one" })
-      .click();
+    await conflictBar(second).getByRole("button", { name: "Keep this one" }).click();
 
     await expect(conflictBar(second)).toHaveCount(0);
     await expect(editor(second)).toContainText("level");
@@ -403,9 +354,7 @@ test("keeps working when the browser blocks site storage", async ({ page }) => {
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 });
 
-test("word finder searches the pt-br dictionary and shows mirrors", async ({
-  page,
-}) => {
+test("word finder searches the pt-br dictionary and shows mirrors", async ({ page }) => {
   const searchInput = page.locator('input[aria-label="search words"]');
   await expect(searchInput).toBeVisible();
 
@@ -414,11 +363,8 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({
   const results = page.locator('[aria-label="results"] [role="listitem"]');
   await expect(results.first()).toContainText("abacate");
 
-  const word =
-    (await results.first().locator("span").first().textContent()) ?? "";
-  await expect(results.first().locator("span").last()).toHaveText(
-    mirrorWord(word),
-  );
+  const word = (await results.first().locator("span").first().textContent()) ?? "";
+  await expect(results.first().locator("span").last()).toHaveText(mirrorWord(word));
 
   await page.locator('button:has-text("ends with")').click();
   await searchInput.fill("ate");
@@ -444,13 +390,11 @@ test("loading a dictionary does not block the page", async ({ page }) => {
     }).observe({ entryTypes: ["longtask"] });
   });
 
-  await page
-    .locator('select[aria-label="dictionary language"]')
-    .selectOption("es");
+  await page.locator('select[aria-label="dictionary language"]').selectOption("es");
   await page.locator('input[aria-label="search words"]').fill("casa");
-  await expect(
-    page.locator('[aria-label="results"] [role="listitem"]').first(),
-  ).toContainText("casa");
+  await expect(page.locator('[aria-label="results"] [role="listitem"]').first()).toContainText(
+    "casa",
+  );
 
   const longTasks = await page.evaluate(
     () => (window as unknown as { longTasks: number[] }).longTasks,
@@ -468,12 +412,8 @@ test("word finder recovers from a failed dictionary load", async ({ page }) => {
 
   // the next language fails to load
   let failing = true;
-  await page.route("**/dictionary/en.txt", (route) =>
-    failing ? route.abort() : route.continue(),
-  );
-  await page
-    .locator('select[aria-label="dictionary language"]')
-    .selectOption("en");
+  await page.route("**/dictionary/en.txt", (route) => (failing ? route.abort() : route.continue()));
+  await page.locator('select[aria-label="dictionary language"]').selectOption("en");
 
   await expect(page.getByText("failed to load dictionary")).toBeVisible();
 
@@ -512,9 +452,7 @@ test("word finder marks mirror pairs and palindromes", async ({ page }) => {
   await expect(results.first().locator("span.text-green-700")).toHaveCount(0);
 });
 
-test("clicking a result inserts the word, and its mirror opposite", async ({
-  page,
-}) => {
+test("clicking a result inserts the word, and its mirror opposite", async ({ page }) => {
   // the status bar switch, not the word "mirror" inside result rows
   const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
   await mirrorToggle.click();
@@ -526,8 +464,7 @@ test("clicking a result inserts the word, and its mirror opposite", async ({
   await expect(results.first()).toContainText("amor");
 
   // whichever word tops the list: the row inserts what it displays
-  const word =
-    (await results.first().locator("span").first().textContent()) ?? "";
+  const word = (await results.first().locator("span").first().textContent()) ?? "";
   await results.first().locator("button").click();
 
   await expect(editor(page)).toHaveText(`${word} ${mirrorWord(word)}`);
@@ -544,13 +481,10 @@ test("clicking a result inserts the word, and its mirror opposite", async ({
   await mirrorToggle.click();
   await searchInput.fill("casa");
   await expect(results.first()).toContainText("casa");
-  const second =
-    (await results.first().locator("span").first().textContent()) ?? "";
+  const second = (await results.first().locator("span").first().textContent()) ?? "";
   await results.first().locator("button").click();
 
-  await expect(editor(page)).toHaveText(
-    `${word}x ${second} x${mirrorWord(word)}`,
-  );
+  await expect(editor(page)).toHaveText(`${word}x ${second} x${mirrorWord(word)}`);
   await expect(redStatus(page)).toBeVisible();
 });
 
@@ -567,23 +501,15 @@ test("word finder virtualizes broad result sets", async ({ page }) => {
 
   // the full list is virtualized: only a small window of rows exists
   expect(await rows.count()).toBeLessThan(100);
-  const scrollHeight = await scroller.evaluate(
-    (element) => element.scrollHeight,
-  );
+  const scrollHeight = await scroller.evaluate((element) => element.scrollHeight);
   expect(scrollHeight).toBeGreaterThan(1_000_000);
 
   // scrolling to the bottom swaps the rendered window, never grows it
-  const firstRowBefore = await rows
-    .first()
-    .locator("span")
-    .first()
-    .textContent();
+  const firstRowBefore = await rows.first().locator("span").first().textContent();
   await scroller.evaluate((element) => {
     element.scrollTop = element.scrollHeight;
   });
-  await expect(rows.first().locator("span").first()).not.toHaveText(
-    firstRowBefore!,
-  );
+  await expect(rows.first().locator("span").first()).not.toHaveText(firstRowBefore!);
   expect(await rows.count()).toBeLessThan(100);
 });
 
@@ -591,25 +517,17 @@ test("word finder virtualizes broad result sets", async ({ page }) => {
 test.describe("pt-BR browser locale", () => {
   test.use({ locale: "pt-BR" });
 
-  test("detects the browser language: pt UI, pt sample, pt document lang", async ({
-    page,
-  }) => {
+  test("detects the browser language: pt UI, pt sample, pt document lang", async ({ page }) => {
     await expect(page.locator("html")).toHaveAttribute("lang", "pt-BR");
-    await expect(
-      page.getByRole("textbox", { name: "Editor de palíndromos" }),
-    ).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Editor de palíndromos" })).toBeVisible();
     await expect(editor(page)).toContainText(SAMPLE_CONTENT_PT);
     await expect(greenStatus(page)).toContainText("Palíndromo");
     // exact: the finder's "idioma do dicionário" select must not match too
-    await expect(
-      page.getByRole("combobox", { name: "Idioma", exact: true }),
-    ).toHaveValue("pt");
+    await expect(page.getByRole("combobox", { name: "Idioma", exact: true })).toHaveValue("pt");
   });
 });
 
-test("the header switch changes the language and remembers it", async ({
-  page,
-}) => {
+test("the header switch changes the language and remembers it", async ({ page }) => {
   const html = page.locator("html");
   // exact: the finder's "dictionary language" select must not match too
   const uiLanguage = page.getByRole("combobox", {
@@ -629,8 +547,6 @@ test("the header switch changes the language and remembers it", async ({
   await expect(html).toHaveAttribute("lang", "pt-BR");
 
   // the accessible name follows the language, so re-locate in pt
-  await page
-    .getByRole("combobox", { name: "Idioma", exact: true })
-    .selectOption("en");
+  await page.getByRole("combobox", { name: "Idioma", exact: true }).selectOption("en");
   await expect(html).toHaveAttribute("lang", "en");
 });

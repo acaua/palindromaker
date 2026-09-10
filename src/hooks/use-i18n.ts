@@ -9,9 +9,6 @@ type Translate = (key: MessageKey, vars?: Record<string, string>) => string;
 // language switch re-renders consumers through the module store
 export function useI18n(): { lang: UiLanguage; t: Translate } {
   const lang = useSyncExternalStore(subscribeUiLanguage, getUiLanguage);
-  const t = useCallback<Translate>(
-    (key, vars) => translate(lang, key, vars),
-    [lang],
-  );
+  const t = useCallback<Translate>((key, vars) => translate(lang, key, vars), [lang]);
   return { lang, t };
 }

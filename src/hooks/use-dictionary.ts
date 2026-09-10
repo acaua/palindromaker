@@ -22,10 +22,7 @@ interface Outcome {
 
 // Loads the dictionary for `language`, but only once `enabled` (the panel
 // is closed most of the time, and the files are megabytes).
-export const useDictionary = (
-  language: Language,
-  enabled: boolean,
-): DictionaryState => {
+export const useDictionary = (language: Language, enabled: boolean): DictionaryState => {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((count) => count + 1), []);

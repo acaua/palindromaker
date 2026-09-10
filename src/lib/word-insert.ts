@@ -81,9 +81,7 @@ const planWordInsert = (
   // brings its mirror in beside it. An empty document is this case, and
   // the word becomes the whole palindrome.
   if (2 * before === letterPositions.length) {
-    return caretOnly(
-      readsTheSameBothWays(word) ? word : `${word} ${mirrorWord(word)}`,
-    );
+    return caretOnly(readsTheSameBothWays(word) ? word : `${word} ${mirrorWord(word)}`);
   }
 
   const mirrorPos = mirrorInsertDocPos(letterPositions, before);
@@ -96,9 +94,7 @@ const planWordInsert = (
   const other = at(mirrorPos, mirrorWord(word));
   return {
     // inserting at the later position first leaves the earlier one intact
-    inserts: [own, other]
-      .sort((a, b) => b.pos - a.pos)
-      .map(({ pos, text }) => ({ pos, text })),
+    inserts: [own, other].sort((a, b) => b.pos - a.pos).map(({ pos, text }) => ({ pos, text })),
     caret:
       caret +
       own.lead +

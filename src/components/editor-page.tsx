@@ -2,11 +2,7 @@ import { useCallback, useRef, useState } from "react";
 
 import Editor from "@/components/editor";
 import { useI18n } from "@/hooks/use-i18n";
-import {
-  localStorageOrNull,
-  readStoredPrefs,
-  writePrefs,
-} from "@/lib/persistence";
+import { localStorageOrNull, readStoredPrefs, writePrefs } from "@/lib/persistence";
 
 // the home route: today's page minus the header row, which the site header
 // (brand, links, language select) now owns. The tagline stays here because
@@ -18,9 +14,7 @@ export default function EditorPage() {
   const [restored] = useState(() => readStoredPrefs(storage));
   const { t } = useI18n();
   // open by default; the choice is remembered like the mirror toggle
-  const [finderOpen, setFinderOpen] = useState(
-    () => restored.finderOpen ?? true,
-  );
+  const [finderOpen, setFinderOpen] = useState(() => restored.finderOpen ?? true);
   // the status bar's "Find words" trigger; the panel's ✕ returns focus to it
   const triggerRef = useRef<HTMLButtonElement>(null);
 

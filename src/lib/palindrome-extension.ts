@@ -17,9 +17,7 @@ interface PalindromePluginState {
   decorations: DecorationSet;
 }
 
-export const palindromePluginKey = new PluginKey<PalindromePluginState>(
-  "palindrome",
-);
+export const palindromePluginKey = new PluginKey<PalindromePluginState>("palindrome");
 
 // first and last document position mapped by the text range [from, to];
 // normalization leaves some characters (block separators, expansions)
@@ -49,10 +47,7 @@ const lastMappedPos = (
 };
 
 // center and gap decorations depend only on the document, not the selection
-const computeBaseDecorations = (
-  doc: ProseMirrorNode,
-  analysis: DocAnalysis,
-): DecorationSet => {
+const computeBaseDecorations = (doc: ProseMirrorNode, analysis: DocAnalysis): DecorationSet => {
   const { result, positions } = analysis;
   const decorations: Decoration[] = [];
 
@@ -85,25 +80,19 @@ const computeBaseDecorations = (
     const to = lastMappedPos(positions, gapStart, gapEnd);
 
     if (from !== undefined && to !== undefined) {
-      decorations.push(
-        Decoration.inline(from, to + 1, { class: "bg-red-300" }),
-      );
+      decorations.push(Decoration.inline(from, to + 1, { class: "bg-red-300" }));
     }
   }
 
   return DecorationSet.create(doc, decorations);
 };
 
-const computeCaretDecorations = (
-  state: EditorState,
-  analysis: DocAnalysis,
-): Decoration[] => {
+const computeCaretDecorations = (state: EditorState, analysis: DocAnalysis): Decoration[] => {
   const anchorIndex = analysis.posToIndex.get(state.selection.from);
   if (anchorIndex === undefined) return [];
 
   const mirrorIndex = analysis.result.mirror[anchorIndex];
-  const mirrorPos =
-    mirrorIndex === undefined ? undefined : analysis.positions[mirrorIndex];
+  const mirrorPos = mirrorIndex === undefined ? undefined : analysis.positions[mirrorIndex];
   if (mirrorPos === undefined) return [];
 
   return [
@@ -137,11 +126,7 @@ export const createPalindromePlugin = () =>
     state: {
       init: (_, state) => {
         const analysis = analyzeDoc(state.doc);
-        return buildState(
-          state,
-          analysis,
-          computeBaseDecorations(state.doc, analysis),
-        );
+        return buildState(state, analysis, computeBaseDecorations(state.doc, analysis));
       },
       apply: (tr, prev, _oldState, newState) => {
         // meta-only transactions change nothing the decorations depend on
@@ -150,9 +135,7 @@ export const createPalindromePlugin = () =>
         }
         // the analysis only depends on the document: reuse it for
         // selection-only transactions (caret moves)
-        const analysis = tr.docChanged
-          ? analyzeDoc(newState.doc)
-          : prev.analysis;
+        const analysis = tr.docChanged ? analyzeDoc(newState.doc) : prev.analysis;
         const baseDecorations = tr.docChanged
           ? computeBaseDecorations(newState.doc, analysis)
           : prev.baseDecorations;

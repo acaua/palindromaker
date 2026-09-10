@@ -1,11 +1,7 @@
 import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import type { RefObject } from "react";
-import {
-  CheckCircleIcon,
-  MagnifyingGlassIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/solid";
+import { CheckCircleIcon, MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/solid";
 
 import { mirrorPluginKey } from "@/lib/mirror-extension";
 import { palindromePluginKey } from "@/lib/palindrome-extension";
@@ -41,11 +37,7 @@ export default function StatusBar({
       <div className="flex items-center gap-2.5">
         <MirrorSwitch editor={editor} enabled={mirrorEnabled} />
         <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
-        <FindWordsTrigger
-          ref={triggerRef}
-          expanded={finderOpen}
-          onToggle={onToggleFinder}
-        />
+        <FindWordsTrigger ref={triggerRef} expanded={finderOpen} onToggle={onToggleFinder} />
       </div>
     </div>
   );
@@ -71,22 +63,13 @@ const FindWordsTrigger = ({
       onClick={onToggle}
       className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
     >
-      <MagnifyingGlassIcon
-        aria-hidden="true"
-        className="h-4 w-4 text-gray-500"
-      />
+      <MagnifyingGlassIcon aria-hidden="true" className="h-4 w-4 text-gray-500" />
       {t("findWords")}
     </button>
   );
 };
 
-const MirrorSwitch = ({
-  editor,
-  enabled,
-}: {
-  editor: Editor;
-  enabled: boolean;
-}) => {
+const MirrorSwitch = ({ editor, enabled }: { editor: Editor; enabled: boolean }) => {
   const { t } = useI18n();
   return (
     <button
@@ -106,14 +89,10 @@ const MirrorSwitch = ({
         }`}
       >
         <span
-          className={`h-5 w-5 rounded-full bg-white shadow transition ${
-            enabled ? "ml-auto" : ""
-          }`}
+          className={`h-5 w-5 rounded-full bg-white shadow transition ${enabled ? "ml-auto" : ""}`}
         />
       </span>
-      <span className="text-sm font-medium text-gray-700">
-        {t("mirror.typing")}
-      </span>
+      <span className="text-sm font-medium text-gray-700">{t("mirror.typing")}</span>
     </button>
   );
 };
@@ -137,11 +116,7 @@ const StatusState = ({
       role="status"
       aria-live="polite"
       className={`flex items-center gap-2 text-sm font-medium ${
-        !hasLetters
-          ? "text-gray-500"
-          : isPalindrome
-            ? "text-green-700"
-            : "text-red-700"
+        !hasLetters ? "text-gray-500" : isPalindrome ? "text-green-700" : "text-red-700"
       }`}
     >
       {!hasLetters ? (

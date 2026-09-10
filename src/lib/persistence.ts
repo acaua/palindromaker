@@ -26,10 +26,7 @@ export const localStorageOrNull = (): StorageLike | null => {
 
 // the raw stored string, or null when storage is unavailable, the key is
 // absent, or reading it fails
-const readRaw = (
-  storage: Pick<Storage, "getItem"> | null,
-  key: string,
-): string | null => {
+const readRaw = (storage: Pick<Storage, "getItem"> | null, key: string): string | null => {
   if (!storage) return null;
   try {
     return storage.getItem(key);
@@ -40,10 +37,7 @@ const readRaw = (
 
 // reads and parses a stored value; undefined when there is nothing to read
 // or the value is not JSON — callers fall back to their own defaults
-const readJson = (
-  storage: Pick<Storage, "getItem"> | null,
-  key: string,
-): unknown => {
+const readJson = (storage: Pick<Storage, "getItem"> | null, key: string): unknown => {
   const raw = readRaw(storage, key);
   if (raw === null) return undefined;
   try {
@@ -63,10 +57,7 @@ interface Prefs {
 interface PersistenceEditor {
   getJSON: () => JSONContent;
   commands: {
-    setContent: (
-      content: JSONContent,
-      options?: { emitUpdate?: boolean },
-    ) => boolean;
+    setContent: (content: JSONContent, options?: { emitUpdate?: boolean }) => boolean;
   };
   on: (event: "update" | "destroy", handler: () => void) => unknown;
   off: (event: "update" | "destroy", handler: () => void) => unknown;
@@ -134,16 +125,10 @@ export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
     finderOpen?: unknown;
   };
   const prefs: Prefs = {};
-  if (
-    typeof lang === "string" &&
-    LANGUAGES.some((info) => info.code === lang)
-  ) {
+  if (typeof lang === "string" && LANGUAGES.some((info) => info.code === lang)) {
     prefs.lang = lang as Language;
   }
-  if (
-    typeof uiLang === "string" &&
-    (UI_LANGUAGES as readonly string[]).includes(uiLang)
-  ) {
+  if (typeof uiLang === "string" && (UI_LANGUAGES as readonly string[]).includes(uiLang)) {
     prefs.uiLang = uiLang as UiLanguage;
   }
   if (typeof mirrorEnabled === "boolean") {
@@ -292,10 +277,7 @@ export const createPersistence = (
         window.removeEventListener("beforeunload", handleUnload);
       }
       if (typeof document !== "undefined") {
-        document.removeEventListener(
-          "visibilitychange",
-          handleVisibilityChange,
-        );
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
       }
       flush();
     },

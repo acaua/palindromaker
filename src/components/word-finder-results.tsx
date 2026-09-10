@@ -1,9 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  ArrowsRightLeftIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/solid";
+import { ArrowsRightLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
 
 import { useI18n } from "@/hooks/use-i18n";
 import type { Dictionary, MirrorMatch } from "@/lib/dictionary";
@@ -80,10 +77,7 @@ export const ResultRow = ({
           {marker && <span className="sr-only"> ({markerLabel})</span>}
         </span>
         {marker && (
-          <marker.Icon
-            aria-hidden="true"
-            className={`h-4 w-4 shrink-0 ${marker.className}`}
-          />
+          <marker.Icon aria-hidden="true" className={`h-4 w-4 shrink-0 ${marker.className}`} />
         )}
       </button>
     </div>
@@ -106,7 +100,7 @@ export default function WordFinderResults({
 
   // TanStack Virtual's instance is not compiler-memoizable; safe here since
   // it stays local to this component
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // oxlint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: words.length,
     getScrollElement: () => scrollerRef.current,
@@ -141,9 +135,7 @@ export default function WordFinderResults({
         aria-label={t("finder.resultsAria")}
         className="min-h-0 flex-1 overflow-y-auto font-mono text-base"
       >
-        <div
-          style={{ height: virtualizer.getTotalSize(), position: "relative" }}
-        >
+        <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {virtualizer.getVirtualItems().map((row) => (
             <ResultRow
               key={words[row.index]}

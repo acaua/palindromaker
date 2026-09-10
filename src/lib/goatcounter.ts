@@ -33,8 +33,7 @@ export const countRoute = (path: string): void => {
   // count() exists only once the script has loaded; earlier navigations
   // queue in order and are flushed on the script's load event, not lost
   if (window.goatcounter?.count) countNow(path);
-  else if (pendingPaths[pendingPaths.length - 1] !== path)
-    pendingPaths.push(path);
+  else if (pendingPaths[pendingPaths.length - 1] !== path) pendingPaths.push(path);
 };
 
 export const initGoatcounter = (

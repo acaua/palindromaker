@@ -1,7 +1,4 @@
-import {
-  ArrowsRightLeftIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/solid";
+import { ArrowsRightLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
 
 import { useI18n } from "@/hooks/use-i18n";
 
@@ -18,17 +15,11 @@ export function FinderLegend() {
       className="flex flex-wrap gap-x-4 gap-y-1 border-t border-gray-100 px-4 py-3 text-xs text-gray-500"
     >
       <span className={item}>
-        <ArrowsRightLeftIcon
-          aria-hidden="true"
-          className={`${icon} text-purple-700`}
-        />
+        <ArrowsRightLeftIcon aria-hidden="true" className={`${icon} text-purple-700`} />
         {t("legend.pair")}
       </span>
       <span className={item}>
-        <CheckCircleIcon
-          aria-hidden="true"
-          className={`${icon} text-green-700`}
-        />
+        <CheckCircleIcon aria-hidden="true" className={`${icon} text-green-700`} />
         {t("legend.palindromeWord")}
       </span>
     </footer>
