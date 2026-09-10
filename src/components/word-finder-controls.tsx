@@ -45,23 +45,21 @@ export default function WordFinderControls({
           className="min-h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-white py-2 pr-3 pl-10 font-mono text-base text-gray-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
         />
       </label>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-xs font-medium text-gray-500">
-          {t("language")}
-          <select
-            aria-label={t("finder.languageAria")}
-            value={language}
-            onChange={(event) => onLanguageChange(event.target.value as Language)}
-            className="min-h-10 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700"
-          >
-            {LANGUAGES.map(({ code, label }) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <label className="flex items-center gap-2 text-xs font-medium text-gray-500">
+        {t("language")}
+        <select
+          aria-label={t("finder.languageAria")}
+          value={language}
+          onChange={(event) => onLanguageChange(event.target.value as Language)}
+          className="min-h-10 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700"
+        >
+          {LANGUAGES.map(({ code, label }) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
       <div
         className="grid grid-cols-3 rounded-lg bg-gray-200/70 p-1"
         aria-label={t("finder.matchPosition")}

@@ -22,10 +22,10 @@ export default function StatusBar({
   const { hasLetters, isPalindrome, mirrorEnabled } = useEditorState({
     editor,
     selector: ({ editor }) => {
-      const palindrome = palindromePluginKey.getState(editor.state);
+      const analysis = palindromePluginKey.getState(editor.state)?.analysis;
       return {
-        hasLetters: palindrome?.hasLetters ?? false,
-        isPalindrome: palindrome?.isPalindrome ?? false,
+        hasLetters: (analysis?.letterPositions.length ?? 0) > 0,
+        isPalindrome: analysis?.result.isPalindrome ?? false,
         mirrorEnabled: mirrorPluginKey.getState(editor.state)?.enabled ?? false,
       };
     },

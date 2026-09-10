@@ -102,8 +102,7 @@ const dictionaryPromises = new Map<Language, Promise<Dictionary>>();
 export const loadDictionary = (language: Language): Promise<Dictionary> => {
   let promise = dictionaryPromises.get(language);
   if (!promise) {
-    const file =
-      LANGUAGES.find((info) => info.code === language)?.file ?? `/dictionary/${language}.txt`;
+    const file = LANGUAGES.find((info) => info.code === language)!.file;
     promise = fetch(file).then(
       async (response) => {
         if (!response.ok) {

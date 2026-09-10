@@ -48,16 +48,20 @@ const decorationSummaries = (set: DecorationSet) =>
 
 describe("palindrome plugin", () => {
   test("reports whether the document holds any letters", () => {
-    expect(palindromePluginKey.getState(createState("aba"))?.hasLetters).toBe(true);
+    expect(palindromePluginKey.getState(createState("aba"))?.analysis.letterPositions).toHaveLength(
+      3,
+    );
     // the toolbar shows "Start typing" until a letter shows up
-    expect(palindromePluginKey.getState(createState(""))?.hasLetters).toBe(false);
-    expect(palindromePluginKey.getState(createState("!?, 12"))?.hasLetters).toBe(false);
+    expect(palindromePluginKey.getState(createState(""))?.analysis.letterPositions).toHaveLength(0);
+    expect(
+      palindromePluginKey.getState(createState("!?, 12"))?.analysis.letterPositions,
+    ).toHaveLength(0);
   });
 
   test("marks the center characters of a palindrome", () => {
     const pluginState = palindromePluginKey.getState(createState("aba"));
 
-    expect(pluginState?.isPalindrome).toBe(true);
+    expect(pluginState?.analysis.result.isPalindrome).toBe(true);
     const centerClasses = decorationSummaries(pluginState!.decorations)
       .map((deco) => deco.class)
       .filter((cls) => cls.startsWith("pm-center"));
@@ -69,7 +73,7 @@ describe("palindrome plugin", () => {
   test("marks the gap that breaks the palindrome", () => {
     const pluginState = palindromePluginKey.getState(createState("abc a"));
 
-    expect(pluginState?.isPalindrome).toBe(false);
+    expect(pluginState?.analysis.result.isPalindrome).toBe(false);
     const gap = decorationSummaries(pluginState!.decorations).find((deco) =>
       deco.class.includes("bg-red-300"),
     );
@@ -82,7 +86,7 @@ describe("palindrome plugin", () => {
   test("marks the gap even when no letters pair up", () => {
     const pluginState = palindromePluginKey.getState(createState("hello world"));
 
-    expect(pluginState?.isPalindrome).toBe(false);
+    expect(pluginState?.analysis.result.isPalindrome).toBe(false);
     const summaries = decorationSummaries(pluginState!.decorations);
     // nothing matched, so there is no center: the whole text is the gap
     expect(summaries.filter((deco) => deco.class.includes("pm-center"))).toEqual([]);
@@ -154,6 +158,6 @@ describe("analysis caching", () => {
     const after = palindromePluginKey.getState(typed);
 
     expect(after?.analysis).not.toBe(before?.analysis);
-    expect(after?.isPalindrome).toBe(false);
+    expect(after?.analysis.result.isPalindrome).toBe(false);
   });
 });
