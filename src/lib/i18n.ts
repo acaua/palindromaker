@@ -100,6 +100,20 @@ const en = {
   "conflict.message": "This palindrome was edited in another tab.",
   "conflict.loadTheirs": "Load that version",
   "conflict.keepMine": "Keep this one",
+  "share.label": "Share",
+  "share.title": "Copy a link to this palindrome",
+  "share.disabled": "Finish the palindrome first",
+  "share.tooLong": "This palindrome is too long to share",
+  "share.copied": "Copied!",
+  "reader.title": "A shared palindrome",
+  "reader.hint": "Someone shared this palindrome with you.",
+  "reader.ariaLabel": "Shared palindrome",
+  "reader.copyText": "Copy text",
+  "reader.edit": "Edit this",
+  "reader.empty.title": "Nothing shared here",
+  "reader.empty.body":
+    "This link doesn’t point to a palindrome. Ask for a new one, or start your own.",
+  "reader.back": "Make your own palindrome",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -163,6 +177,19 @@ const pt: Table = {
   "conflict.message": "Este palíndromo foi editado em outra aba.",
   "conflict.loadTheirs": "Carregar aquela versão",
   "conflict.keepMine": "Manter esta",
+  "share.label": "Compartilhar",
+  "share.title": "Copiar um link para este palíndromo",
+  "share.disabled": "Termine o palíndromo primeiro",
+  "share.tooLong": "Este palíndromo é longo demais para compartilhar",
+  "share.copied": "Copiado!",
+  "reader.title": "Um palíndromo compartilhado",
+  "reader.hint": "Alguém compartilhou este palíndromo com você.",
+  "reader.ariaLabel": "Palíndromo compartilhado",
+  "reader.copyText": "Copiar texto",
+  "reader.edit": "Editar",
+  "reader.empty.title": "Nada compartilhado aqui",
+  "reader.empty.body": "Este link não aponta para um palíndromo. Peça um novo, ou comece o seu.",
+  "reader.back": "Crie o seu palíndromo",
 };
 
 const es: Table = {
@@ -222,6 +249,19 @@ const es: Table = {
   "conflict.message": "Este palíndromo fue editado en otra pestaña.",
   "conflict.loadTheirs": "Cargar esa versión",
   "conflict.keepMine": "Conservar esta",
+  "share.label": "Compartir",
+  "share.title": "Copiar un enlace a este palíndromo",
+  "share.disabled": "Termina el palíndromo primero",
+  "share.tooLong": "Este palíndromo es demasiado largo para compartir",
+  "share.copied": "¡Copiado!",
+  "reader.title": "Un palíndromo compartido",
+  "reader.hint": "Alguien compartió este palíndromo contigo.",
+  "reader.ariaLabel": "Palíndromo compartido",
+  "reader.copyText": "Copiar texto",
+  "reader.edit": "Editar",
+  "reader.empty.title": "Nada compartido aquí",
+  "reader.empty.body": "Este enlace no apunta a un palíndromo. Pide uno nuevo, o empieza el tuyo.",
+  "reader.back": "Crea tu propio palíndromo",
 };
 
 const de: Table = {
@@ -281,6 +321,20 @@ const de: Table = {
   "conflict.message": "Dieses Palindrom wurde in einem anderen Tab bearbeitet.",
   "conflict.loadTheirs": "Andere Version laden",
   "conflict.keepMine": "Diese behalten",
+  "share.label": "Teilen",
+  "share.title": "Link zu diesem Palindrom kopieren",
+  "share.disabled": "Vollende erst das Palindrom",
+  "share.tooLong": "Dieses Palindrom ist zu lang zum Teilen",
+  "share.copied": "Kopiert!",
+  "reader.title": "Ein geteiltes Palindrom",
+  "reader.hint": "Jemand hat dieses Palindrom mit dir geteilt.",
+  "reader.ariaLabel": "Geteiltes Palindrom",
+  "reader.copyText": "Text kopieren",
+  "reader.edit": "Bearbeiten",
+  "reader.empty.title": "Hier ist nichts geteilt",
+  "reader.empty.body":
+    "Dieser Link führt zu keinem Palindrom. Frag nach einem neuen, oder schreib dein eigenes.",
+  "reader.back": "Schreib dein eigenes Palindrom",
 };
 
 const fr: Table = {
@@ -340,6 +394,20 @@ const fr: Table = {
   "conflict.message": "Ce palindrome a été modifié dans un autre onglet.",
   "conflict.loadTheirs": "Charger cette version",
   "conflict.keepMine": "Garder celle-ci",
+  "share.label": "Partager",
+  "share.title": "Copier un lien vers ce palindrome",
+  "share.disabled": "Terminez d’abord le palindrome",
+  "share.tooLong": "Ce palindrome est trop long à partager",
+  "share.copied": "Copié !",
+  "reader.title": "Un palindrome partagé",
+  "reader.hint": "Quelqu’un a partagé ce palindrome avec vous.",
+  "reader.ariaLabel": "Palindrome partagé",
+  "reader.copyText": "Copier le texte",
+  "reader.edit": "Modifier",
+  "reader.empty.title": "Rien n’est partagé ici",
+  "reader.empty.body":
+    "Ce lien ne mène à aucun palindrome. Demandez-en un nouveau, ou écrivez le vôtre.",
+  "reader.back": "Écrivez votre propre palindrome",
 };
 
 const it: Table = {
@@ -399,6 +467,20 @@ const it: Table = {
   "conflict.message": "Questo palindromo è stato modificato in un’altra scheda.",
   "conflict.loadTheirs": "Carica quella versione",
   "conflict.keepMine": "Mantieni questa",
+  "share.label": "Condividi",
+  "share.title": "Copia un link a questo palindromo",
+  "share.disabled": "Completa prima il palindromo",
+  "share.tooLong": "Questo palindromo è troppo lungo da condividere",
+  "share.copied": "Copiato!",
+  "reader.title": "Un palindromo condiviso",
+  "reader.hint": "Qualcuno ha condiviso questo palindromo con te.",
+  "reader.ariaLabel": "Palindromo condiviso",
+  "reader.copyText": "Copia il testo",
+  "reader.edit": "Modifica",
+  "reader.empty.title": "Niente condiviso qui",
+  "reader.empty.body":
+    "Questo link non porta a nessun palindromo. Chiedine uno nuovo, o scrivi il tuo.",
+  "reader.back": "Scrivi il tuo palindromo",
 };
 
 export const messages: Record<UiLanguage, Table> = { en, pt, es, de, fr, it };
