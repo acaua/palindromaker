@@ -22,8 +22,13 @@ describe("BlueskyPostList", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
     // only the first row contains a palindrome
     expect(screen.getAllByText("palindrome")).toHaveLength(1);
+    // and the button says what a click actually does
+    expect(screen.getByRole("button", { name: "Check palindrome" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "View post" })).not.toBeNull();
+    // the post date is rendered as a machine-readable time element
+    expect(document.querySelectorAll("time").length).toBe(2);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Check palindrome" })[1]);
+    fireEvent.click(screen.getByRole("button", { name: "View post" }));
     expect(onCheck).toHaveBeenCalledWith("at://did:plc:x/app.bsky.feed.post/2");
   });
 });

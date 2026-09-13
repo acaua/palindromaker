@@ -13,6 +13,11 @@ import { postPageUrl } from "@/lib/bluesky-post";
 import type { PostRef } from "@/lib/bluesky-post";
 import { extractPalindrome } from "@/lib/palindrome-extract";
 
+// The post view is one 600px column: the official embed is designed for
+// that width, and the hint, viewer and links all align to it. No vertical
+// auto-margin, so the content sits against the top rather than floating.
+const COLUMN = "mx-auto w-full max-w-[600px]";
+
 const Notice = ({ text }: { text: string }) => {
   const { t } = useI18n();
   return (
@@ -64,7 +69,7 @@ export default function PostReader({ input }: { input: PostRef }) {
             ? t("post.error")
             : t("post.loading");
     return (
-      <div ref={rootRef} className="m-auto w-full max-w-3xl">
+      <div ref={rootRef} className={COLUMN}>
         <PageHeading>{t("post.title")}</PageHeading>
         <p role="status" className="mt-4 text-sm leading-6 text-gray-600 md:text-base md:leading-7">
           {message}
@@ -107,12 +112,12 @@ export default function PostReader({ input }: { input: PostRef }) {
   );
 
   return (
-    <div ref={rootRef} className="m-auto w-full max-w-3xl">
+    <div ref={rootRef} className={COLUMN}>
       <BlueskyEmbed uri={post.uri} title={t("post.embedTitle")} />
       {restricted ? (
         <NoticeBlock text={t("post.restricted")} links={links} />
       ) : extracted ? (
-        <Reader text={extracted} extraFooter={links} />
+        <Reader text={extracted} extraFooter={links} hint={t("post.hint")} />
       ) : (
         <NoticeBlock text={t("post.noPalindrome")} links={links} />
       )}

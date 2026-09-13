@@ -21,11 +21,14 @@ export default function Reader({
   text,
   onReady,
   extraFooter,
+  hint,
 }: {
   text: string;
   onReady?: (editor: Editor) => void;
   // the post view adds Copy link / View on Bluesky to the same footer
   extraFooter?: ReactNode;
+  // the post view swaps the shared-link line for its own
+  hint?: string;
 }) {
   const { t } = useI18n();
   const readyRef = useRef(onReady);
@@ -101,11 +104,11 @@ export default function Reader({
         {t("reader.title")}
       </h1>
       <p className="mt-2.5 max-w-xl text-sm leading-5 text-gray-600 md:mt-3 md:text-base md:leading-6">
-        {t("reader.hint")}
+        {hint ?? t("reader.hint")}
       </p>
       <div className="mt-5 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_20px_50px_-20px_rgba(0,0,0,0.18)] md:mt-8">
         <EditorContent editor={editor} />
-        <footer className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:px-5">
+        <footer className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:justify-between md:px-5">
           <CopyButton
             label={t("reader.copyText")}
             title={t("reader.copyText")}

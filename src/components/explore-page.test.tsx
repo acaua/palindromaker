@@ -56,7 +56,7 @@ describe("ExplorePage", () => {
   test("switching sort re-queries", async () => {
     mockedSearch.mockReturnValue({ status: "ready", posts: [], retry: () => {} });
     await renderRouted(<ExplorePage />);
-    await screen.findByText("No posts found right now.");
+    await screen.findByText(/No posts found right now/);
 
     fireEvent.click(screen.getByRole("button", { name: "Recent" }));
     expect(mockedSearch).toHaveBeenLastCalledWith("en", "latest");

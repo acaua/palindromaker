@@ -123,7 +123,7 @@ const en = {
   "explore.sortRecent": "Recent",
   "explore.sort": "Sort posts",
   "explore.loading": "Loading posts…",
-  "explore.empty": "No posts found right now.",
+  "explore.empty": "No posts found right now. Try another language or check back later.",
   "explore.rateLimited": "Bluesky is rate-limiting requests. Try again in a moment.",
   "explore.error": "Couldn’t load posts.",
   "explore.badRequest": "Bluesky couldn’t process this search.",
@@ -142,11 +142,13 @@ const en = {
   "post.restricted": "This post isn’t available to logged-out viewers.",
   "post.noPalindrome": "No palindrome found in this post.",
   "post.title": "A Bluesky post",
+  "post.hint": "The palindrome inside this post.",
   "post.embedTitle": "Bluesky post",
   "post.viewOnBluesky": "View on Bluesky",
   "post.copyLink": "Copy link",
   "post.palindromeBadge": "palindrome",
   "post.checkCard": "Check palindrome",
+  "post.viewCard": "View post",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -232,7 +234,7 @@ const pt: Table = {
   "explore.sortRecent": "Recentes",
   "explore.sort": "Ordenar publicações",
   "explore.loading": "Carregando publicações…",
-  "explore.empty": "Nenhuma publicação encontrada agora.",
+  "explore.empty": "Nenhuma publicação encontrada agora. Tente outro idioma ou volte mais tarde.",
   "explore.rateLimited": "O Bluesky está limitando as requisições. Tente novamente em instantes.",
   "explore.error": "Não foi possível carregar as publicações.",
   "explore.badRequest": "O Bluesky não conseguiu processar esta busca.",
@@ -251,11 +253,13 @@ const pt: Table = {
   "post.restricted": "Esta publicação não está disponível para quem não está conectado.",
   "post.noPalindrome": "Nenhum palíndromo encontrado nesta publicação.",
   "post.title": "Uma publicação do Bluesky",
+  "post.hint": "O palíndromo dentro desta publicação.",
   "post.embedTitle": "Publicação do Bluesky",
   "post.viewOnBluesky": "Ver no Bluesky",
   "post.copyLink": "Copiar link",
   "post.palindromeBadge": "palíndromo",
   "post.checkCard": "Verificar palíndromo",
+  "post.viewCard": "Ver publicação",
 };
 
 const es: Table = {
@@ -337,7 +341,8 @@ const es: Table = {
   "explore.sortRecent": "Recientes",
   "explore.sort": "Ordenar publicaciones",
   "explore.loading": "Cargando publicaciones…",
-  "explore.empty": "No se encontraron publicaciones ahora mismo.",
+  "explore.empty":
+    "No se encontraron publicaciones ahora mismo. Prueba otro idioma o vuelve más tarde.",
   "explore.rateLimited":
     "Bluesky está limitando las solicitudes. Inténtalo de nuevo en un momento.",
   "explore.error": "No se pudieron cargar las publicaciones.",
@@ -357,11 +362,13 @@ const es: Table = {
   "post.restricted": "Esta publicación no está disponible para quienes no han iniciado sesión.",
   "post.noPalindrome": "No se encontró ningún palíndromo en esta publicación.",
   "post.title": "Una publicación de Bluesky",
+  "post.hint": "El palíndromo dentro de esta publicación.",
   "post.embedTitle": "Publicación de Bluesky",
   "post.viewOnBluesky": "Ver en Bluesky",
   "post.copyLink": "Copiar enlace",
   "post.palindromeBadge": "palíndromo",
   "post.checkCard": "Comprobar palíndromo",
+  "post.viewCard": "Ver publicación",
 };
 
 const de: Table = {
@@ -444,7 +451,8 @@ const de: Table = {
   "explore.sortRecent": "Neu",
   "explore.sort": "Beiträge sortieren",
   "explore.loading": "Beiträge werden geladen…",
-  "explore.empty": "Gerade keine Beiträge gefunden.",
+  "explore.empty":
+    "Gerade keine Beiträge gefunden. Versuch eine andere Sprache oder schau später wieder vorbei.",
   "explore.rateLimited": "Bluesky begrenzt gerade die Anfragen. Versuch es gleich noch einmal.",
   "explore.error": "Beiträge konnten nicht geladen werden.",
   "explore.badRequest": "Bluesky konnte diese Suche nicht verarbeiten.",
@@ -463,11 +471,13 @@ const de: Table = {
   "post.restricted": "Dieser Beitrag ist für abgemeldete Betrachter nicht verfügbar.",
   "post.noPalindrome": "In diesem Beitrag wurde kein Palindrom gefunden.",
   "post.title": "Ein Bluesky-Beitrag",
+  "post.hint": "Das Palindrom in diesem Beitrag.",
   "post.embedTitle": "Bluesky-Beitrag",
   "post.viewOnBluesky": "Auf Bluesky ansehen",
   "post.copyLink": "Link kopieren",
   "post.palindromeBadge": "Palindrom",
   "post.checkCard": "Palindrom prüfen",
+  "post.viewCard": "Beitrag ansehen",
 };
 
 const fr: Table = {
@@ -550,7 +560,8 @@ const fr: Table = {
   "explore.sortRecent": "Récentes",
   "explore.sort": "Trier les publications",
   "explore.loading": "Chargement des publications…",
-  "explore.empty": "Aucune publication trouvée pour l’instant.",
+  "explore.empty":
+    "Aucune publication trouvée pour l’instant. Essayez une autre langue ou revenez plus tard.",
   "explore.rateLimited": "Bluesky limite les requêtes. Réessayez dans un instant.",
   "explore.error": "Impossible de charger les publications.",
   "explore.badRequest": "Bluesky n’a pas pu traiter cette recherche.",
@@ -569,11 +580,13 @@ const fr: Table = {
   "post.restricted": "Cette publication n’est pas disponible pour les visiteurs non connectés.",
   "post.noPalindrome": "Aucun palindrome trouvé dans cette publication.",
   "post.title": "Une publication Bluesky",
+  "post.hint": "Le palindrome contenu dans cette publication.",
   "post.embedTitle": "Publication Bluesky",
   "post.viewOnBluesky": "Voir sur Bluesky",
   "post.copyLink": "Copier le lien",
   "post.palindromeBadge": "palindrome",
   "post.checkCard": "Vérifier le palindrome",
+  "post.viewCard": "Voir la publication",
 };
 
 const it: Table = {
@@ -656,7 +669,7 @@ const it: Table = {
   "explore.sortRecent": "Recenti",
   "explore.sort": "Ordina i post",
   "explore.loading": "Caricamento dei post…",
-  "explore.empty": "Nessun post trovato al momento.",
+  "explore.empty": "Nessun post trovato al momento. Prova un’altra lingua o torna più tardi.",
   "explore.rateLimited": "Bluesky sta limitando le richieste. Riprova tra un momento.",
   "explore.error": "Impossibile caricare i post.",
   "explore.badRequest": "Bluesky non ha potuto elaborare questa ricerca.",
@@ -675,11 +688,13 @@ const it: Table = {
   "post.restricted": "Questo post non è disponibile per chi non ha effettuato l’accesso.",
   "post.noPalindrome": "Nessun palindromo trovato in questo post.",
   "post.title": "Un post di Bluesky",
+  "post.hint": "Il palindromo contenuto in questo post.",
   "post.embedTitle": "Post di Bluesky",
   "post.viewOnBluesky": "Vedi su Bluesky",
   "post.copyLink": "Copia link",
   "post.palindromeBadge": "palindromo",
   "post.checkCard": "Controlla palindromo",
+  "post.viewCard": "Vedi post",
 };
 
 export const messages: Record<UiLanguage, Table> = { en, pt, es, de, fr, it };

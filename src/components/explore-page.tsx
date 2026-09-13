@@ -71,9 +71,19 @@ export default function ExplorePage() {
 
         <div className="mt-4">
           {state.status === "loading" && (
-            <p role="status" className="text-sm text-gray-500">
-              {t("explore.loading")}
-            </p>
+            <>
+              <span role="status" className="sr-only">
+                {t("explore.loading")}
+              </span>
+              <ul aria-hidden="true" className="grid list-none gap-3 p-0 sm:grid-cols-2">
+                {["a", "b", "c", "d"].map((key) => (
+                  <li
+                    key={key}
+                    className="h-36 animate-pulse rounded-xl bg-white/70 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                  />
+                ))}
+              </ul>
+            </>
           )}
 
           {state.status === "ready" && state.posts.length === 0 && (
