@@ -1,5 +1,5 @@
-import { facetByteRangesToIndices } from "@/lib/palindrome-extract";
-import type { FacetRange } from "@/lib/palindrome-extract";
+import { facetExclusions } from "@/lib/annotated-text";
+import type { FacetRange } from "@/lib/annotated-text";
 
 export interface TextSegment {
   // where the segment starts in the original UTF-16 string (a stable key)
@@ -12,10 +12,7 @@ export interface TextSegment {
 // Split a post's text into plain and annotation spans, so a card can
 // de-emphasize the hashtags without hiding them.
 export const splitAnnotations = (text: string, ranges: readonly FacetRange[]): TextSegment[] => {
-  const excluded = new Set<number>();
-  for (const [start, end] of facetByteRangesToIndices(text, ranges)) {
-    for (let index = start; index < end; index++) excluded.add(index);
-  }
+  const excluded = facetExclusions(text, ranges);
 
   const segments: TextSegment[] = [];
   for (let index = 0; index < text.length;) {

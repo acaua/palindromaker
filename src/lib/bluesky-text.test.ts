@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
+import type { FacetRange } from "@/lib/annotated-text";
 import { splitAnnotations } from "@/lib/bluesky-text";
-import type { FacetRange } from "@/lib/palindrome-extract";
 
 const encoder = new TextEncoder();
 

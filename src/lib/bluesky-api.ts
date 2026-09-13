@@ -1,6 +1,6 @@
 import { BSKY_API, atUriFor } from "@/lib/bluesky-post";
 import type { PostRef } from "@/lib/bluesky-post";
-import type { FacetRange } from "@/lib/palindrome-extract";
+import type { FacetRange } from "@/lib/annotated-text";
 
 // The slice of a Bluesky post view the app actually uses. The API returns
 // a lot more; mapping once (and validating) keeps the rest of the app type
