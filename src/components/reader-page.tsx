@@ -1,31 +1,47 @@
-import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
 
+import PageHeading from "@/components/page-heading";
+import PostLinkForm from "@/components/post-link-form";
+import PostReader from "@/components/post-reader";
 import Reader from "@/components/reader";
+import ReaderMain from "@/components/reader-main";
 import { useI18n } from "@/hooks/use-i18n";
+import { useOpenPost } from "@/hooks/use-open-post";
+import { readPostRef } from "@/lib/bluesky-post";
 import { readShareText } from "@/lib/share-link";
 
-// the /p route: a destination, not a browsable page (deliberately not in
-// NAV_ENTRIES). The fragment is the whole payload, so it is read once on
-// mount like the editor reads storage; anything unexpected — no hash, an
-// empty t=, a malformed or over-long one — gets the friendly empty card.
+// The /p route: a destination reached through shared links. Two payloads
+// live here — #t= (the text itself) and #b= (a Bluesky post to fetch and
+// embed). The fragment is read from router state, not a one-time
+// initializer, because pasting a link here navigates to *this same route*
+// with a new hash and the page must react.
 export default function ReaderPage() {
   const { t } = useI18n();
-  const [shared] = useState(() => readShareText());
+  const hash = useRouterState({ select: ({ location }) => location.hash });
+  const postRef = useMemo(() => readPostRef(hash), [hash]);
+  const shared = useMemo(() => readShareText(hash), [hash]);
+  const openPost = useOpenPost();
+
+  if (postRef) {
+    return (
+      <ReaderMain>
+        <PostReader input={postRef} />
+      </ReaderMain>
+    );
+  }
 
   if (!shared) {
     return (
-      <main className="flex flex-1 flex-col bg-[#faf8f5] px-5 py-5 md:py-8">
+      <ReaderMain>
         <div className="mx-auto w-full max-w-3xl">
-          <h1
-            tabIndex={-1}
-            className="text-2xl font-bold tracking-tight text-gray-900 outline-none md:text-3xl"
-          >
-            {t("reader.empty.title")}
-          </h1>
+          <PageHeading>{t("reader.empty.title")}</PageHeading>
           <p className="mt-4 text-sm leading-6 text-gray-600 md:text-base md:leading-7">
             {t("reader.empty.body")}
           </p>
+          <div className="mt-6 rounded-xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+            <PostLinkForm onSubmitUrl={openPost} />
+          </div>
           <p className="mt-6">
             <Link
               to="/"
@@ -35,13 +51,13 @@ export default function ReaderPage() {
             </Link>
           </p>
         </div>
-      </main>
+      </ReaderMain>
     );
   }
 
   return (
-    <main className="flex flex-1 flex-col bg-[#faf8f5] px-5 py-5 md:py-8">
+    <ReaderMain>
       <Reader text={shared} />
-    </main>
+    </ReaderMain>
   );
 }

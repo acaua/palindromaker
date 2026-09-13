@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import { ClipboardDocumentIcon } from "@heroicons/react/24/solid";
 import { Link } from "@tanstack/react-router";
 import type { Editor } from "@tiptap/core";
@@ -19,9 +20,12 @@ import { textToDoc } from "@/lib/share-link";
 export default function Reader({
   text,
   onReady,
+  extraFooter,
 }: {
   text: string;
   onReady?: (editor: Editor) => void;
+  // the post view adds Copy link / View on Bluesky to the same footer
+  extraFooter?: ReactNode;
 }) {
   const { t } = useI18n();
   const readyRef = useRef(onReady);
@@ -112,13 +116,16 @@ export default function Reader({
           {/* the silent replace: / takes the same #t= fragment as its
               initial content, and the first edit there replaces the local
               doc — accepted (see editor.tsx) */}
-          <Link
-            to="/"
-            hash={`t=${encodeURIComponent(text)}`}
-            className="rounded-lg px-2 py-1.5 text-sm font-medium text-violet-700 hover:bg-gray-100"
-          >
-            {t("reader.edit")}
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/"
+              hash={`t=${encodeURIComponent(text)}`}
+              className="rounded-lg px-2 py-1.5 text-sm font-medium text-violet-700 hover:bg-gray-100"
+            >
+              {t("reader.edit")}
+            </Link>
+            {extraFooter}
+          </div>
         </footer>
       </div>
       <EditorLegend />

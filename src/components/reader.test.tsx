@@ -100,8 +100,7 @@ describe("Reader", () => {
 
 describe("ReaderPage", () => {
   test("renders the shared palindrome from the hash", async () => {
-    window.location.hash = "#t=A%20b%2C%20b%20a";
-    await renderRouted(<ReaderPage />);
+    await renderRouted(<ReaderPage />, "/p#t=A%20b%2C%20b%20a");
 
     expect(await screen.findByText("Copy text")).not.toBeNull();
     const viewer = document.querySelector('[role="region"]');
@@ -109,10 +108,9 @@ describe("ReaderPage", () => {
   });
 
   test("shows the empty card for a missing, empty or broken hash", async () => {
-    const badHashes = [undefined, "#t=", "#t=%80", "#lang=pt"];
-    for (const bad of badHashes) {
-      if (bad !== undefined) window.location.hash = bad;
-      await renderRouted(<ReaderPage />);
+    const badEntries = ["/p", "/p#t=", "/p#t=%80", "/p#lang=pt"];
+    for (const entry of badEntries) {
+      await renderRouted(<ReaderPage />, entry);
 
       expect(await screen.findByText("Nothing shared here")).not.toBeNull();
       expect(screen.getByText(/doesn.t point to a palindrome/)).not.toBeNull();
@@ -131,7 +129,7 @@ describe("ReaderPage", () => {
 
 // Reader renders a TanStack Link, so it needs a router context like the
 // page does: a memory router with a stub home around the unit under test
-async function renderRouted(ui: ReactElement) {
+async function renderRouted(ui: ReactElement, entry = "/p") {
   const rootRoute = createRootRoute({ component: () => <Outlet /> });
   const homeRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -145,7 +143,7 @@ async function renderRouted(ui: ReactElement) {
   });
   const router = createRouter({
     routeTree: rootRoute.addChildren([homeRoute, pRoute]),
-    history: createMemoryHistory({ initialEntries: ["/p"] }),
+    history: createMemoryHistory({ initialEntries: [entry] }),
   });
   const view = render(<RouterProvider router={router} />);
   // RouterProvider resolves its initial location asynchronously and its

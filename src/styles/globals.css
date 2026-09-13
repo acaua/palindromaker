@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@layer base {
+  /* Primary buttons carry white text, so the browser's default focus ring
+     inherits `currentColor` and vanishes against the light page. Give every
+     keyboard-focusable control a visible ring; controls that opt into their
+     own focus styles (the inputs' `outline-none` + ring utilities) still
+     win, because utilities outrank base. */
+  :where(a, button, [role="button"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid #6d28d9;
+    outline-offset: 2px;
+  }
+}
+
 .pm-center1,
 .pm-center2 {
   @apply relative;

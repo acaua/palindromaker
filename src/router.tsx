@@ -9,6 +9,7 @@ import {
 
 import AboutPage from "@/components/about-page";
 import EditorPage from "@/components/editor-page";
+import ExplorePage from "@/components/explore-page";
 import ReaderPage from "@/components/reader-page";
 import SiteHeader from "@/components/site-header";
 import { countRoute } from "@/lib/goatcounter";
@@ -74,7 +75,13 @@ const aboutRoute = createRoute({
   component: AboutPage,
 });
 
-export const routeTree = rootRoute.addChildren([indexRoute, readerRoute, aboutRoute]);
+const exploreRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/explore",
+  component: ExplorePage,
+});
+
+export const routeTree = rootRoute.addChildren([indexRoute, readerRoute, aboutRoute, exploreRoute]);
 
 export const router = createRouter({ routeTree });
 

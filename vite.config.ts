@@ -267,6 +267,9 @@ export default defineConfig({
               settings: {
                 disableJavaScriptFileLoading: true,
                 handleDisabledFileLoadingAsSuccess: true,
+                // the Bluesky embed renders a real iframe; if a test ever
+                // mounts it, don't let happy-dom fetch embed.bsky.app
+                disableIframePageLoading: true,
               },
             },
           },
