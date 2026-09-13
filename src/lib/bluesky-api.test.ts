@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import {
+  RATE_LIMIT_TTL,
   clearBlueskyCache,
   fetchPost,
   isRestrictedPost,
@@ -181,33 +182,63 @@ describe("searchTaggedPosts", () => {
   });
 
   test("tells a throttle, a bad request and a server error apart", async () => {
+    // each status gets its own query: throttle answers are remembered, so
+    // reusing a key would serve the first answer again
     expect(
-      await searchTaggedPosts("#p", "top", async () => new Response("", { status: 403 })),
+      await searchTaggedPosts("#p-403", "top", async () => new Response("", { status: 403 })),
     ).toEqual({ ok: false, reason: "rateLimited" });
     expect(
-      await searchTaggedPosts("#p", "top", async () => new Response("", { status: 429 })),
+      await searchTaggedPosts("#p-429", "top", async () => new Response("", { status: 429 })),
     ).toEqual({ ok: false, reason: "rateLimited" });
     expect(
-      await searchTaggedPosts("#p", "top", async () => new Response("", { status: 400 })),
+      await searchTaggedPosts("#p-400", "top", async () => new Response("", { status: 400 })),
     ).toEqual({ ok: false, reason: "badRequest" });
     // only 400 is a malformed request; other 4xx are errors, not badRequest
     expect(
-      await searchTaggedPosts("#p", "top", async () => new Response("", { status: 401 })),
+      await searchTaggedPosts("#p-401", "top", async () => new Response("", { status: 401 })),
     ).toEqual({ ok: false, reason: "error" });
     // ...including a 404, which is a not-found elsewhere but an error here
     expect(
-      await searchTaggedPosts("#p", "top", async () => new Response("", { status: 404 })),
+      await searchTaggedPosts("#p-404", "top", async () => new Response("", { status: 404 })),
     ).toEqual({ ok: false, reason: "error" });
     expect(
-      await searchTaggedPosts("#p", "top", async () => new Response("", { status: 503 })),
+      await searchTaggedPosts("#p-503", "top", async () => new Response("", { status: 503 })),
     ).toEqual({ ok: false, reason: "error" });
   });
 
   test("a failure is not cached, so retry really retries", async () => {
-    const fetchImpl = vi.fn(async () => new Response("", { status: 403 }));
+    const fetchImpl = vi.fn(async () => new Response("", { status: 500 }));
     await searchTaggedPosts("#p", "top", fetchImpl);
     await searchTaggedPosts("#p", "top", fetchImpl);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  test("a throttle is remembered briefly, so retries stop spending", async () => {
+    const fetchImpl = vi.fn(async () => new Response("", { status: 429 }));
+    expect(await searchTaggedPosts("#p", "top", fetchImpl)).toEqual({
+      ok: false,
+      reason: "rateLimited",
+    });
+    expect(await searchTaggedPosts("#p", "top", fetchImpl)).toEqual({
+      ok: false,
+      reason: "rateLimited",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test("a remembered throttle expires", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi.fn(async () => new Response("", { status: 429 }));
+      await searchTaggedPosts("#p", "top", fetchImpl);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+
+      vi.setSystemTime(Date.now() + RATE_LIMIT_TTL + 1);
+      await searchTaggedPosts("#p", "top", fetchImpl);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -265,14 +296,15 @@ describe("searchQueries", () => {
   });
 
   test("all throttled is rateLimited, all failing is an error, 400 is badRequest", async () => {
+    // each expectation gets fresh queries: throttle answers are remembered
     expect(
       await searchQueries(["#a", "#b"], "top", async () => new Response("", { status: 403 })),
     ).toEqual({ ok: false, reason: "rateLimited" });
     expect(
-      await searchQueries(["#a", "#b"], "top", async () => new Response("", { status: 401 })),
+      await searchQueries(["#c", "#d"], "top", async () => new Response("", { status: 401 })),
     ).toEqual({ ok: false, reason: "error" });
     expect(
-      await searchQueries(["#a", "#b"], "top", async () => new Response("", { status: 400 })),
+      await searchQueries(["#e", "#f"], "top", async () => new Response("", { status: 400 })),
     ).toEqual({ ok: false, reason: "badRequest" });
   });
 });

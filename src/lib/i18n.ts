@@ -133,6 +133,7 @@ const en = {
   "explore.error": "Couldn’t load posts.",
   "explore.badRequest": "Bluesky couldn’t process this search.",
   "explore.retry": "Try again",
+  "explore.retryIn": "Try again in {count}s",
   "post.checkTitle": "Check a Bluesky post",
   "post.checkHint": "Paste a post link to see the palindrome inside it.",
   "post.checkPlaceholder": "https://bsky.app/profile/…/post/…",
@@ -249,6 +250,7 @@ const pt: Table = {
   "explore.error": "Não foi possível carregar as publicações.",
   "explore.badRequest": "O Bluesky não conseguiu processar esta busca.",
   "explore.retry": "Tentar novamente",
+  "explore.retryIn": "Tentar novamente em {count}s",
   "post.checkTitle": "Verificar uma publicação do Bluesky",
   "post.checkHint": "Cole o link de uma publicação para ver o palíndromo dentro dela.",
   "post.checkPlaceholder": "https://bsky.app/profile/…/post/…",
@@ -363,6 +365,7 @@ const es: Table = {
   "explore.error": "No se pudieron cargar las publicaciones.",
   "explore.badRequest": "Bluesky no pudo procesar esta búsqueda.",
   "explore.retry": "Reintentar",
+  "explore.retryIn": "Reintentar en {count}s",
   "post.checkTitle": "Comprobar una publicación de Bluesky",
   "post.checkHint": "Pega el enlace de una publicación para ver el palíndromo que contiene.",
   "post.checkPlaceholder": "https://bsky.app/profile/…/post/…",
@@ -477,6 +480,7 @@ const de: Table = {
   "explore.error": "Beiträge konnten nicht geladen werden.",
   "explore.badRequest": "Bluesky konnte diese Suche nicht verarbeiten.",
   "explore.retry": "Erneut versuchen",
+  "explore.retryIn": "In {count} Sekunden erneut versuchen",
   "post.checkTitle": "Einen Bluesky-Beitrag prüfen",
   "post.checkHint": "Füge einen Beitragslink ein, um das Palindrom darin zu sehen.",
   "post.checkPlaceholder": "https://bsky.app/profile/…/post/…",
@@ -591,6 +595,7 @@ const fr: Table = {
   "explore.error": "Impossible de charger les publications.",
   "explore.badRequest": "Bluesky n’a pas pu traiter cette recherche.",
   "explore.retry": "Réessayer",
+  "explore.retryIn": "Réessayer dans {count} s",
   "post.checkTitle": "Vérifier une publication Bluesky",
   "post.checkHint": "Collez le lien d’une publication pour voir le palindrome qu’elle contient.",
   "post.checkPlaceholder": "https://bsky.app/profile/…/post/…",
@@ -704,6 +709,7 @@ const it: Table = {
   "explore.error": "Impossibile caricare i post.",
   "explore.badRequest": "Bluesky non ha potuto elaborare questa ricerca.",
   "explore.retry": "Riprova",
+  "explore.retryIn": "Riprova tra {count} secondi",
   "post.checkTitle": "Controlla un post di Bluesky",
   "post.checkHint": "Incolla il link di un post per vedere il palindromo che contiene.",
   "post.checkPlaceholder": "https://bsky.app/profile/…/post/…",
@@ -740,6 +746,11 @@ export const resultCount = (lang: UiLanguage, count: number): string =>
     "{count}",
     count.toLocaleString(UI_LANGUAGE_LOCALES[lang]),
   );
+
+// "Try again in 42s": the retry cooldown's remaining seconds, substituted
+// like resultCount's {count}
+export const retryIn = (lang: UiLanguage, seconds: number): string =>
+  messages[lang]["explore.retryIn"].replace("{count}", String(seconds));
 
 const isUiLanguage = (value: unknown): value is UiLanguage =>
   typeof value === "string" && (UI_LANGUAGES as readonly string[]).includes(value);

@@ -7,6 +7,9 @@ import ReaderMain from "@/components/reader-main";
 import { useI18n } from "@/hooks/use-i18n";
 import { useOpenPost } from "@/hooks/use-open-post";
 import { useBlueskySearch } from "@/hooks/use-bluesky-search";
+import { useCountdown } from "@/hooks/use-countdown";
+import { retryIn } from "@/lib/i18n";
+import { RATE_LIMIT_TTL } from "@/lib/bluesky-api";
 import type { SearchSort } from "@/lib/bluesky-api";
 
 // the shared status line for the failures that offer a retry
@@ -15,19 +18,44 @@ const RetryLine = ({
   tone,
   onRetry,
   retryLabel,
+  disabled = false,
 }: {
   message: string;
   tone: "warn" | "error";
   onRetry: () => void;
   retryLabel: string;
+  disabled?: boolean;
 }) => (
   <p role="status" className={`text-sm ${tone === "warn" ? "text-amber-700" : "text-red-700"}`}>
     {message}{" "}
-    <button type="button" onClick={onRetry} className="cursor-pointer underline">
+    <button
+      type="button"
+      onClick={onRetry}
+      disabled={disabled}
+      className="cursor-pointer underline disabled:cursor-not-allowed"
+    >
       {retryLabel}
     </button>
   </p>
 );
+
+// The throttle retry: mounted fresh on every rateLimited episode, so its
+// countdown always starts over. The endpoint sends no Retry-After, so the
+// window matches RATE_LIMIT_TTL — what the API remembers a throttle for —
+// and firing straight back in only spends.
+const ThrottledRetry = ({ onRetry }: { onRetry: () => void }) => {
+  const { lang, t } = useI18n();
+  const remaining = useCountdown(RATE_LIMIT_TTL / 1000);
+  return (
+    <RetryLine
+      message={t("explore.rateLimited")}
+      tone="warn"
+      onRetry={onRetry}
+      retryLabel={remaining > 0 ? retryIn(lang, remaining) : t("explore.retry")}
+      disabled={remaining > 0}
+    />
+  );
+};
 
 export default function ExplorePage() {
   const { lang, t } = useI18n();
@@ -96,14 +124,7 @@ export default function ExplorePage() {
             <BlueskyPostList posts={state.posts} onCheck={openPost} />
           )}
 
-          {state.status === "rateLimited" && (
-            <RetryLine
-              message={t("explore.rateLimited")}
-              tone="warn"
-              onRetry={state.retry}
-              retryLabel={t("explore.retry")}
-            />
-          )}
+          {state.status === "rateLimited" && <ThrottledRetry onRetry={state.retry} />}
 
           {(state.status === "error" || state.status === "badRequest") && (
             <RetryLine

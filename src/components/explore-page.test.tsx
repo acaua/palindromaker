@@ -62,14 +62,14 @@ describe("ExplorePage", () => {
     expect(mockedSearch).toHaveBeenLastCalledWith("en", "latest");
   });
 
-  test("a throttle gets its own message and a retry", async () => {
+  test("a throttle gets its own message and a held retry", async () => {
     const retry = vi.fn();
     mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry });
     await renderRouted(<ExplorePage />);
 
     expect(await screen.findByText(/rate-limiting/)).not.toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(retry).toHaveBeenCalledTimes(1);
+    const button = screen.getByRole("button", { name: /Try again in \d+s/ });
+    expect(button.getAttribute("disabled")).toBe("");
   });
 
   test("other failures can be retried", async () => {

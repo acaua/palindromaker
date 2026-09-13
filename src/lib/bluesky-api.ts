@@ -149,11 +149,18 @@ export const isRestrictedPost = (post: BlueskyPost): boolean =>
 
 // getPosts and searchPosts are both slow and throttled; an in-memory cache
 // keeps a route revisit or a gallery card from spending another request.
-// Only successful answers are remembered, so an explicit retry is never
-// served a stale failure.
+// Successful answers are remembered for minutes; throttle answers briefly,
+// so a retry storm stops spending budget instead of extending the block.
+// Any other failure is never cached, so an explicit retry really retries.
 const postCache = new Map<string, BlueskyPost>();
-const searchCache = new Map<string, { at: number; result: ApiResult<BlueskyPost[]> }>();
-const SEARCH_TTL = 60_000;
+const searchCache = new Map<
+  string,
+  { at: number; ttl: number; result: ApiResult<BlueskyPost[]> }
+>();
+const SEARCH_TTL = 5 * 60_000;
+// how long a throttle answer is remembered — and the UI holds its retry:
+// the endpoint sends no Retry-After, so both sides share this one window
+export const RATE_LIMIT_TTL = 60_000;
 
 export const clearBlueskyCache = (): void => {
   postCache.clear();
@@ -218,7 +225,7 @@ export const searchTaggedPosts = async (
 ): Promise<ApiResult<BlueskyPost[]>> => {
   const key = `${sort}|${query}`;
   const cached = searchCache.get(key);
-  if (cached && Date.now() - cached.at < SEARCH_TTL) return cached.result;
+  if (cached && Date.now() - cached.at < cached.ttl) return cached.result;
 
   let result: ApiResult<BlueskyPost[]>;
   try {
@@ -238,7 +245,11 @@ export const searchTaggedPosts = async (
     result = { ok: false, reason: "error" };
   }
 
-  if (result.ok) searchCache.set(key, { at: Date.now(), result });
+  if (result.ok) {
+    searchCache.set(key, { at: Date.now(), ttl: SEARCH_TTL, result });
+  } else if (!result.ok && result.reason === "rateLimited") {
+    searchCache.set(key, { at: Date.now(), ttl: RATE_LIMIT_TTL, result });
+  }
   return result;
 };
 
