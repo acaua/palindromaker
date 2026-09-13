@@ -5,10 +5,11 @@ import {
   fetchPost,
   isRestrictedPost,
   resolveHandle,
+  resolvePostRef,
   searchQueries,
   searchTaggedPosts,
 } from "@/lib/bluesky-api";
-import { BSKY_DID as DID, BSKY_URI as URI } from "@/test/bluesky-post";
+import { BSKY_DID as DID, BSKY_RKEY as RKEY, BSKY_URI as URI } from "@/test/bluesky-post";
 
 const postView = (overrides: Record<string, unknown> = {}) => ({
   uri: URI,
@@ -125,6 +126,33 @@ describe("resolveHandle", () => {
       ok: false,
       reason: "error",
     });
+  });
+});
+
+describe("resolvePostRef", () => {
+  test("an at-uri is its own answer, with no request", async () => {
+    const fetchImpl = vi.fn();
+    expect(await resolvePostRef({ kind: "uri", uri: URI }, fetchImpl)).toEqual({
+      ok: true,
+      value: URI,
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  test("a handle ref resolves the DID and builds the at-uri", async () => {
+    expect(
+      await resolvePostRef({ kind: "handle", handle: "bsky.app", rkey: RKEY }, async () =>
+        jsonResponse({ did: DID }),
+      ),
+    ).toEqual({ ok: true, value: URI });
+  });
+
+  test("a failed handle resolution is passed through", async () => {
+    expect(
+      await resolvePostRef({ kind: "handle", handle: "nope", rkey: "3abc" }, async () =>
+        jsonResponse({}, 404),
+      ),
+    ).toEqual({ ok: false, reason: "notFound" });
   });
 });
 

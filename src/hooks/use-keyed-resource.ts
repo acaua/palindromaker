@@ -2,15 +2,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // A keyed async load: when `key` changes (or retry is called), run `load`
 // and keep its result. A load that finishes after the key changed is
-// dropped. This is the shape both Bluesky readers share — one keyed
-// outcome, one retry, one stale-response guard. A null key loads nothing.
-export function useKeyedAsync<S>(
+// dropped. A null key loads nothing (idle). The caller supplies the shape
+// of the three non-answers, so `state` is always the caller's own outcome
+// type — the guard lives here, the vocabulary stays with the caller. This
+// is the one shape every keyed reader shares: the dictionaries, the post
+// and the search.
+export function useKeyedResource<S>(
   key: string | null,
   load: () => Promise<S>,
-  // what to store if the load rejects; the load is expected to handle its
-  // own failure, so this is only a last-resort guard
-  onError: () => S,
-): { value: S | null; retry: () => void } {
+  // the caller's own loading/error (and optional idle) states; a null key
+  // is idle, which falls back to `loading` when the caller has no idle
+  fallbacks: { loading: S; error: S; idle?: S },
+): { state: S; retry: () => void } {
   const [attempt, setAttempt] = useState(0);
   const [outcome, setOutcome] = useState<{ key: string; value: S } | null>(null);
   const retry = useCallback(() => setAttempt((count) => count + 1), []);
@@ -18,9 +21,9 @@ export function useKeyedAsync<S>(
 
   // the callbacks are read through refs so a caller that re-creates them
   // each render cannot restart the load; the key carries the identity
-  const latestRef = useRef({ load, onError });
+  const latestRef = useRef({ load, fallbacks });
   useEffect(() => {
-    latestRef.current = { load, onError };
+    latestRef.current = { load, fallbacks };
   });
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export function useKeyedAsync<S>(
         if (active) setOutcome({ key: fullKey, value });
       },
       () => {
-        if (active) setOutcome({ key: fullKey, value: latestRef.current.onError() });
+        if (active) setOutcome({ key: fullKey, value: latestRef.current.fallbacks.error });
       },
     );
     return () => {
@@ -39,5 +42,7 @@ export function useKeyedAsync<S>(
     };
   }, [fullKey]);
 
-  return { value: fullKey !== null && outcome?.key === fullKey ? outcome.value : null, retry };
+  if (fullKey === null) return { state: fallbacks.idle ?? fallbacks.loading, retry };
+  if (outcome?.key === fullKey) return { state: outcome.value, retry };
+  return { state: fallbacks.loading, retry };
 }

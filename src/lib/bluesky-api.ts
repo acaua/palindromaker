@@ -1,4 +1,5 @@
-import { BSKY_API } from "@/lib/bluesky-post";
+import { BSKY_API, atUriFor } from "@/lib/bluesky-post";
+import type { PostRef } from "@/lib/bluesky-post";
 import type { FacetRange } from "@/lib/palindrome-extract";
 
 // The slice of a Bluesky post view the app actually uses. The API returns
@@ -45,20 +46,14 @@ export const failureStatus = <S extends string>(
 ): S => overrides[reason] ?? fallback;
 
 // one owner for "what did this response status mean": 404 is a real
-// not-found, 400 a malformed request, everything else a server/network
-// failure
-const statusFailure = (response: Response): ApiFailure => {
+// not-found, 400 a malformed request, 403/429 a throttle, everything else a
+// server/network failure. Callers map the reasons they do not care about
+// onto their own status vocabulary through failureStatus.
+const httpFailure = (response: Response): ApiFailure => {
   if (response.status === 404) return { ok: false, reason: "notFound" };
   if (response.status === 400) return { ok: false, reason: "badRequest" };
-  return { ok: false, reason: "error" };
-};
-
-// search adds its own vocabulary: a throttle is retryable, and only a 400
-// is actually a malformed request (401/404/422/... are errors)
-const searchFailure = (response: Response): ApiFailure => {
   if (response.status === 403 || response.status === 429)
     return { ok: false, reason: "rateLimited" };
-  if (response.status === 400) return { ok: false, reason: "badRequest" };
   return { ok: false, reason: "error" };
 };
 
@@ -167,7 +162,7 @@ export const fetchPost = async (
     const response = await fetchImpl(
       `${BSKY_API}/app.bsky.feed.getPosts?uris=${encodeURIComponent(uri)}`,
     );
-    if (!response.ok) return statusFailure(response);
+    if (!response.ok) return httpFailure(response);
     const body = asRecord(await response.json());
     const posts = Array.isArray(body?.posts) ? body.posts : [];
     const post = mapPost(posts[0]);
@@ -187,13 +182,25 @@ export const resolveHandle = async (
     const response = await fetchImpl(
       `${BSKY_API}/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
     );
-    if (!response.ok) return statusFailure(response);
+    if (!response.ok) return httpFailure(response);
     const body = asRecord(await response.json());
     const did = asString(body?.did);
     return did ? { ok: true, value: did } : { ok: false, reason: "notFound" };
   } catch {
     return { ok: false, reason: "error" };
   }
+};
+
+// Turn a parsed post reference into an at-uri: an at-uri is its own answer,
+// a handle needs a DID first. The post link form and the post reader both
+// go through here rather than re-walking the branch.
+export const resolvePostRef = async (
+  ref: PostRef,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ApiResult<string>> => {
+  if (ref.kind === "uri") return { ok: true, value: ref.uri };
+  const resolved = await resolveHandle(ref.handle, fetchImpl);
+  return resolved.ok ? { ok: true, value: atUriFor(resolved.value, ref.rkey) } : resolved;
 };
 
 export const searchTaggedPosts = async (
@@ -211,7 +218,7 @@ export const searchTaggedPosts = async (
       `${BSKY_API}/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&limit=${SEARCH_LIMIT}&sort=${sort}`,
     );
     if (!response.ok) {
-      result = searchFailure(response);
+      result = httpFailure(response);
     } else {
       const body = asRecord(await response.json());
       const raw = Array.isArray(body?.posts) ? body.posts : [];

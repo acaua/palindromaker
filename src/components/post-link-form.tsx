@@ -3,8 +3,8 @@ import type { FormEvent } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 
 import { useI18n } from "@/hooks/use-i18n";
-import { resolveHandle } from "@/lib/bluesky-api";
-import { atUriFor, parsePostInput } from "@/lib/bluesky-post";
+import { resolvePostRef } from "@/lib/bluesky-api";
+import { parsePostInput } from "@/lib/bluesky-post";
 
 // Paste a bsky.app post link (or an at-uri) and hand the resolved at-uri
 // back; how it navigates is the caller's business, which keeps this
@@ -28,13 +28,13 @@ export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: strin
       return;
     }
     setBusy(true);
-    const resolved = await resolveHandle(ref.handle);
+    const resolved = await resolvePostRef(ref);
     setBusy(false);
     if (!resolved.ok) {
       setError(true);
       return;
     }
-    onSubmitUrl(atUriFor(resolved.value, ref.rkey));
+    onSubmitUrl(resolved.value);
   };
 
   return (

@@ -2,14 +2,14 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import PostLinkForm from "@/components/post-link-form";
-import { resolveHandle } from "@/lib/bluesky-api";
-import { BSKY_DID as DID, BSKY_URI as URI } from "@/test/bluesky-post";
+import { resolvePostRef } from "@/lib/bluesky-api";
+import { BSKY_URI as URI } from "@/test/bluesky-post";
 
 vi.mock("@/lib/bluesky-api", () => ({
-  resolveHandle: vi.fn(),
+  resolvePostRef: vi.fn(),
 }));
 
-const mockedResolveHandle = vi.mocked(resolveHandle);
+const mockedResolvePostRef = vi.mocked(resolvePostRef);
 
 afterEach(cleanup);
 
@@ -29,19 +29,23 @@ describe("PostLinkForm", () => {
   test("an at-uri is passed straight through", () => {
     const onSubmitUrl = submitLink(URI);
     expect(onSubmitUrl).toHaveBeenCalledWith(URI);
-    expect(mockedResolveHandle).not.toHaveBeenCalled();
+    expect(mockedResolvePostRef).not.toHaveBeenCalled();
   });
 
   test("a handle URL is resolved to a DID first", async () => {
-    mockedResolveHandle.mockResolvedValue({ ok: true, value: DID });
+    mockedResolvePostRef.mockResolvedValue({ ok: true, value: URI });
     const onSubmitUrl = submitLink("https://bsky.app/profile/bsky.app/post/3kq7aeuwbg42k");
 
     await vi.waitFor(() => expect(onSubmitUrl).toHaveBeenCalledWith(URI));
-    expect(mockedResolveHandle).toHaveBeenCalledWith("bsky.app");
+    expect(mockedResolvePostRef).toHaveBeenCalledWith({
+      kind: "handle",
+      handle: "bsky.app",
+      rkey: "3kq7aeuwbg42k",
+    });
   });
 
   test("a handle that cannot be resolved shows the error", async () => {
-    mockedResolveHandle.mockResolvedValue({ ok: false, reason: "notFound" });
+    mockedResolvePostRef.mockResolvedValue({ ok: false, reason: "notFound" });
     const onSubmitUrl = submitLink("https://bsky.app/profile/nope/post/3abc");
 
     await vi.waitFor(() =>
