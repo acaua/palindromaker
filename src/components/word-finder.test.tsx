@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 import WordFinder from "@/components/word-finder";
 import { buildDictionary, loadDictionary } from "@/lib/dictionary";
 import type { Dictionary, Language } from "@/lib/dictionary";
-import { PREFS_STORAGE_KEY, readStoredPrefs } from "@/lib/persistence";
+import { PREFS_STORAGE_KEY, readPrefs } from "@/lib/prefs";
 import type { WordInsertMode } from "@/lib/word-insert";
 
 // the real loader fetches megabytes; these dictionaries are a handful of
@@ -148,7 +148,7 @@ describe("WordFinder", () => {
     chooseLanguage("en");
     await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("en"));
 
-    expect(readStoredPrefs(localStorage).lang).toBe("en");
+    expect(readPrefs(localStorage).lang).toBe("en");
 
     unmount();
     renderPanel();

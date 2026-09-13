@@ -10,7 +10,8 @@ import { useI18n } from "@/hooks/use-i18n";
 import type { Language, SearchMode } from "@/lib/dictionary";
 import { searchWords } from "@/lib/dictionary";
 import type { MessageKey } from "@/lib/i18n";
-import { localStorageOrNull, readStoredPrefs, writePrefs } from "@/lib/persistence";
+import { prefsFor } from "@/lib/prefs";
+import { localStorageOrNull } from "@/lib/storage";
 import type { WordInsertMode } from "@/lib/word-insert";
 
 const SEARCH_DELAY = 150;
@@ -39,11 +40,9 @@ export default function WordFinder({
   onInsertWord: (word: string) => void;
   insertMode: WordInsertMode;
 }) {
-  const storage = localStorageOrNull();
+  const [prefs] = useState(() => prefsFor(localStorageOrNull()));
   const { t } = useI18n();
-  const [language, setLanguage] = useState<Language>(
-    () => readStoredPrefs(storage).lang ?? "pt-br",
-  );
+  const [language, setLanguage] = useState<Language>(() => prefs.read().lang ?? "pt-br");
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("starts");
 
@@ -90,7 +89,7 @@ export default function WordFinder({
           language={language}
           onLanguageChange={(code) => {
             setLanguage(code);
-            writePrefs(storage, { lang: code });
+            prefs.write({ lang: code });
           }}
           mode={mode}
           onModeChange={setMode}

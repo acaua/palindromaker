@@ -2,15 +2,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/tes
 import type { JSONContent } from "@tiptap/core";
 import { Schema } from "@tiptap/pm/model";
 
-import {
-  createPersistence,
-  DOC_STORAGE_KEY,
-  localStorageOrNull,
-  PREFS_STORAGE_KEY,
-  readStoredDoc,
-  readStoredPrefs,
-  writePrefs,
-} from "./persistence";
+import { PREFS_STORAGE_KEY } from "./prefs";
+import { createPersistence, DOC_STORAGE_KEY, readStoredDoc } from "./persistence";
 
 const schema = new Schema({
   nodes: {
@@ -175,41 +168,6 @@ describe("readStoredDoc", () => {
       storage.setItem(DOC_STORAGE_KEY, value);
       expect(readStoredDoc(storage, schema)).toBeNull();
     }
-  });
-});
-
-describe("localStorageOrNull", () => {
-  const defineLocalStorage = (descriptor: PropertyDescriptor) =>
-    Object.defineProperty(globalThis, "localStorage", {
-      configurable: true,
-      ...descriptor,
-    });
-
-  afterEach(() => {
-    Reflect.deleteProperty(globalThis, "localStorage");
-  });
-
-  test("returns null when there is no localStorage", () => {
-    expect(localStorageOrNull()).toBeNull();
-  });
-
-  test("returns null when the browser blocks site storage", () => {
-    // Chrome and Safari throw on *access* when storage is blocked; without
-    // this guard the exception escapes before the app renders
-    defineLocalStorage({
-      get() {
-        throw new Error("SecurityError");
-      },
-    });
-
-    expect(localStorageOrNull()).toBeNull();
-  });
-
-  test("returns the storage when it is available", () => {
-    const storage = new MemoryStorage();
-    defineLocalStorage({ value: storage });
-
-    expect(localStorageOrNull()).toBe(storage);
   });
 });
 
@@ -478,84 +436,5 @@ describe("createPersistence across tabs", () => {
     otherTabSaves("racecar");
 
     expect(editor.applied).toEqual([]);
-  });
-});
-
-describe("readStoredPrefs", () => {
-  test("returns nothing when storage is unavailable or key is absent", () => {
-    expect(readStoredPrefs(null)).toEqual({});
-    expect(readStoredPrefs(new MemoryStorage())).toEqual({});
-  });
-
-  test("returns the stored prefs", () => {
-    const storage = new MemoryStorage();
-    storage.setItem(
-      PREFS_STORAGE_KEY,
-      JSON.stringify({
-        lang: "en",
-        uiLang: "es",
-        mirrorEnabled: true,
-        finderOpen: false,
-      }),
-    );
-
-    expect(readStoredPrefs(storage)).toEqual({
-      lang: "en",
-      uiLang: "es",
-      mirrorEnabled: true,
-      finderOpen: false,
-    });
-  });
-
-  test("drops unknown languages and mistyped values", () => {
-    const storage = new MemoryStorage();
-    storage.setItem(
-      PREFS_STORAGE_KEY,
-      JSON.stringify({
-        lang: "xx",
-        // the dictionary's pt code is not a UI language ("pt" is)
-        uiLang: "pt-br",
-        mirrorEnabled: "yes",
-        finderOpen: "open",
-      }),
-    );
-
-    expect(readStoredPrefs(storage)).toEqual({});
-  });
-
-  test("returns nothing for corrupt JSON", () => {
-    const storage = new MemoryStorage();
-    storage.setItem(PREFS_STORAGE_KEY, "not json");
-
-    expect(readStoredPrefs(storage)).toEqual({});
-  });
-
-  test("returns nothing when storage refuses to be read", () => {
-    expect(readStoredPrefs(new ThrowingStorage())).toEqual({});
-  });
-});
-
-describe("writePrefs", () => {
-  test("merges the patch into the stored prefs", () => {
-    const storage = new MemoryStorage();
-    writePrefs(storage, { lang: "de" });
-    writePrefs(storage, { mirrorEnabled: true });
-    writePrefs(storage, { finderOpen: false });
-
-    expect(readStoredPrefs(storage)).toEqual({
-      lang: "de",
-      mirrorEnabled: true,
-      finderOpen: false,
-    });
-  });
-
-  test("swallows storage failures", () => {
-    const storage = new FailingStorage();
-
-    expect(() => writePrefs(storage, { lang: "de" })).not.toThrow();
-  });
-
-  test("does nothing when storage is unavailable", () => {
-    expect(() => writePrefs(null, { lang: "de" })).not.toThrow();
   });
 });

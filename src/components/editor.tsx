@@ -5,14 +5,10 @@ import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import { EMPTY_FACTS, editorFacts } from "@/lib/editor-facts";
 import { extensions, schema } from "@/lib/editor-schema";
 import { getUiLanguage, translate } from "@/lib/i18n";
-import {
-  createPersistence,
-  localStorageOrNull,
-  readStoredDoc,
-  readStoredPrefs,
-  writePrefs,
-} from "@/lib/persistence";
+import { createPersistence, readStoredDoc } from "@/lib/persistence";
 import type { ConflictChoice, Persistence } from "@/lib/persistence";
+import { prefsFor } from "@/lib/prefs";
+import { localStorageOrNull } from "@/lib/storage";
 import { sampleContent } from "@/lib/sample";
 import { readShareText, textToDoc } from "@/lib/share-link";
 import ConflictNotice from "@/components/conflict-notice";
@@ -32,6 +28,7 @@ export default function Editor({
   triggerRef: RefObject<HTMLButtonElement | null>;
 }) {
   const storage = localStorageOrNull();
+  const prefs = prefsFor(storage);
   // the editor keeps the content and the toggle state it was created with,
   // so storage is read once: re-reading every render would re-validate the
   // stored doc against the schema on every keystroke. The UI language is
@@ -48,7 +45,7 @@ export default function Editor({
       content: shared
         ? textToDoc(shared)
         : (readStoredDoc(storage, schema) ?? sampleContent(getUiLanguage())),
-      mirrorEnabled: readStoredPrefs(storage).mirrorEnabled ?? false,
+      mirrorEnabled: prefs.read().mirrorEnabled ?? false,
     };
   });
 
@@ -65,7 +62,7 @@ export default function Editor({
   const editor = useEditor({
     extensions: extensions({
       enabled: restored.mirrorEnabled,
-      onChange: (enabled) => writePrefs(storage, { mirrorEnabled: enabled }),
+      onChange: (enabled) => prefs.write({ mirrorEnabled: enabled }),
     }),
     content: restored.content,
     autofocus: "end",

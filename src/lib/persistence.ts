@@ -1,58 +1,10 @@
 import type { JSONContent } from "@tiptap/core";
 import type { Schema } from "@tiptap/pm/model";
 
-import { LANGUAGES } from "@/lib/dictionary";
-import type { Language } from "@/lib/dictionary";
-import { UI_LANGUAGES } from "@/lib/i18n";
-import type { UiLanguage } from "@/lib/i18n";
+import { readJson, readRaw } from "@/lib/storage";
+import type { StorageLike } from "@/lib/storage";
 
 export const DOC_STORAGE_KEY = "palindromaker:doc:v1";
-export const PREFS_STORAGE_KEY = "palindromaker:prefs:v1";
-
-type StorageLike = Pick<Storage, "getItem" | "setItem">;
-
-// the browser's localStorage, or null when it cannot be used. Reading
-// window.localStorage *throws* (rather than returning null) when the
-// browser blocks site storage — inside an iframe, or with cookies
-// disabled — so every call site goes through here instead of touching
-// the global and taking the app down before it renders
-export const localStorageOrNull = (): StorageLike | null => {
-  try {
-    return typeof localStorage === "undefined" ? null : localStorage;
-  } catch {
-    return null;
-  }
-};
-
-// the raw stored string, or null when storage is unavailable, the key is
-// absent, or reading it fails
-const readRaw = (storage: Pick<Storage, "getItem"> | null, key: string): string | null => {
-  if (!storage) return null;
-  try {
-    return storage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-
-// reads and parses a stored value; undefined when there is nothing to read
-// or the value is not JSON — callers fall back to their own defaults
-const readJson = (storage: Pick<Storage, "getItem"> | null, key: string): unknown => {
-  const raw = readRaw(storage, key);
-  if (raw === null) return undefined;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return undefined;
-  }
-};
-
-interface Prefs {
-  lang?: Language;
-  uiLang?: UiLanguage;
-  mirrorEnabled?: boolean;
-  finderOpen?: boolean;
-}
 
 interface PersistenceEditor {
   getJSON: () => JSONContent;
@@ -110,46 +62,6 @@ export const readStoredDoc = (
     return null;
   }
   return parsed;
-};
-
-// loads UI preferences, keeping only recognized languages and booleans;
-// anything unexpected falls back to defaults chosen by the callers
-export const readStoredPrefs = (storage: StorageLike | null): Prefs => {
-  const parsed = readJson(storage, PREFS_STORAGE_KEY);
-  if (typeof parsed !== "object" || parsed === null) return {};
-
-  const { lang, uiLang, mirrorEnabled, finderOpen } = parsed as {
-    lang?: unknown;
-    uiLang?: unknown;
-    mirrorEnabled?: unknown;
-    finderOpen?: unknown;
-  };
-  const prefs: Prefs = {};
-  if (typeof lang === "string" && LANGUAGES.some((info) => info.code === lang)) {
-    prefs.lang = lang as Language;
-  }
-  if (typeof uiLang === "string" && (UI_LANGUAGES as readonly string[]).includes(uiLang)) {
-    prefs.uiLang = uiLang as UiLanguage;
-  }
-  if (typeof mirrorEnabled === "boolean") {
-    prefs.mirrorEnabled = mirrorEnabled;
-  }
-  if (typeof finderOpen === "boolean") {
-    prefs.finderOpen = finderOpen;
-  }
-  return prefs;
-};
-
-// merges a patch into the stored UI preferences: best effort, so storage
-// failures never break the interaction that triggered the write
-export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
-  if (!storage) return;
-  try {
-    const merged = { ...readStoredPrefs(storage), ...patch };
-    storage.setItem(PREFS_STORAGE_KEY, JSON.stringify(merged));
-  } catch {
-    // storage full or blocked: best effort, keep going
-  }
 };
 
 // Saves the editor doc to storage: debounced on updates, flushed when the
