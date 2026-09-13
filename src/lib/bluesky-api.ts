@@ -46,14 +46,22 @@ export const failureStatus = <S extends string>(
 ): S => overrides[reason] ?? fallback;
 
 // one owner for "what did this response status mean": 404 is a real
-// not-found, 400 a malformed request, 403/429 a throttle, everything else a
-// server/network failure. Callers map the reasons they do not care about
-// onto their own status vocabulary through failureStatus.
+// not-found, 400 a malformed request, everything else a server/network
+// failure. Callers map the reasons they do not care about onto their own
+// status vocabulary through failureStatus.
 const httpFailure = (response: Response): ApiFailure => {
   if (response.status === 404) return { ok: false, reason: "notFound" };
   if (response.status === 400) return { ok: false, reason: "badRequest" };
+  return { ok: false, reason: "error" };
+};
+
+// search adds the throttle to that vocabulary: 403/429 is a back-off, and
+// only a 400 is a malformed request there (401/404/422/... are errors).
+// The throttle rule lives here, next to httpFailure, and nowhere else.
+const searchFailure = (response: Response): ApiFailure => {
   if (response.status === 403 || response.status === 429)
     return { ok: false, reason: "rateLimited" };
+  if (response.status === 400) return { ok: false, reason: "badRequest" };
   return { ok: false, reason: "error" };
 };
 
@@ -218,7 +226,7 @@ export const searchTaggedPosts = async (
       `${BSKY_API}/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&limit=${SEARCH_LIMIT}&sort=${sort}`,
     );
     if (!response.ok) {
-      result = httpFailure(response);
+      result = searchFailure(response);
     } else {
       const body = asRecord(await response.json());
       const raw = Array.isArray(body?.posts) ? body.posts : [];

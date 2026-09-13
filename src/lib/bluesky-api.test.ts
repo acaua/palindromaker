@@ -84,6 +84,15 @@ describe("fetchPost", () => {
       ok: false,
       reason: "error",
     });
+    // throttles are a search concern; here 403/429 are plain errors
+    expect(await fetchPost(URI, async () => jsonResponse({}, 403))).toEqual({
+      ok: false,
+      reason: "error",
+    });
+    expect(await fetchPost(URI, async () => jsonResponse({}, 429))).toEqual({
+      ok: false,
+      reason: "error",
+    });
     expect(
       await fetchPost(URI, async () => {
         throw new Error("offline");
@@ -123,6 +132,11 @@ describe("resolveHandle", () => {
       reason: "badRequest",
     });
     expect(await resolveHandle("nope", async () => jsonResponse({}, 500))).toEqual({
+      ok: false,
+      reason: "error",
+    });
+    // throttles are a search concern; here a 429 is a plain error
+    expect(await resolveHandle("nope", async () => jsonResponse({}, 429))).toEqual({
       ok: false,
       reason: "error",
     });
@@ -179,6 +193,10 @@ describe("searchTaggedPosts", () => {
     // only 400 is a malformed request; other 4xx are errors, not badRequest
     expect(
       await searchTaggedPosts("#p", "top", async () => new Response("", { status: 401 })),
+    ).toEqual({ ok: false, reason: "error" });
+    // ...including a 404, which is a not-found elsewhere but an error here
+    expect(
+      await searchTaggedPosts("#p", "top", async () => new Response("", { status: 404 })),
     ).toEqual({ ok: false, reason: "error" });
     expect(
       await searchTaggedPosts("#p", "top", async () => new Response("", { status: 503 })),
