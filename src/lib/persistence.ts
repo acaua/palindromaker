@@ -6,7 +6,7 @@ import type { StorageLike } from "@/lib/storage";
 
 export const DOC_STORAGE_KEY = "palindromaker:doc:v1";
 
-interface PersistenceEditor {
+export interface PersistenceEditor {
   getJSON: () => JSONContent;
   commands: {
     setContent: (content: JSONContent, options?: { emitUpdate?: boolean }) => boolean;

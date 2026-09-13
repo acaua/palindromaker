@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { RefObject } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 
 import { EMPTY_FACTS, editorFacts } from "@/lib/editor-facts";
 import { extensions, schema } from "@/lib/editor-schema";
+import { clearShareFragment, resolveInitialContent } from "@/lib/editor-session";
 import { getUiLanguage, translate } from "@/lib/i18n";
-import { createPersistence, readStoredDoc } from "@/lib/persistence";
-import type { ConflictChoice, Persistence } from "@/lib/persistence";
 import { prefsFor } from "@/lib/prefs";
 import { localStorageOrNull } from "@/lib/storage";
-import { sampleContent } from "@/lib/sample";
-import { readShareText, textToDoc } from "@/lib/share-link";
+import { useEditorPersistence } from "@/hooks/use-editor-persistence";
 import ConflictNotice from "@/components/conflict-notice";
 import { EditorLegend } from "@/components/legend";
 import StatusBar from "@/components/status-bar";
@@ -31,32 +29,21 @@ export default function Editor({
   const prefs = prefsFor(storage);
   // the editor keeps the content and the toggle state it was created with,
   // so storage is read once: re-reading every render would re-validate the
-  // stored doc against the schema on every keystroke. The UI language is
-  // also mount-time: App has run initUiLanguage by now, and the editor is
-  // never recreated, so switching the language mid-session cannot reseed it
-  const [restored] = useState(() => {
-    // a shared #t= fragment wins over the stored doc: the /p reader's
-    // "Edit this" lands here carrying one, and editing that shared
-    // palindrome replaces the local doc on the first edit — the hash
-    // content is not saved until then (accepted trade-off; the conflict
-    // rules that then govern saving live in persistence.ts)
-    const shared = readShareText();
-    return {
-      content: shared
-        ? textToDoc(shared)
-        : (readStoredDoc(storage, schema) ?? sampleContent(getUiLanguage())),
-      mirrorEnabled: prefs.read().mirrorEnabled ?? false,
-    };
-  });
+  // stored doc against the schema on every keystroke. The content
+  // precedence (shared #t= > stored > sample) lives in editor-session.ts;
+  // the UI language is mount-time too, since App has run initUiLanguage by
+  // now and the editor is never recreated
+  const [restored] = useState(() => ({
+    content: resolveInitialContent({ fragment: window.location.hash, storage, schema }),
+    mirrorEnabled: prefs.read().mirrorEnabled ?? false,
+  }));
 
-  // consume the share fragment once it has been read: without this,
-  // reloading after "Edit this" would load the shared text instead of
-  // whatever was edited and saved. replaceState (no history entry, no
-  // popstate, no scroll jump) keeps the switch invisible to the router
+  // the share fragment is consumed once it has been read, so a reload after
+  // "Edit this" falls back to storage; editing a shared palindrome replaces
+  // the stored doc on the first edit (accepted trade-off — the conflict
+  // rules that then govern saving live in persistence.ts)
   useEffect(() => {
-    if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
+    clearShareFragment();
   }, []);
 
   const editor = useEditor({
@@ -110,27 +97,7 @@ export default function Editor({
 
   // another tab saved a different palindrome while this one had edits of
   // its own; until the user answers, this tab holds off on saving
-  const [conflict, setConflict] = useState(false);
-  const persistenceRef = useRef<Persistence | null>(null);
-
-  useEffect(() => {
-    if (!editor) return;
-    const handle = createPersistence(editor, {
-      storage,
-      schema,
-      onConflict: () => setConflict(true),
-    });
-    persistenceRef.current = handle;
-    return () => {
-      handle.detach();
-      persistenceRef.current = null;
-    };
-  }, [editor, storage]);
-
-  const resolveConflict = useCallback((choice: ConflictChoice) => {
-    persistenceRef.current?.resolveConflict(choice);
-    setConflict(false);
-  }, []);
+  const { conflict, resolveConflict } = useEditorPersistence(editor, { storage, schema });
 
   if (!editor) return null;
   // the selector's fallback covers only the pre-mount render
