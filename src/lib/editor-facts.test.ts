@@ -2,7 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState } from "@tiptap/pm/state";
 
-import { editorFacts } from "./editor-facts";
+import { EMPTY_FACTS, editorFacts } from "./editor-facts";
 import { createMirrorPlugin, mirrorPluginKey } from "./mirror-extension";
 import { MAX_SHARE_TEXT } from "./share-link";
 
@@ -35,6 +35,16 @@ const enableMirror = (state: EditorState) =>
   state.apply(state.tr.setMeta(mirrorPluginKey, { enabled: true }));
 
 describe("editorFacts", () => {
+  test("the pre-mount fallback agrees with an empty document", () => {
+    expect(EMPTY_FACTS).toMatchObject({
+      hasLetters: false,
+      isPalindrome: true,
+      shareable: false,
+      overLimit: false,
+      raw: "",
+    });
+  });
+
   test("reports an empty document as a vacuous palindrome that cannot be shared", () => {
     expect(editorFacts(createState(""))).toMatchObject({
       hasLetters: false,

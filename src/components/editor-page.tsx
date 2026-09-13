@@ -15,7 +15,7 @@ export default function EditorPage() {
   const [restored] = useState(() => prefs.read());
   const { t } = useI18n();
   // open by default; the choice is remembered like the mirror toggle
-  const [finderOpen, setFinderOpen] = useState(() => restored.finderOpen ?? true);
+  const [finderOpen, setFinderOpen] = useState(() => restored.finderOpen);
   // the status bar's "Find words" trigger; the panel's ✕ returns focus to it
   const triggerRef = useRef<HTMLButtonElement>(null);
 

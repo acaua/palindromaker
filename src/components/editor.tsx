@@ -6,6 +6,7 @@ import { EMPTY_FACTS, editorFacts } from "@/lib/editor-facts";
 import { extensions, schema } from "@/lib/editor-schema";
 import { clearShareFragment, resolveInitialContent } from "@/lib/editor-session";
 import { getUiLanguage, translate } from "@/lib/i18n";
+import { wordInsertMode } from "@/lib/mirror-extension";
 import { prefsFor } from "@/lib/prefs";
 import { localStorageOrNull } from "@/lib/storage";
 import { useEditorPersistence } from "@/hooks/use-editor-persistence";
@@ -35,7 +36,7 @@ export default function Editor({
   // now and the editor is never recreated
   const [restored] = useState(() => ({
     content: resolveInitialContent({ fragment: window.location.hash, storage, schema }),
-    mirrorEnabled: prefs.read().mirrorEnabled ?? false,
+    mirrorEnabled: prefs.read().mirrorEnabled,
   }));
 
   // the share fragment is consumed once it has been read, so a reload after
@@ -70,12 +71,13 @@ export default function Editor({
     },
   });
 
-  // what clicking a word in the finder will do. The selector returns the
-  // answer rather than the state it is derived from, so keystrokes that
-  // leave it unchanged never re-render the finder and its result list.
+  // what clicking a word in the finder will do. The selector reads only the
+  // mode — not the share fields — so keystrokes that leave it unchanged
+  // never re-render the finder and its result list. The rule itself stays
+  // single-owned: editorFacts delegates to wordInsertMode too.
   const insertMode = useEditorState({
     editor,
-    selector: ({ editor }) => (editor ? editorFacts(editor.state).insertMode : "caret"),
+    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : EMPTY_FACTS.insertMode),
   });
 
   // everything the footer shows, through the one EditorFacts interface
@@ -121,7 +123,7 @@ export default function Editor({
         open={finderOpen}
         onClose={onCloseFinder}
         onInsertWord={insertWord}
-        insertMode={insertMode ?? "caret"}
+        insertMode={insertMode ?? EMPTY_FACTS.insertMode}
       />
     </>
   );

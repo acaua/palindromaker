@@ -42,7 +42,7 @@ export default function WordFinder({
 }) {
   const [prefs] = useState(() => prefsFor(localStorageOrNull()));
   const { t } = useI18n();
-  const [language, setLanguage] = useState<Language>(() => prefs.read().lang ?? "pt-br");
+  const [language, setLanguage] = useState<Language>(() => prefs.read().lang);
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("starts");
 

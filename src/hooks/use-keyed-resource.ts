@@ -7,12 +7,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // type — the guard lives here, the vocabulary stays with the caller. This
 // is the one shape every keyed reader shares: the dictionaries, the post
 // and the search.
+export type ResourceFallbacks<S> = {
+  // the caller's own loading/error (and optional idle) states; a null key
+  // is idle, which falls back to `loading` when the caller has no idle
+  loading: S;
+  error: S;
+  idle?: S;
+};
+
 export function useKeyedResource<S>(
   key: string | null,
   load: () => Promise<S>,
-  // the caller's own loading/error (and optional idle) states; a null key
-  // is idle, which falls back to `loading` when the caller has no idle
-  fallbacks: { loading: S; error: S; idle?: S },
+  fallbacks: ResourceFallbacks<S>,
 ): { state: S; retry: () => void } {
   const [attempt, setAttempt] = useState(0);
   const [outcome, setOutcome] = useState<{ key: string; value: S } | null>(null);

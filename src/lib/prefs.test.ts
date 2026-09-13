@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import { FailingStorage, MemoryStorage, ThrowingStorage } from "@/test/storages";
-import { prefsFor, PREFS_STORAGE_KEY, readPrefs, writePrefs } from "./prefs";
+import { DEFAULT_PREFS, prefsFor, PREFS_STORAGE_KEY, readPrefs, writePrefs } from "./prefs";
 import { localStorageOrNull } from "./storage";
 
 describe("localStorageOrNull", () => {
@@ -40,9 +40,9 @@ describe("localStorageOrNull", () => {
 });
 
 describe("readPrefs", () => {
-  test("returns nothing when storage is unavailable or key is absent", () => {
-    expect(readPrefs(null)).toEqual({});
-    expect(readPrefs(new MemoryStorage())).toEqual({});
+  test("returns the defaults when storage is unavailable or key is absent", () => {
+    expect(readPrefs(null)).toEqual(DEFAULT_PREFS);
+    expect(readPrefs(new MemoryStorage())).toEqual(DEFAULT_PREFS);
   });
 
   test("returns the stored prefs", () => {
@@ -78,18 +78,18 @@ describe("readPrefs", () => {
       }),
     );
 
-    expect(readPrefs(storage)).toEqual({});
+    expect(readPrefs(storage)).toEqual(DEFAULT_PREFS);
   });
 
-  test("returns nothing for corrupt JSON", () => {
+  test("returns the defaults for corrupt JSON", () => {
     const storage = new MemoryStorage();
     storage.setItem(PREFS_STORAGE_KEY, "not json");
 
-    expect(readPrefs(storage)).toEqual({});
+    expect(readPrefs(storage)).toEqual(DEFAULT_PREFS);
   });
 
-  test("returns nothing when storage refuses to be read", () => {
-    expect(readPrefs(new ThrowingStorage())).toEqual({});
+  test("returns the defaults when storage refuses to be read", () => {
+    expect(readPrefs(new ThrowingStorage())).toEqual(DEFAULT_PREFS);
   });
 });
 
@@ -123,6 +123,6 @@ describe("prefsFor", () => {
     const prefs = prefsFor(new MemoryStorage());
     prefs.write({ mirrorEnabled: true });
 
-    expect(prefs.read()).toEqual({ mirrorEnabled: true });
+    expect(prefs.read()).toEqual({ ...DEFAULT_PREFS, mirrorEnabled: true });
   });
 });

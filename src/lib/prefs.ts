@@ -7,9 +7,10 @@ import type { StorageLike } from "@/lib/storage";
 
 export const PREFS_STORAGE_KEY = "palindromaker:prefs:v1";
 
-// one owner for the preference keys and their types; every value is
-// optional, so a missing or unrecognized one falls back to the caller's
-// own default
+// one owner for the preference keys, their types and their defaults.
+// Every stored value is optional; a missing or unrecognized one falls back
+// to the default below — except uiLang, which has none: the stored pref
+// wins, else the browser's languages are detected, else the app default.
 export interface Prefs {
   lang?: Language;
   uiLang?: UiLanguage;
@@ -17,11 +18,23 @@ export interface Prefs {
   finderOpen?: boolean;
 }
 
+export const DEFAULT_PREFS = {
+  lang: "pt-br",
+  mirrorEnabled: false,
+  finderOpen: true,
+} as const;
+
+export interface DefaultedPrefs extends Prefs {
+  lang: Language;
+  mirrorEnabled: boolean;
+  finderOpen: boolean;
+}
+
 // loads UI preferences, keeping only recognized languages and booleans;
-// anything unexpected is dropped
-export const readPrefs = (storage: StorageLike | null): Prefs => {
+// anything unexpected falls back to the defaults above
+export const readPrefs = (storage: StorageLike | null): DefaultedPrefs => {
   const parsed = readJson(storage, PREFS_STORAGE_KEY);
-  if (typeof parsed !== "object" || parsed === null) return {};
+  if (typeof parsed !== "object" || parsed === null) return { ...DEFAULT_PREFS };
 
   const { lang, uiLang, mirrorEnabled, finderOpen } = parsed as {
     lang?: unknown;
@@ -42,7 +55,7 @@ export const readPrefs = (storage: StorageLike | null): Prefs => {
   if (typeof finderOpen === "boolean") {
     prefs.finderOpen = finderOpen;
   }
-  return prefs;
+  return { ...DEFAULT_PREFS, ...prefs };
 };
 
 // merges a patch into the stored UI preferences: best effort, so storage
@@ -61,7 +74,7 @@ export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
 // pairs localStorageOrNull() with the codec itself: one module owns the
 // key, the shape and the merge.
 export interface PrefsStore {
-  read: () => Prefs;
+  read: () => DefaultedPrefs;
   write: (patch: Prefs) => void;
 }
 

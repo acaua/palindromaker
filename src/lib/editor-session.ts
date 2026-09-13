@@ -1,18 +1,17 @@
 import type { JSONContent } from "@tiptap/core";
-import type { Schema } from "@tiptap/pm/model";
 
 import { getUiLanguage } from "@/lib/i18n";
 import type { UiLanguage } from "@/lib/i18n";
 import { readStoredDoc } from "@/lib/persistence";
+import type { StoreContext } from "@/lib/persistence";
 import { sampleContent } from "@/lib/sample";
 import { readShareText, textToDoc } from "@/lib/share-link";
-import type { StorageLike } from "@/lib/storage";
 
 // What the editor opens with, from the one place that knows the
 // precedence: a shared #t= fragment wins over the stored doc, which wins
-// over the sample. Reading stays injectable (fragment, storage, schema) so
-// the rules are testable without a browser; `uiLanguage` only picks the
-// sample.
+// over the sample. Reading stays injectable (fragment plus the store
+// context) so the rules are testable without a browser; `uiLanguage`
+// only picks the sample.
 export const resolveInitialContent = ({
   fragment,
   storage,
@@ -20,10 +19,8 @@ export const resolveInitialContent = ({
   uiLanguage = getUiLanguage(),
 }: {
   fragment: string;
-  storage: StorageLike | null;
-  schema: Schema;
   uiLanguage?: UiLanguage;
-}): JSONContent | string => {
+} & StoreContext): JSONContent | string => {
   const shared = readShareText(fragment);
   return shared ? textToDoc(shared) : (readStoredDoc(storage, schema) ?? sampleContent(uiLanguage));
 };

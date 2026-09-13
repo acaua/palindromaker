@@ -24,10 +24,12 @@ export interface EditorFacts {
   shareable: boolean;
 }
 
-// the pre-mount answer, so a selector can return facts before the editor exists
+// the pre-mount answer, so a selector can return facts before the editor exists.
+// The empty document reads as a vacuous palindrome, like editorFacts says;
+// the `!editor` guard in editor.tsx keeps this off-DOM regardless.
 export const EMPTY_FACTS: EditorFacts = {
   hasLetters: false,
-  isPalindrome: false,
+  isPalindrome: true,
   mirrorEnabled: false,
   insertMode: "caret",
   raw: "",

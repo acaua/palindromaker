@@ -18,10 +18,15 @@ export interface PersistenceEditor {
 // which version wins when two tabs have both moved on
 export type ConflictChoice = "theirs" | "mine";
 
-interface PersistenceOptions {
+// the doc store every editor surface is injected with: the storage to read
+// and write, and the schema stored docs are validated against
+export interface StoreContext {
   storage: StorageLike | null;
   // validates documents written by other tabs, exactly like the initial load
   schema: Schema;
+}
+
+interface PersistenceOptions extends StoreContext {
   delay?: number;
   // another tab saved a document this one cannot silently take: the app
   // asks the user and calls resolveConflict(). Fires once per conflict.

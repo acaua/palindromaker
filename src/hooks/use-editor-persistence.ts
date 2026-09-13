@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Schema } from "@tiptap/pm/model";
 
 import { createPersistence } from "@/lib/persistence";
-import type { ConflictChoice, Persistence, PersistenceEditor } from "@/lib/persistence";
-import type { StorageLike } from "@/lib/storage";
+import type {
+  ConflictChoice,
+  Persistence,
+  PersistenceEditor,
+  StoreContext,
+} from "@/lib/persistence";
 
 // Ties doc persistence to the editor's lifetime and turns the cross-tab
 // conflict into component state. `editor` is the only live dependency;
-// storage and schema are injected like everywhere else, so the hook is
+// the store context is injected like everywhere else, so the hook is
 // testable with a stub editor.
 export const useEditorPersistence = (
   editor: PersistenceEditor | null,
-  { storage, schema }: { storage: StorageLike | null; schema: Schema },
+  { storage, schema }: StoreContext,
 ): { conflict: boolean; resolveConflict: (choice: ConflictChoice) => void } => {
   const [conflict, setConflict] = useState(false);
   const persistenceRef = useRef<Persistence | null>(null);
