@@ -12,7 +12,9 @@ import { BSKY_API, BSKY_EMBED } from "@/lib/bluesky-post";
 // origins are read off the app's own constants so the two cannot drift.
 const headers = readFileSync(new URL("../../public/_headers", import.meta.url), "utf8");
 
-const csp = (): string => {
+type HeadersDirective = "connect-src" | "frame-src";
+
+const deployedCsp = (): string => {
   const line = headers
     .split("\n")
     .find((entry) => entry.trimStart().startsWith("Content-Security-Policy:"));
@@ -20,18 +22,18 @@ const csp = (): string => {
   return line;
 };
 
-const directive = (name: string): string[] => {
-  const match = new RegExp(`${name} ([^;]+)`).exec(csp());
+const headersDirective = (name: HeadersDirective): string[] => {
+  const match = new RegExp(`${name} ([^;]+)`).exec(deployedCsp());
   if (!match) throw new Error(`${name} not found in the deployed CSP`);
   return match[1].split(/\s+/);
 };
 
 describe("deployed CSP", () => {
   test("connect-src allowlists the Bluesky API origin", () => {
-    expect(directive("connect-src")).toContain(new URL(BSKY_API).origin);
+    expect(headersDirective("connect-src")).toContain(new URL(BSKY_API).origin);
   });
 
   test("frame-src allowlists the Bluesky embed origin", () => {
-    expect(directive("frame-src")).toContain(new URL(BSKY_EMBED).origin);
+    expect(headersDirective("frame-src")).toContain(new URL(BSKY_EMBED).origin);
   });
 });
