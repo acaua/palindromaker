@@ -30,11 +30,12 @@ export interface DefaultedPrefs extends Prefs {
   finderOpen: boolean;
 }
 
-// loads UI preferences, keeping only recognized languages and booleans;
-// anything unexpected falls back to the defaults above
-export const readPrefs = (storage: StorageLike | null): DefaultedPrefs => {
+// the validated stored preferences, without defaults: what writePrefs
+// merges onto, so a write stores only keys actually set — never the
+// defaults below
+const readStored = (storage: StorageLike | null): Prefs => {
   const parsed = readJson(storage, PREFS_STORAGE_KEY);
-  if (typeof parsed !== "object" || parsed === null) return { ...DEFAULT_PREFS };
+  if (typeof parsed !== "object" || parsed === null) return {};
 
   const { lang, uiLang, mirrorEnabled, finderOpen } = parsed as {
     lang?: unknown;
@@ -55,15 +56,22 @@ export const readPrefs = (storage: StorageLike | null): DefaultedPrefs => {
   if (typeof finderOpen === "boolean") {
     prefs.finderOpen = finderOpen;
   }
-  return { ...DEFAULT_PREFS, ...prefs };
+  return prefs;
 };
+
+// loads UI preferences, keeping only recognized languages and booleans;
+// anything unexpected falls back to the defaults above
+export const readPrefs = (storage: StorageLike | null): DefaultedPrefs => ({
+  ...DEFAULT_PREFS,
+  ...readStored(storage),
+});
 
 // merges a patch into the stored UI preferences: best effort, so storage
 // failures never break the interaction that triggered the write
 export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
   if (!storage) return;
   try {
-    const merged = { ...readPrefs(storage), ...patch };
+    const merged = { ...readStored(storage), ...patch };
     storage.setItem(PREFS_STORAGE_KEY, JSON.stringify(merged));
   } catch {
     // storage full or blocked: best effort, keep going

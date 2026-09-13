@@ -107,6 +107,15 @@ describe("writePrefs", () => {
     });
   });
 
+  test("stores only the keys actually written, never the defaults", () => {
+    const storage = new MemoryStorage();
+    writePrefs(storage, { uiLang: "es" });
+
+    expect(JSON.parse(storage.getItem(PREFS_STORAGE_KEY) ?? "{}")).toEqual({ uiLang: "es" });
+    // reads still see the defaults alongside
+    expect(readPrefs(storage)).toEqual({ ...DEFAULT_PREFS, uiLang: "es" });
+  });
+
   test("swallows storage failures", () => {
     const storage = new FailingStorage();
 
