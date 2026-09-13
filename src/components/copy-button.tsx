@@ -1,11 +1,19 @@
-import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-import { clipboardOrNull, copyText } from "@/lib/clipboard";
+import { useCopyFeedback } from "@/hooks/use-copy-feedback";
+
+// the one "Copied!" live region, shared by CopyButton and the Share
+// dropdown's trigger: a renamed control is not announced on its own
+export const CopyStatus = ({ label }: { label: string }) => (
+  <span role="status" className="sr-only">
+    {label}
+  </span>
+);
 
 // one transient "Copied!" feedback for every copy action in the app: the
-// visible label swaps for sighted users and a polite live region announces
-// it for screen readers — a renamed button is not announced on its own
+// visible label swaps for sighted users and a polite role="status" live
+// region announces it for screen readers — a renamed button is not
+// announced on its own
 export default function CopyButton({
   label,
   title,
@@ -23,19 +31,7 @@ export default function CopyButton({
   icon: ReactNode;
   disabled?: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => () => clearTimeout(timerRef.current), []);
-
-  const onCopy = () => {
-    void copyText(clipboardOrNull(), getText()).then((ok) => {
-      if (!ok) return;
-      setCopied(true);
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setCopied(false), 2000);
-    });
-  };
+  const { copied, copy } = useCopyFeedback();
 
   return (
     <>
@@ -43,7 +39,7 @@ export default function CopyButton({
         type="button"
         disabled={disabled}
         title={title}
-        onClick={onCopy}
+        onClick={() => copy(getText())}
         className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium ${
           disabled
             ? "cursor-not-allowed text-gray-400"
@@ -53,11 +49,7 @@ export default function CopyButton({
         {icon}
         {copied ? copiedLabel : label}
       </button>
-      {copied && (
-        <span role="status" className="sr-only">
-          {copiedLabel}
-        </span>
-      )}
+      {copied && <CopyStatus label={copiedLabel} />}
     </>
   );
 }

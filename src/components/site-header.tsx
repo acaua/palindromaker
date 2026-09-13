@@ -1,8 +1,8 @@
-import { useEffect, useId, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 import LanguageSwitcher from "@/components/language-switcher";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { useI18n } from "@/hooks/use-i18n";
 import { NAV_ENTRIES } from "@/lib/navigation";
 import type { NavEntry } from "@/lib/navigation";
@@ -62,52 +62,20 @@ const NavLink = ({
 // it closed — no effect has to watch the route to reset the state.
 const MobileMenu = ({ pathname }: { pathname: string }) => {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const navRef = useRef<HTMLElement | null>(null);
-  const panelId = useId();
-
-  // while open: Esc closes and hands focus back to the button, per the
-  // disclosure pattern — keyboard users are not dropped where the panel
-  // used to be; a click outside the nav closes it, where focus landing is
-  // the click's business, so nothing is refocused there
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        buttonRef.current?.focus();
-      }
-    };
-    const onPointerDown = (event: PointerEvent) => {
-      if (
-        navRef.current &&
-        event.target instanceof Node &&
-        !navRef.current.contains(event.target)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [open]);
+  const { open, toggle, close, triggerRef, panelRef, panelId } = useDisclosure();
 
   return (
-    <nav aria-label={t("nav.aria")} ref={navRef} className="md:hidden">
+    <nav aria-label={t("nav.aria")} className="md:hidden">
       <div className="flex h-14 w-full items-center gap-3 px-4">
         <BrandLink compact />
         <button
           type="button"
-          ref={buttonRef}
+          ref={triggerRef}
           aria-expanded={open}
           aria-controls={panelId}
           aria-label={t("nav.menu")}
           title={t("nav.menu")}
-          onClick={() => setOpen(!open)}
+          onClick={toggle}
           className="ml-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50"
         >
           {open ? (
@@ -119,6 +87,7 @@ const MobileMenu = ({ pathname }: { pathname: string }) => {
       </div>
       <div
         id={panelId}
+        ref={panelRef}
         hidden={!open}
         className="border-b border-gray-200 bg-white px-4 pb-4 pt-2 shadow-lg"
       >
@@ -131,7 +100,7 @@ const MobileMenu = ({ pathname }: { pathname: string }) => {
               className={panelLinkClass}
               // same-page clicks leave the route unchanged, so the link
               // itself has to close the panel
-              onClick={() => setOpen(false)}
+              onClick={() => close()}
             />
           ))}
         </div>

@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { replaceAll } from "./helpers";
+
 const DID = "did:plc:test";
 const RKEY = "3abc";
 const URI = `at://${DID}/app.bsky.feed.post/${RKEY}`;
@@ -153,4 +155,35 @@ test("a restricted post is not extracted", async ({ page }) => {
 
   await expect(page.getByText(/logged-out viewers/)).toBeVisible();
   await expect(page.locator('[role="region"]')).toHaveCount(0);
+});
+
+test("the editor posts the palindrome to Bluesky", async ({ page }) => {
+  await page.addInitScript(() => {
+    const opened: string[] = [];
+    (window as unknown as { __opened: string[] }).__opened = opened;
+    window.open = ((url?: string | URL) => {
+      opened.push(url instanceof URL ? url.href : String(url ?? ""));
+      return null;
+    }) as typeof window.open;
+  });
+  await page.goto("/");
+
+  const trigger = page.getByRole("button", { name: "Share" });
+  await expect(trigger).toBeEnabled();
+  await expect(trigger).toHaveAttribute("title", /Share this palindrome/);
+  await trigger.click();
+
+  const post = page.getByRole("button", { name: "Post to Bluesky" });
+  await expect(post).toHaveAttribute("title", /Open Bluesky/);
+  await post.click();
+
+  const opened = await page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+  expect(opened).toHaveLength(1);
+  expect(opened[0]).toContain("https://bsky.app/intent/compose?text=");
+  expect(decodeURIComponent(opened[0])).toContain("/p#t=");
+
+  // no longer a palindrome: the trigger disables with the shared reason
+  await replaceAll(page, "hello world");
+  await expect(trigger).toBeDisabled();
+  await expect(trigger).toHaveAttribute("title", /Finish the palindrome/);
 });

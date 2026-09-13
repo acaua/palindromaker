@@ -70,6 +70,15 @@ describe("text and positions", () => {
   });
 });
 
+describe("raw", () => {
+  test("keeps the original characters, blocks joined with a newline", () => {
+    expect(analyzeDoc(buildDoc("A b, b a")).raw).toBe("A b, b a");
+    expect(analyzeDoc(buildDoc("ab\nba")).raw).toBe("ab\nba");
+    // normalization the checker applies must not touch raw
+    expect(analyzeDoc(buildDoc("e\u0301a")).raw).toBe("e\u0301a");
+  });
+});
+
 describe("posToIndex", () => {
   test("maps doc positions back to text indexes", () => {
     const { posToIndex } = analyzeDoc(buildDoc("ab\nba"));
