@@ -3,10 +3,11 @@
 /dictionary/*
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 
-# The app only loads its own assets plus GoatCounter's script and endpoint.
+# Besides its own assets and GoatCounter, the app fetches posts from the
+# Bluesky API and embeds posts in iframes from the Bluesky embed host.
 # Inline styles are needed for the virtualized result rows' dynamic positions.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; connect-src 'self' https://*.goatcounter.com; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; connect-src 'self' https://api.bsky.app https://*.goatcounter.com; font-src 'self'; form-action 'self'; frame-ancestors 'none'; frame-src https://embed.bsky.app; img-src 'self' data:; object-src 'none'; script-src 'self' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests
   Permissions-Policy: camera=(), geolocation=(), microphone=()
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
