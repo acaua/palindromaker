@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/tes
 import type { JSONContent } from "@tiptap/core";
 import { Schema } from "@tiptap/pm/model";
 
+import { FailingStorage, MemoryStorage, ThrowingStorage } from "@/test/storages";
 import { PREFS_STORAGE_KEY } from "./prefs";
 import { createPersistence, DOC_STORAGE_KEY, readStoredDoc } from "./persistence";
 
@@ -12,28 +13,6 @@ const schema = new Schema({
     text: { group: "inline" },
   },
 });
-
-class MemoryStorage {
-  private map = new Map<string, string>();
-
-  getItem(key: string): string | null {
-    return this.map.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.map.set(key, value);
-  }
-}
-
-class FailingStorage {
-  getItem(): string | null {
-    return null;
-  }
-
-  setItem(): void {
-    throw new Error("quota exceeded");
-  }
-}
 
 type Handler = () => void;
 
@@ -90,16 +69,6 @@ const otherTabDoc = (text: string): JSONContent => ({
 
 // what a browser delivers to the *other* tabs after a write
 const storageEvent = (key: string) => Object.assign(new Event("storage"), { key });
-
-class ThrowingStorage {
-  getItem(): string | null {
-    throw new Error("access denied");
-  }
-
-  setItem(): void {
-    throw new Error("access denied");
-  }
-}
 
 describe("readStoredDoc", () => {
   test("returns null when storage is unavailable", () => {

@@ -1,39 +1,8 @@
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
+import { FailingStorage, MemoryStorage, ThrowingStorage } from "@/test/storages";
 import { prefsFor, PREFS_STORAGE_KEY, readPrefs, writePrefs } from "./prefs";
 import { localStorageOrNull } from "./storage";
-
-class MemoryStorage {
-  private map = new Map<string, string>();
-
-  getItem(key: string): string | null {
-    return this.map.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.map.set(key, value);
-  }
-}
-
-class FailingStorage {
-  getItem(): string | null {
-    return null;
-  }
-
-  setItem(): void {
-    throw new Error("quota exceeded");
-  }
-}
-
-class ThrowingStorage {
-  getItem(): string | null {
-    throw new Error("access denied");
-  }
-
-  setItem(): void {
-    throw new Error("access denied");
-  }
-}
 
 describe("localStorageOrNull", () => {
   const defineLocalStorage = (descriptor: PropertyDescriptor) =>

@@ -6,6 +6,7 @@ import { Schema } from "@tiptap/pm/model";
 import { useEditorPersistence } from "@/hooks/use-editor-persistence";
 import { DOC_STORAGE_KEY } from "@/lib/persistence";
 import type { PersistenceEditor } from "@/lib/persistence";
+import { MemoryStorage } from "@/test/storages";
 
 const schema = new Schema({
   nodes: {
@@ -14,18 +15,6 @@ const schema = new Schema({
     text: { group: "inline" },
   },
 });
-
-class MemoryStorage {
-  private map = new Map<string, string>();
-
-  getItem(key: string): string | null {
-    return this.map.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.map.set(key, value);
-  }
-}
 
 type Handler = () => void;
 

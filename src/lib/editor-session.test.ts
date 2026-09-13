@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vite-plus/test";
 import { Schema } from "@tiptap/pm/model";
 
+import { MemoryStorage } from "@/test/storages";
 import { clearShareFragment, resolveInitialContent } from "./editor-session";
 import { DOC_STORAGE_KEY } from "./persistence";
 import { sampleContent } from "./sample";
@@ -12,18 +13,6 @@ const schema = new Schema({
     text: { group: "inline" },
   },
 });
-
-class MemoryStorage {
-  private map = new Map<string, string>();
-
-  getItem(key: string): string | null {
-    return this.map.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.map.set(key, value);
-  }
-}
 
 const doc = (text: string) => ({
   type: "doc",
