@@ -34,8 +34,9 @@ test("share copies a /p link for the current palindrome", async ({ page }) => {
   await page.goto("/");
 
   await shareButton(page).click();
+  await page.getByRole("button", { name: "Copy link" }).click();
 
-  // the feedback is a label swap that renames the button: locate by the
+  // the feedback is a label swap that renames the trigger: locate by the
   // copied name (locating by the resting name would re-resolve only once
   // the label has flipped back, and never see the flip)
   const copied = page.getByRole("button", { name: /Copied!/i });
@@ -43,6 +44,15 @@ test("share copies a /p link for the current palindrome", async ({ page }) => {
   await clipboard(page).toBe(shareUrl(SAMPLE_CONTENT));
   // the feedback is transient
   await expect(copied).toBeHidden({ timeout: 4000 });
+});
+
+test("the share menu passes the accessibility audit", async ({ page }) => {
+  await page.goto("/");
+  await shareButton(page).click();
+  await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test("share is disabled while the text is not a palindrome", async ({ page }) => {

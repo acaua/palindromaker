@@ -13,6 +13,9 @@ import type { PalindromeResult } from "@/lib/check-palindrome";
 export interface DocAnalysis {
   // normalized text, index-aligned with positions
   text: string;
+  // the document's original text, blocks joined with "\n" (what getText
+  // returns with a newline separator) — for callers that post it verbatim
+  raw: string;
   // text index -> document position
   positions: Array<number | undefined>;
   // document position -> text index
@@ -25,6 +28,7 @@ export interface DocAnalysis {
 
 const analyze = (doc: ProseMirrorNode): DocAnalysis => {
   let text = "";
+  let raw = "";
   const positions: Array<number | undefined> = [];
   const posToIndex = new Map<number, number>();
   const letterPositions: Array<number | undefined> = [];
@@ -41,9 +45,13 @@ const analyze = (doc: ProseMirrorNode): DocAnalysis => {
     // only text blocks hold content that needs separating; a wrapping block
     // (blockquote, list item) must not add a separator of its own
     if (node.isTextblock) {
-      if (!isFirstBlock) push("\n", undefined);
+      if (!isFirstBlock) {
+        push("\n", undefined);
+        raw += "\n";
+      }
       isFirstBlock = false;
     } else if (node.isText && node.text) {
+      raw += node.text;
       for (let offset = 0; offset < node.text.length; offset++) {
         const normalized = normalizeText(node.text[offset]);
         // a character the checker never sees (e.g. a bare combining mark)
@@ -59,6 +67,7 @@ const analyze = (doc: ProseMirrorNode): DocAnalysis => {
 
   return {
     text,
+    raw,
     positions,
     posToIndex,
     letterPositions,

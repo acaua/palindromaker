@@ -7,6 +7,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 
 import CopyButton from "@/components/copy-button";
 import { EditorLegend } from "@/components/legend";
+import { analyzeDoc } from "@/lib/doc-analysis";
 import { readerExtensions } from "@/lib/editor-schema";
 import { useI18n } from "@/hooks/use-i18n";
 import { textToDoc } from "@/lib/share-link";
@@ -114,7 +115,7 @@ export default function Reader({
             title={t("reader.copyText")}
             copiedLabel={t("share.copied")}
             icon={<ClipboardDocumentIcon aria-hidden="true" className="h-4 w-4 text-gray-500" />}
-            getText={() => editor.getText({ blockSeparator: "\n" })}
+            getText={() => analyzeDoc(editor.state.doc).raw}
           />
           {/* the silent replace: / takes the same #t= fragment as its
               initial content, and the first edit there replaces the local
