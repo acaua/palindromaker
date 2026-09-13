@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 
-import { wordInsertMode } from "@/lib/mirror-extension";
+import { EMPTY_FACTS, editorFacts } from "@/lib/editor-facts";
 import { extensions, schema } from "@/lib/editor-schema";
 import { getUiLanguage, translate } from "@/lib/i18n";
 import {
@@ -91,7 +91,13 @@ export default function Editor({
   // leave it unchanged never re-render the finder and its result list.
   const insertMode = useEditorState({
     editor,
-    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : "caret"),
+    selector: ({ editor }) => (editor ? editorFacts(editor.state).insertMode : "caret"),
+  });
+
+  // everything the footer shows, through the one EditorFacts interface
+  const facts = useEditorState({
+    editor,
+    selector: ({ editor }) => (editor ? editorFacts(editor.state) : EMPTY_FACTS),
   });
 
   const insertWord = useCallback(
@@ -100,6 +106,10 @@ export default function Editor({
     },
     [editor],
   );
+
+  const onToggleMirror = useCallback(() => {
+    editor?.commands.toggleMirrorEditing();
+  }, [editor]);
 
   // another tab saved a different palindrome while this one had edits of
   // its own; until the user answers, this tab holds off on saving
@@ -126,6 +136,8 @@ export default function Editor({
   }, []);
 
   if (!editor) return null;
+  // the selector's fallback covers only the pre-mount render
+  const currentFacts = facts ?? editorFacts(editor.state);
 
   return (
     <>
@@ -133,7 +145,8 @@ export default function Editor({
         {conflict && <ConflictNotice onResolve={resolveConflict} />}
         <EditorContent editor={editor} />
         <StatusBar
-          editor={editor}
+          facts={currentFacts}
+          onToggleMirror={onToggleMirror}
           finderOpen={finderOpen}
           onToggleFinder={onToggleFinder}
           triggerRef={triggerRef}

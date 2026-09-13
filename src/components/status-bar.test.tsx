@@ -1,27 +1,35 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useRef } from "react";
-import { useEditor } from "@tiptap/react";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 
-import { extensions } from "@/lib/editor-schema";
 import StatusBar from "@/components/status-bar";
+import type { EditorFacts } from "@/lib/editor-facts";
 import { stubClipboard } from "@/test/stub-clipboard";
 
 afterEach(cleanup);
 afterEach(() => vi.restoreAllMocks());
 
-// StatusBar reads both custom plugins' state off the editor, so the
-// harness builds the same extension set the real editor does
-const Harness = ({ content }: { content: string }) => {
-  const editor = useEditor({
-    extensions: extensions({ enabled: false }),
-    content,
-  });
+const raw = "A b, b a";
+
+const facts = (overrides: Partial<EditorFacts> = {}): EditorFacts => ({
+  hasLetters: true,
+  isPalindrome: true,
+  mirrorEnabled: false,
+  insertMode: "mirrored",
+  raw,
+  overLimit: false,
+  shareable: true,
+  ...overrides,
+});
+
+// StatusBar is presentational: the editor state arrives as facts, so the
+// test needs no ProseMirror harness
+const Harness = ({ value }: { value: EditorFacts }) => {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-  if (!editor) return null;
   return (
     <StatusBar
-      editor={editor}
+      facts={value}
+      onToggleMirror={() => {}}
       finderOpen={false}
       onToggleFinder={() => {}}
       triggerRef={triggerRef}
@@ -45,7 +53,7 @@ describe("StatusBar share menu", () => {
     stubClipboard(async (text) => {
       written.push(text);
     });
-    const { container } = render(<Harness content="A b, b a" />);
+    const { container } = render(<Harness value={facts()} />);
     const trigger = await openMenu();
 
     expect(trigger.getAttribute("title")).toContain("Share this palindrome");
@@ -54,7 +62,7 @@ describe("StatusBar share menu", () => {
       fireEvent.click(screen.getByRole("button", { name: "Copy text" }));
     });
 
-    expect(written).toEqual(["A b, b a"]);
+    expect(written).toEqual([raw]);
     // the menu closed, the trigger took focus back, and it flashed
     expect(screen.queryByRole("button", { name: "Copy text" })).toBeNull();
     expect(document.activeElement).toBe(trigger);
@@ -69,24 +77,24 @@ describe("StatusBar share menu", () => {
     stubClipboard(async (text) => {
       written.push(text);
     });
-    render(<Harness content="A b, b a" />);
+    render(<Harness value={facts()} />);
     await openMenu();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     });
 
-    expect(written).toEqual([`${location.origin}/p#t=${encodeURIComponent("A b, b a")}`]);
+    expect(written).toEqual([`${location.origin}/p#t=${encodeURIComponent(raw)}`]);
   });
 
   test("opens the Bluesky composer from the menu", async () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
-    render(<Harness content="A b, b a" />);
+    render(<Harness value={facts()} />);
     await openMenu();
 
     fireEvent.click(screen.getByRole("button", { name: "Post to Bluesky" }));
 
-    const text = `A b, b a\n\n${location.origin}/p#t=${encodeURIComponent("A b, b a")}`;
+    const text = `${raw}\n\n${location.origin}/p#t=${encodeURIComponent(raw)}`;
     expect(open).toHaveBeenCalledWith(
       `https://bsky.app/intent/compose?text=${encodeURIComponent(text)}`,
       "_blank",
@@ -95,7 +103,7 @@ describe("StatusBar share menu", () => {
   });
 
   test("disables Post to Bluesky past 300 graphemes", async () => {
-    render(<Harness content={"a".repeat(301)} />);
+    render(<Harness value={facts({ raw: "a".repeat(301) })} />);
     await openMenu();
 
     const post = screen.getByRole("button", { name: "Post to Bluesky" });
@@ -104,7 +112,7 @@ describe("StatusBar share menu", () => {
   });
 
   test("Esc closes the menu and refocuses the trigger", async () => {
-    render(<Harness content="A b, b a" />);
+    render(<Harness value={facts()} />);
     const trigger = await openMenu();
 
     await act(async () => {
@@ -116,7 +124,7 @@ describe("StatusBar share menu", () => {
   });
 
   test("a click outside closes the menu without stealing focus", async () => {
-    render(<Harness content="A b, b a" />);
+    render(<Harness value={facts()} />);
     const trigger = await openMenu();
 
     await act(async () => {
@@ -129,15 +137,23 @@ describe("StatusBar share menu", () => {
   });
 
   test("is disabled with a reason when the text is not a palindrome", async () => {
-    render(<Harness content="hello world" />);
+    render(<Harness value={facts({ isPalindrome: false, shareable: false })} />);
     await screen.findByRole("status");
 
     expect(shareTrigger().getAttribute("disabled")).toBe("");
     expect(shareTrigger().getAttribute("title")).toContain("Finish the palindrome");
   });
 
+  test("is disabled with the length reason when the text is over the cap", async () => {
+    render(<Harness value={facts({ overLimit: true, shareable: false })} />);
+    await screen.findByRole("status");
+
+    expect(shareTrigger().getAttribute("disabled")).toBe("");
+    expect(shareTrigger().getAttribute("title")).toContain("too long to share");
+  });
+
   test("is disabled for the empty document despite its vacuous palindrome", async () => {
-    render(<Harness content="" />);
+    render(<Harness value={facts({ hasLetters: false, shareable: false, raw: "" })} />);
     await screen.findByRole("status");
 
     expect(shareTrigger().getAttribute("disabled")).toBe("");
