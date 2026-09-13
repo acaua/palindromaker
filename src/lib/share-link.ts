@@ -8,8 +8,13 @@ import { readFragmentParam } from "@/lib/url-fragment";
 // rejected: size is a wash, legible URLs win).
 export const MAX_SHARE_TEXT = 2000;
 
+// the fragment payload for a text link: "t=<percent-encoded text>", kept
+// symmetric with postHash in bluesky-post.ts so a surface can build the
+// same fragment readShareText parses
+export const textHash = (text: string): string => `t=${encodeURIComponent(text)}`;
+
 export const buildShareUrl = (text: string, origin: string): string =>
-  `${origin}/p#t=${encodeURIComponent(text)}`;
+  `${origin}/p#${textHash(text)}`;
 
 // reads the text out of a #t=... fragment, with or without the leading
 // "#": window.location.hash has it, TanStack's hash option does not.

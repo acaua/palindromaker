@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { MAX_SHARE_TEXT, buildShareUrl, readShareText, textToDoc } from "@/lib/share-link";
+import {
+  MAX_SHARE_TEXT,
+  buildShareUrl,
+  readShareText,
+  textHash,
+  textToDoc,
+} from "@/lib/share-link";
 
 describe("buildShareUrl", () => {
   test("encodes the text into /p#t=", () => {
@@ -18,6 +24,16 @@ describe("buildShareUrl", () => {
       "https://x.test/p#t=%C3%89lu%20par%20cette%20crapule",
     );
     expect(buildShareUrl("ab\nba", "https://x.test")).toBe("https://x.test/p#t=ab%0Aba");
+  });
+});
+
+describe("textHash", () => {
+  test("round-trips through readShareText", () => {
+    expect(readShareText(textHash("ab\nba"))).toBe("ab\nba");
+  });
+
+  test("is the fragment buildShareUrl emits", () => {
+    expect(buildShareUrl("ab ba", "https://x.test")).toBe(`https://x.test/p#${textHash("ab ba")}`);
   });
 });
 
