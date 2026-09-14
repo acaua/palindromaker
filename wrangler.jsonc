@@ -7,6 +7,9 @@
     "not_found_handling": "single-page-application",
   },
   "build": {
-    "command": "vp check && vp build",
+    // `pnpm check` is `vp check && vp test run` (format, lint, type
+    // checks, then the unit tests); `vp check` alone runs no tests, so
+    // spelling out the script is what keeps a failing test from deploying.
+    "command": "pnpm check && vp build",
   },
 }
