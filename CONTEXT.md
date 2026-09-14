@@ -16,13 +16,13 @@ The letters of a text in reading order, with everything else dropped: the sequen
 How a character is reduced to its reading: case and combining marks fall away. Two characters read the same when they normalize alike.
 
 **Center**:
-The innermost pair of matching letters. Absent when no pair matched.
+The innermost matching letters: a pair, or a single letter when it is its own mirror. Absent when no letters matched.
 
 **Gap**:
-The inclusive range of letters that could not be paired because the two sides disagree. Absent while the text reads the same both ways.
+The inclusive span the reading left unpaired: from the outermost two letters that disagree inward. Absent while the text reads the same both ways.
 
 **Raw text**:
-The document's original characters, kept exactly as written and normalized in no way. The form the text is shared or posted in.
+The document's original characters, kept exactly as written and normalized in no way, with block boundaries reading as a single newline. The form the text is shared or posted in.
 
 **Document analysis**:
 The document as the checker sees it: the letters in reading order, its raw text, and the reading's verdict.
@@ -30,7 +30,12 @@ The document as the checker sees it: the letters in reading order, its raw text,
 ### Mirroring
 
 **Mirror**:
-For a letter, its partner at the symmetric point in letter space. A mirror-inserted letter is reproduced at that partner's side so a finished palindrome stays one.
+For a letter, the letter at the symmetric point in letter space: its partner. A letter can be its own mirror — the center of an odd reading — and a letter the reading failed to pair has none.
+_Avoid_: reflection, twin
+
+**Caret mirror**:
+The letter at the caret and its mirror, highlighted together while the caret rests on one. Shown, not typed; absent when the caret's letter has no mirror.
+_Avoid_: cursor mirror, caret highlight
 
 **Mirror editing**:
 Typing or deleting as though the text is always a palindrome: a letter is duplicated, or removed, together with its mirror. Only meaningful while the text already reads the same both ways.
@@ -39,8 +44,12 @@ _Avoid_: mirror typing, mirror mode, mirror toggle, or "mirror" alone for the to
 **Mirror word**:
 A word spelled with its letters reversed — its mirror at the word scale. A word that reverses to itself is its own mirror.
 
+**Word insert mode**:
+What a word-finder click will do, shown to the user before the click: **mirrored** (the word and its mirror), **caret** (the word alone, mirror editing off), or **paused** (the word alone, mirror editing on but waiting for the text to read the same both ways).
+_Avoid_: waiting, "not at all" — a word is never withheld.
+
 **Word insert**:
-Putting a whole word into the document the way mirror editing puts in one letter: the word at the caret and its mirror at the symmetric point in letter space. Its mode — what the finder promises before the click — is whether the word goes in mirrored, at the caret alone, or not at all.
+Putting a whole word into the document the way mirror editing puts in one letter: the word at the caret and its mirror at the symmetric point in letter space. Nothing is ever deleted, and the word is never withheld: even a paused or caret click inserts the word alone.
 
 ### The editor
 
@@ -51,7 +60,7 @@ What the editor opens with: its initial content and the remembered mirror-editin
 The choices remembered across visits — dictionary language, UI language, mirror editing, finder open — kept apart from the document itself.
 
 **EditorFacts**:
-The single derived answer to "how does the editor read right now": whether there are letters, whether the text is a palindrome, whether mirror editing is on, and whether the text can be shared or is too long to.
+The single derived answer to "how does the editor read right now": the raw text, whether there are letters, whether it is a palindrome, whether mirror editing is on, whether it is over the share length limit, and whether it may be shared — which needs all of: letters, a palindrome, and within the limit.
 
 **Conflict**:
 The state where another tab saved a different document while this one held unsaved edits. Resolved by taking theirs or keeping mine.
@@ -71,10 +80,29 @@ _Avoid_: viewer.
 **Post reference**:
 The reference a reader link carries to a Bluesky post. Opens the post and the palindrome within it.
 
+**Bluesky post share**:
+Posting the finished palindrome to Bluesky through Bluesky's own composer, prefilled with the text plus a link — the full share link, the site root, or the text alone, whichever first fits Bluesky's limit. Never truncated; absent when even the text alone is too long.
+_Avoid_: composer, "post" alone
+
 ### Bluesky
+
+**Bluesky post**:
+A post read from Bluesky's public API, and the thing Post reference points at and Post view describes. Not to be confused with the outbound Bluesky post share.
+_Avoid_: status, skeet
 
 **Annotation**:
 A span a Bluesky post declares over its text (a link, mention or tag). Its letters are kept out when the palindrome inside the post is extracted.
+
+**Palindrome extraction**:
+The longest palindrome a post's text contains, taken in letter space. Punctuation hugging it is kept; annotation spans and bare #/@ tokens contribute no letters and cannot be crossed. Fewer than three letters counts as none.
+_Avoid_: substring, match
+
+**Restricted post**:
+A post whose labels mark it adult or not for logged-out viewers. Its extracted palindrome is withheld.
+_Avoid_: flagged post, NSFW post
+
+**Palindrome tag**:
+A hashtag the Explore page searches in the current UI language, each expanded to its accent-stripped spelling because Bluesky's search treats the two as distinct.
 
 **Post view**:
 How the app presents one post: whether it is restricted, the palindrome it contains (absent when restricted or when there is none), and its text split into plain and annotated spans. The card and the reader share it.
