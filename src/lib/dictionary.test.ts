@@ -6,7 +6,6 @@ import {
   LANGUAGES,
   loadDictionary,
   mirrorMatch,
-  mirrorWord,
   searchWords,
 } from "./dictionary";
 
@@ -106,18 +105,6 @@ describe("searchWords", () => {
   test("is case-insensitive", () => {
     expect(searchWords(dictionary, "azul", "starts")).toEqual(["Azul"]);
     expect(searchWords(dictionary, "AZUL", "contains")).toEqual(["Azul"]);
-  });
-});
-
-describe("mirrorWord", () => {
-  test("reverses the word keeping accents in place", () => {
-    expect(mirrorWord("casa")).toBe("asac");
-    expect(mirrorWord("lápis")).toBe("sipál");
-    expect(mirrorWord("ábaco")).toBe("ocabá");
-  });
-
-  test("reverses a palindrome to itself", () => {
-    expect(mirrorWord("arara")).toBe("arara");
   });
 });
 

@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { editor, clearEditor, replaceAll, saved, typeText } from "./helpers";
-import { mirrorWord } from "@/lib/dictionary";
+import { mirrorWord } from "@/lib/mirror-word";
 import { DOC_STORAGE_KEY } from "@/lib/persistence";
 import { SAMPLE_CONTENT, SAMPLE_CONTENT_PT } from "@/lib/sample";
 

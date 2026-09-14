@@ -4,6 +4,8 @@ import { getUiLanguage } from "@/lib/i18n";
 import type { UiLanguage } from "@/lib/i18n";
 import { readStoredDoc } from "@/lib/persistence";
 import type { StoreContext } from "@/lib/persistence";
+import { readPrefs, writePrefs } from "@/lib/prefs";
+import type { Prefs } from "@/lib/prefs";
 import { sampleContent } from "@/lib/sample";
 import { readShareText, textToDoc } from "@/lib/share-link";
 
@@ -23,6 +25,36 @@ export const resolveInitialContent = ({
 } & StoreContext): JSONContent | string => {
   const shared = readShareText(fragment);
   return shared ? textToDoc(shared) : (readStoredDoc(storage, schema) ?? sampleContent(uiLanguage));
+};
+
+// Everything the editor is seeded with at mount, resolved once: the initial
+// content (the same precedence as resolveInitialContent) and the two
+// remembered toggles, plus the one write path back. A component that reads
+// them separately would parse the prefs blob again each time and could
+// disagree with what another just wrote; this is the one owner instead.
+export interface EditorSession {
+  content: JSONContent | string;
+  mirrorEnabled: boolean;
+  finderOpen: boolean;
+  writePref: (patch: Prefs) => void;
+}
+
+export const resolveEditorSession = ({
+  fragment,
+  storage,
+  schema,
+  uiLanguage = getUiLanguage(),
+}: {
+  fragment: string;
+  uiLanguage?: UiLanguage;
+} & StoreContext): EditorSession => {
+  const prefs = readPrefs(storage);
+  return {
+    content: resolveInitialContent({ fragment, storage, schema, uiLanguage }),
+    mirrorEnabled: prefs.mirrorEnabled,
+    finderOpen: prefs.finderOpen,
+    writePref: (patch) => writePrefs(storage, patch),
+  };
 };
 
 interface LocationLike {

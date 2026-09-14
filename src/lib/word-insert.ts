@@ -1,11 +1,11 @@
 import { TextSelection } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 
-import { isLetter, normalizeText } from "@/lib/check-palindrome";
+import { isLetter } from "@/lib/check-palindrome";
 import { analyzeDoc } from "@/lib/doc-analysis";
 import type { DocAnalysis } from "@/lib/doc-analysis";
-import { mirrorWord } from "@/lib/dictionary";
 import { countLettersBefore, mirrorInsertDocPos } from "@/lib/mirror-edit";
+import { mirrorWord, mirrorsItself } from "@/lib/mirror-word";
 
 // Putting a whole word into the document, the way mirror typing puts a
 // single character into it: the word goes in at the caret and its mirror at
@@ -48,9 +48,17 @@ const hasLetterAt = (analysis: DocAnalysis, pos: number): boolean => {
   return char !== undefined && isLetter(char);
 };
 
-// the same test the finder's "palindrome word" marker uses
-const readsTheSameBothWays = (word: string): boolean =>
-  normalizeText(mirrorWord(word)) === normalizeText(word);
+// What inserting a word will do, which is also what the finder tells the
+// user before the click. Mirroring is only meaningful while the text reads
+// the same both ways, so a word follows the same rule as a keystroke. The
+// enabled flag is a parameter because the toggle lives in the mirror
+// extension: this module never reaches into its plugin.
+export const wordInsertMode = (state: EditorState, enabled: boolean): WordInsertMode => {
+  if (!enabled) {
+    return "caret";
+  }
+  return analyzeDoc(state.doc).result.isPalindrome ? "mirrored" : "paused";
+};
 
 const planWordInsert = (
   analysis: DocAnalysis,
@@ -86,7 +94,7 @@ const planWordInsert = (
   // brings its mirror in beside it. An empty document is this case, and
   // the word becomes the whole palindrome.
   if (2 * before === letterPositions.length) {
-    return caretOnly(readsTheSameBothWays(word) ? word : `${word} ${mirrorWord(word)}`);
+    return caretOnly(mirrorsItself(word) ? word : `${word} ${mirrorWord(word)}`);
   }
 
   const mirrorPos = mirrorInsertDocPos(letterPositions, before);

@@ -1,8 +1,10 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Editor from "@/components/editor";
+import type { FinderHandle } from "@/components/editor";
 import { useI18n } from "@/hooks/use-i18n";
-import { prefsFor } from "@/lib/prefs";
+import { clearShareFragment, resolveEditorSession } from "@/lib/editor-session";
+import { schema } from "@/lib/editor-schema";
 import { localStorageOrNull } from "@/lib/storage";
 
 // the home route: today's page minus the header row, which the site header
@@ -10,12 +12,25 @@ import { localStorageOrNull } from "@/lib/storage";
 // it is page content, and the sr-only h1 keeps the document outline — the
 // visible brand lives in the header's link.
 export default function EditorPage() {
-  // prefs are read once, like the editor's restored content
-  const [prefs] = useState(() => prefsFor(localStorageOrNull()));
-  const [restored] = useState(() => prefs.read());
+  // the editor's mount-time decisions are resolved once, from the one owner
+  // (content precedence, the remembered toggles, the write path back)
+  const [session] = useState(() =>
+    resolveEditorSession({
+      fragment: window.location.hash,
+      storage: localStorageOrNull(),
+      schema,
+    }),
+  );
+  // the share fragment is consumed once it has been read, so a reload after
+  // "Edit this" falls back to storage; editing a shared palindrome replaces
+  // the stored doc on the first edit (the conflict rules that then govern
+  // saving live in persistence.ts)
+  useEffect(() => {
+    clearShareFragment();
+  }, []);
   const { t } = useI18n();
   // open by default; the choice is remembered like the mirror toggle
-  const [finderOpen, setFinderOpen] = useState(() => restored.finderOpen);
+  const [finderOpen, setFinderOpen] = useState(session.finderOpen);
   // the status bar's "Find words" trigger; the panel's ✕ returns focus to it
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -23,16 +38,26 @@ export default function EditorPage() {
   const setFinder = useCallback(
     (open: boolean) => {
       setFinderOpen(open);
-      prefs.write({ finderOpen: open });
+      session.writePref({ finderOpen: open });
     },
-    [prefs],
+    [session],
   );
+
   const toggleFinder = useCallback(() => setFinder(!finderOpen), [setFinder, finderOpen]);
 
   const closeFinder = useCallback(() => {
     setFinder(false);
     triggerRef.current?.focus();
   }, [setFinder]);
+
+  // one handle for the finder disclosure: the editor takes one prop instead
+  // of four, and the layout below still reads `open` for its reservation
+  const finder: FinderHandle = {
+    open: finderOpen,
+    toggle: toggleFinder,
+    close: closeFinder,
+    triggerRef,
+  };
 
   return (
     // the word finder is a fixed panel: on md+ the column keeps out of its
@@ -58,12 +83,7 @@ export default function EditorPage() {
         <p className="mt-2.5 max-w-xl text-sm leading-5 text-gray-600 md:mt-3 md:text-base md:leading-6">
           {t("app.tagline")}
         </p>
-        <Editor
-          finderOpen={finderOpen}
-          onToggleFinder={toggleFinder}
-          onCloseFinder={closeFinder}
-          triggerRef={triggerRef}
-        />
+        <Editor session={session} finder={finder} />
       </div>
     </main>
   );
