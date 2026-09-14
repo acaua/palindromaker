@@ -4,7 +4,8 @@ import { ArrowsRightLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid"
 
 import { useI18n } from "@/hooks/use-i18n";
 import type { Dictionary, MirrorMatch } from "@/lib/dictionary";
-import { mirrorMatch, mirrorWord } from "@/lib/dictionary";
+import { mirrorMatch } from "@/lib/dictionary";
+import { mirrorWord } from "@/lib/mirror-word";
 import { resultCount } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/i18n";
 

@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import type { RefObject } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 
 import { EMPTY_FACTS, editorFacts } from "@/lib/editor-facts";
 import { extensions, schema } from "@/lib/editor-schema";
-import { clearShareFragment, resolveInitialContent } from "@/lib/editor-session";
+import type { EditorSession } from "@/lib/editor-session";
 import { getUiLanguage, translate } from "@/lib/i18n";
-import { wordInsertMode } from "@/lib/mirror-extension";
-import { DEFAULT_WORD_INSERT_MODE } from "@/lib/word-insert";
-import { prefsFor } from "@/lib/prefs";
+import { mirrorEnabled } from "@/lib/mirror-extension";
+import { DEFAULT_WORD_INSERT_MODE, wordInsertMode } from "@/lib/word-insert";
 import { localStorageOrNull } from "@/lib/storage";
 import { useEditorPersistence } from "@/hooks/use-editor-persistence";
 import ConflictNotice from "@/components/conflict-notice";
@@ -16,44 +15,33 @@ import { EditorLegend } from "@/components/legend";
 import StatusBar from "@/components/status-bar";
 import WordFinder from "@/components/word-finder";
 
-export default function Editor({
-  finderOpen,
-  onToggleFinder,
-  onCloseFinder,
-  triggerRef,
-}: {
-  finderOpen: boolean;
-  onToggleFinder: () => void;
-  onCloseFinder: () => void;
+// the finder disclosure, owned by the page (which reads `open` for its
+// layout reservation) and handed to the editor as one prop; the editor
+// forwards it to the status bar's trigger and the panel
+export interface FinderHandle {
+  open: boolean;
+  toggle: () => void;
+  close: () => void;
   triggerRef: RefObject<HTMLButtonElement | null>;
+}
+
+// The TipTap view. It is seeded from the one EditorSession the page
+// resolved, so it never parses storage or prefs itself; the UI language is
+// mount-time too, since App has run initUiLanguage by now and the editor is
+// never recreated.
+export default function Editor({
+  session,
+  finder,
+}: {
+  session: EditorSession;
+  finder: FinderHandle;
 }) {
-  const storage = localStorageOrNull();
-  const prefs = prefsFor(storage);
-  // the editor keeps the content and the toggle state it was created with,
-  // so storage is read once: re-reading every render would re-validate the
-  // stored doc against the schema on every keystroke. The content
-  // precedence (shared #t= > stored > sample) lives in editor-session.ts;
-  // the UI language is mount-time too, since App has run initUiLanguage by
-  // now and the editor is never recreated
-  const [restored] = useState(() => ({
-    content: resolveInitialContent({ fragment: window.location.hash, storage, schema }),
-    mirrorEnabled: prefs.read().mirrorEnabled,
-  }));
-
-  // the share fragment is consumed once it has been read, so a reload after
-  // "Edit this" falls back to storage; editing a shared palindrome replaces
-  // the stored doc on the first edit (accepted trade-off — the conflict
-  // rules that then govern saving live in persistence.ts)
-  useEffect(() => {
-    clearShareFragment();
-  }, []);
-
   const editor = useEditor({
     extensions: extensions({
-      enabled: restored.mirrorEnabled,
-      onChange: (enabled) => prefs.write({ mirrorEnabled: enabled }),
+      enabled: session.mirrorEnabled,
+      onChange: (enabled) => session.writePref({ mirrorEnabled: enabled }),
     }),
-    content: restored.content,
+    content: session.content,
     autofocus: "end",
     editorProps: {
       attributes: {
@@ -78,7 +66,8 @@ export default function Editor({
   // single-owned in wordInsertMode, whose pre-mount answer is the default.
   const insertMode = useEditorState({
     editor,
-    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : DEFAULT_WORD_INSERT_MODE),
+    selector: ({ editor }) =>
+      editor ? wordInsertMode(editor.state, mirrorEnabled(editor.state)) : DEFAULT_WORD_INSERT_MODE,
   });
 
   // everything the footer shows, through the one EditorFacts interface
@@ -100,6 +89,7 @@ export default function Editor({
 
   // another tab saved a different palindrome while this one had edits of
   // its own; until the user answers, this tab holds off on saving
+  const storage = localStorageOrNull();
   const { conflict, resolveConflict } = useEditorPersistence(editor, { storage, schema });
 
   if (!editor) return null;
@@ -115,15 +105,15 @@ export default function Editor({
           facts={currentFacts}
           origin={window.location.origin}
           onToggleMirror={onToggleMirror}
-          finderOpen={finderOpen}
-          onToggleFinder={onToggleFinder}
-          triggerRef={triggerRef}
+          finderOpen={finder.open}
+          onToggleFinder={finder.toggle}
+          triggerRef={finder.triggerRef}
         />
       </div>
       <EditorLegend />
       <WordFinder
-        open={finderOpen}
-        onClose={onCloseFinder}
+        open={finder.open}
+        onClose={finder.close}
         onInsertWord={insertWord}
         insertMode={insertMode ?? DEFAULT_WORD_INSERT_MODE}
       />

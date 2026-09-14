@@ -2,8 +2,9 @@ import { describe, expect, test, vi } from "vite-plus/test";
 
 import { testSchema } from "@/test/schema";
 import { MemoryStorage } from "@/test/storages";
-import { clearShareFragment, resolveInitialContent } from "./editor-session";
+import { clearShareFragment, resolveEditorSession, resolveInitialContent } from "./editor-session";
 import { DOC_STORAGE_KEY } from "./persistence";
+import { PREFS_STORAGE_KEY } from "./prefs";
 import { sampleContent } from "./sample";
 
 const doc = (text: string) => ({
@@ -53,6 +54,83 @@ describe("resolveInitialContent", () => {
     expect(
       resolveInitialContent({ fragment: "", storage, schema: testSchema, uiLanguage: "fr" }),
     ).toBe(sampleContent("fr"));
+  });
+});
+
+describe("resolveEditorSession", () => {
+  test("resolves the initial content and the remembered toggles together", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ mirrorEnabled: true, finderOpen: false }));
+
+    const session = resolveEditorSession({
+      fragment: "",
+      storage,
+      schema: testSchema,
+      uiLanguage: "en",
+    });
+
+    expect(session.content).toBe(sampleContent("en"));
+    expect(session.mirrorEnabled).toBe(true);
+    expect(session.finderOpen).toBe(false);
+  });
+
+  test("falls back to the defaults when nothing is stored", () => {
+    const session = resolveEditorSession({
+      fragment: "",
+      storage: new MemoryStorage(),
+      schema: testSchema,
+      uiLanguage: "en",
+    });
+
+    expect(session.mirrorEnabled).toBe(false);
+    expect(session.finderOpen).toBe(true);
+  });
+
+  test("a shared #t= fragment wins over the stored doc while prefs still resolve", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc("stored")));
+    storage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ mirrorEnabled: true, finderOpen: false }));
+
+    const session = resolveEditorSession({
+      fragment: `#t=${encodeURIComponent("A b, b a")}`,
+      storage,
+      schema: testSchema,
+      uiLanguage: "en",
+    });
+
+    expect(session.content).toEqual(doc("A b, b a"));
+    expect(session.mirrorEnabled).toBe(true);
+    expect(session.finderOpen).toBe(false);
+  });
+
+  test("the stored doc is used when there is no share", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc("stored")));
+    storage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ mirrorEnabled: true }));
+
+    const session = resolveEditorSession({
+      fragment: "",
+      storage,
+      schema: testSchema,
+      uiLanguage: "en",
+    });
+
+    expect(session.content).toEqual(doc("stored"));
+    expect(session.mirrorEnabled).toBe(true);
+  });
+
+  test("writePref persists a patch without replaying the defaults", () => {
+    const storage = new MemoryStorage();
+    const session = resolveEditorSession({
+      fragment: "",
+      storage,
+      schema: testSchema,
+      uiLanguage: "en",
+    });
+
+    session.writePref({ finderOpen: false });
+
+    expect(storage.getItem(PREFS_STORAGE_KEY)).toBe('{"finderOpen":false}');
   });
 });
 

@@ -11,8 +11,7 @@ import {
   mirrorDeleteDocPos,
   mirrorInsertDocPos,
 } from "@/lib/mirror-edit";
-import { wordInsertTransaction } from "@/lib/word-insert";
-import type { WordInsertMode } from "@/lib/word-insert";
+import { wordInsertTransaction, wordInsertMode } from "@/lib/word-insert";
 
 export interface MirrorEditingOptions {
   // state the toggle starts in, e.g. restored from a previous session
@@ -124,22 +123,20 @@ const mirrorEdits = (
   return null;
 };
 
-// What inserting a word from the finder will do, and what the finder says
-// it will do. Mirroring is only meaningful while the text reads the same
-// both ways, so a word follows the same rule as a keystroke.
-export const wordInsertMode = (state: EditorState): WordInsertMode => {
-  if (!mirrorPluginKey.getState(state)?.enabled) {
-    return "caret";
-  }
-  return analyzeDoc(state.doc).result.isPalindrome ? "mirrored" : "paused";
-};
+// the mirror editing toggle, read where the plugin key lives so callers do
+// not reach into the plugin themselves
+export const mirrorEnabled = (state: EditorState): boolean =>
+  mirrorPluginKey.getState(state)?.enabled ?? false;
 
 // The transaction the insertWord command dispatches: both halves of the
 // word and the caret between them, marked as this plugin's own edit. The
 // mark matters — a one-letter word is a single-character insert, which
 // appendTransaction would otherwise mirror a second time.
 export const wordInsertTransactionFor = (state: EditorState, word: string): Transaction =>
-  wordInsertTransaction(state, word, wordInsertMode(state)).setMeta(mirrorPluginKey, { own: true });
+  wordInsertTransaction(state, word, wordInsertMode(state, mirrorEnabled(state))).setMeta(
+    mirrorPluginKey,
+    { own: true },
+  );
 
 export const createMirrorPlugin = ({ enabled = false } = {}) =>
   new Plugin<MirrorEditingPluginState>({

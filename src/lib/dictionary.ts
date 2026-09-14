@@ -1,4 +1,5 @@
 import { normalizeText } from "@/lib/check-palindrome";
+import { mirrorWord, mirrorsItself } from "@/lib/mirror-word";
 
 export type Language = "pt-br" | "en" | "es" | "de" | "fr" | "it";
 
@@ -143,24 +144,13 @@ export const searchWords = (dictionary: Dictionary, query: string, mode: SearchM
   return results;
 };
 
-// segment by grapheme cluster so astral/emoji letters survive the round trip
-// (a plain [...word] split would cut them into unpaired surrogate halves)
-const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-
-export const mirrorWord = (word: string): string =>
-  [...graphemes.segment(word)]
-    .reverse()
-    .map((s) => s.segment)
-    .join("");
-
 export type MirrorMatch = "pair" | "palindrome" | null;
 
 // what the word's mirror means for building palindromes: "palindrome"
 // when the word mirrors to itself, "pair" when the mirror is also a
 // dictionary word, null otherwise (accent/case-insensitive)
 export const mirrorMatch = (dictionary: Dictionary, word: string): MirrorMatch => {
-  const normalized = normalizeText(word);
+  if (mirrorsItself(word)) return "palindrome";
   const mirrored = normalizeText(mirrorWord(word));
-  if (mirrored === normalized) return "palindrome";
   return dictionary.normalizedSet.has(mirrored) ? "pair" : null;
 };

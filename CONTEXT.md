@@ -16,6 +16,12 @@ For a letter, its partner at the symmetric point in letter space. A mirror-inser
 **Mirror editing**:
 Typing or deleting as though the text is always a palindrome: a letter is duplicated (or removed) together with its mirror. Only meaningful while the text already reads the same both ways.
 
+**Mirror word**:
+The spelling of a word with its grapheme order reversed — its mirror at the word scale. A word that mirrors to itself (`mirrorsItself`) is its own mirror.
+
+**Word insert**:
+Putting a whole word into the document the way mirror typing puts in a single character: the word at the caret and its mirror at the symmetric point in letter space. Its mode (`mirrored`, `caret`, `paused`) is what the finder promises before the click.
+
 **Center**:
 The innermost matching pair of letters; `undefined` when nothing matched.
 

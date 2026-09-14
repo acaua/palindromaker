@@ -1,7 +1,7 @@
 import type { EditorState } from "@tiptap/pm/state";
 
 import { analyzeDoc } from "@/lib/doc-analysis";
-import { mirrorPluginKey } from "@/lib/mirror-extension";
+import { mirrorEnabled } from "@/lib/mirror-extension";
 import { MAX_SHARE_TEXT } from "@/lib/share-link";
 
 // Everything the card's footer needs to know about the editor, derived from
@@ -43,7 +43,7 @@ export const editorFacts = (state: EditorState): EditorFacts => {
   return {
     hasLetters,
     isPalindrome,
-    mirrorEnabled: mirrorPluginKey.getState(state)?.enabled ?? false,
+    mirrorEnabled: mirrorEnabled(state),
     raw: analysis.raw,
     overLimit,
     shareable: hasLetters && isPalindrome && !overLimit,

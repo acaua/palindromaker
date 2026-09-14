@@ -5,12 +5,7 @@ import { Slice } from "@tiptap/pm/model";
 import { ReplaceStep } from "@tiptap/pm/transform";
 
 import { buildDoc } from "@/test/schema";
-import {
-  createMirrorPlugin,
-  mirrorPluginKey,
-  wordInsertMode,
-  wordInsertTransactionFor,
-} from "./mirror-extension";
+import { createMirrorPlugin, mirrorPluginKey, wordInsertTransactionFor } from "./mirror-extension";
 
 const docText = (state: EditorState) =>
   state.doc.textBetween(0, state.doc.content.size, "\n", "\n");
@@ -190,14 +185,6 @@ describe("inserting a word", () => {
     const state = insertWord(enabled("a,,a"), 3, "a");
 
     expect(docText(state)).toBe("a,a,a");
-  });
-});
-
-describe("word insert mode", () => {
-  test("reports what a word finder click will do", () => {
-    expect(wordInsertMode(createState("aba"))).toBe("caret");
-    expect(wordInsertMode(enableMirror(createState("aba")))).toBe("mirrored");
-    expect(wordInsertMode(enableMirror(createState("abc")))).toBe("paused");
   });
 });
 

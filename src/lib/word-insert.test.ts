@@ -3,7 +3,7 @@ import { EditorState, TextSelection } from "@tiptap/pm/state";
 
 import { buildDoc } from "@/test/schema";
 import { analyzeDoc } from "./doc-analysis";
-import { wordInsertTransaction } from "./word-insert";
+import { wordInsertMode, wordInsertTransaction } from "./word-insert";
 import type { WordInsertMode } from "./word-insert";
 
 // the document with the caret at doc position `caret`, then the word
@@ -105,6 +105,16 @@ describe("spacing", () => {
   test("the ends of a block need no space", () => {
     expect(insert("", 1, "casa", "caret").text).toBe("casa|");
     expect(insert("ab\nba", 3, "casa", "caret").text).toBe("ab casa|\nba");
+  });
+});
+
+describe("word insert mode", () => {
+  const state = (text: string) => EditorState.create({ doc: buildDoc(text) });
+
+  test("reports what a word finder click will do", () => {
+    expect(wordInsertMode(state("aba"), false)).toBe("caret");
+    expect(wordInsertMode(state("aba"), true)).toBe("mirrored");
+    expect(wordInsertMode(state("abc"), true)).toBe("paused");
   });
 });
 
