@@ -737,20 +737,23 @@ export const messages: Record<UiLanguage, Table> = { en, pt, es, de, fr, it };
 
 export const translate = (lang: UiLanguage, key: MessageKey): string => messages[lang][key];
 
+// substitutes a preformatted value into a "{count}" placeholder; each
+// caller formats its own number (locale digits for counts, plain for the
+// cooldown's seconds)
+const fillCount = (template: string, value: string): string => template.replace("{count}", value);
+
 // "{count} results" / "{count} resultados": the wording is per-language
 // data (finder.resultOne/finder.resultMany, pluralized by count), the
-// number follows the result language's locale; the "{count}" placeholder
-// is substituted here
+// number follows the result language's locale
 export const resultCount = (lang: UiLanguage, count: number): string =>
-  messages[lang][count === 1 ? "finder.resultOne" : "finder.resultMany"].replace(
-    "{count}",
+  fillCount(
+    messages[lang][count === 1 ? "finder.resultOne" : "finder.resultMany"],
     count.toLocaleString(UI_LANGUAGE_LOCALES[lang]),
   );
 
-// "Try again in 42s": the retry cooldown's remaining seconds, substituted
-// like resultCount's {count}
+// "Try again in 42s": the retry cooldown's remaining seconds
 export const retryIn = (lang: UiLanguage, seconds: number): string =>
-  messages[lang]["explore.retryIn"].replace("{count}", String(seconds));
+  fillCount(messages[lang]["explore.retryIn"], String(seconds));
 
 const isUiLanguage = (value: unknown): value is UiLanguage =>
   typeof value === "string" && (UI_LANGUAGES as readonly string[]).includes(value);

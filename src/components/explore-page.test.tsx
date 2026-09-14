@@ -12,16 +12,22 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/tes
 
 import ExplorePage from "@/components/explore-page";
 import { useBlueskySearch } from "@/hooks/use-bluesky-search";
+import { useCountdown } from "@/hooks/use-countdown";
 import { makePost } from "@/test/bluesky-post";
 
 vi.mock("@/hooks/use-bluesky-search", () => ({ useBlueskySearch: vi.fn() }));
+vi.mock("@/hooks/use-countdown", () => ({ useCountdown: vi.fn() }));
 
 const mockedSearch = vi.mocked(useBlueskySearch);
+const mockedCountdown = vi.mocked(useCountdown);
 
 const post = makePost();
 
 afterEach(cleanup);
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockedCountdown.mockReturnValue(60);
+});
 
 async function renderRouted(ui: ReactElement) {
   const rootRoute = createRootRoute({ component: () => <Outlet /> });
@@ -70,6 +76,19 @@ describe("ExplorePage", () => {
     expect(await screen.findByText(/rate-limiting/)).not.toBeNull();
     const button = screen.getByRole("button", { name: /Try again in \d+s/ });
     expect(button.getAttribute("disabled")).toBe("");
+  });
+
+  test("the held retry releases at zero and fires", async () => {
+    const retry = vi.fn();
+    mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry });
+    mockedCountdown.mockReturnValue(0);
+    await renderRouted(<ExplorePage />);
+
+    expect(await screen.findByText(/rate-limiting/)).not.toBeNull();
+    const button = screen.getByRole("button", { name: "Try again" });
+    expect(button.getAttribute("disabled")).toBeNull();
+    fireEvent.click(button);
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 
   test("other failures can be retried", async () => {

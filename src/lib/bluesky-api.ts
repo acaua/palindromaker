@@ -247,7 +247,7 @@ export const searchTaggedPosts = async (
 
   if (result.ok) {
     searchCache.set(key, { at: Date.now(), ttl: SEARCH_TTL, result });
-  } else if (!result.ok && result.reason === "rateLimited") {
+  } else if (result.reason === "rateLimited") {
     searchCache.set(key, { at: Date.now(), ttl: RATE_LIMIT_TTL, result });
   }
   return result;

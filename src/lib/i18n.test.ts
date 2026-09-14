@@ -11,6 +11,7 @@ import {
   messages,
   resolveUiLanguage,
   resultCount,
+  retryIn,
   setUiLanguage,
   subscribeUiLanguage,
   translate,
@@ -75,6 +76,15 @@ describe("translate", () => {
     expect(resultCount("en", 1234)).toBe("1,234 results");
     expect(resultCount("pt", 1)).toBe("1 resultado");
     expect(resultCount("de", 1234)).toBe("1.234 Ergebnisse");
+  });
+
+  test("substitutes the retry countdown by language", () => {
+    expect(retryIn("en", 42)).toBe("Try again in 42s");
+    expect(retryIn("pt", 42)).toBe("Tentar novamente em 42s");
+    expect(retryIn("es", 42)).toBe("Reintentar en 42s");
+    expect(retryIn("de", 42)).toBe("In 42 Sekunden erneut versuchen");
+    expect(retryIn("fr", 42)).toBe("Réessayer dans 42 s");
+    expect(retryIn("it", 42)).toBe("Riprova tra 42 secondi");
   });
 });
 
