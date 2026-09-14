@@ -9,17 +9,26 @@ import { isTaggedWith, tagQuery, tagsFor } from "@/lib/bluesky-tags";
 import type { UiLanguage } from "@/lib/i18n";
 import { useKeyedResource } from "@/hooks/use-keyed-resource";
 
-export type BlueskySearchState = { retry: () => void } & (
-  | { status: "loading" | "ready" | "badRequest" | "error"; posts: readonly BlueskyPost[] }
-  | { status: "rateLimited"; posts: readonly BlueskyPost[]; cooldownSeconds: number }
-);
+// every answer carries the posts list — empty until a load lands — so it is
+// stated once rather than in every member
+interface SearchPosts {
+  posts: readonly BlueskyPost[];
+}
 
-type SearchOutcome =
-  | { status: "loading"; posts: readonly BlueskyPost[] }
-  | { status: "ready"; posts: readonly BlueskyPost[] }
-  | { status: "rateLimited"; posts: readonly BlueskyPost[]; cooldownSeconds: number }
-  | { status: "badRequest"; posts: readonly BlueskyPost[] }
-  | { status: "error"; posts: readonly BlueskyPost[] };
+export type BlueskySearchState = { retry: () => void } & SearchPosts &
+  (
+    | { status: "loading" | "ready" | "badRequest" | "error" }
+    | { status: "rateLimited"; cooldownSeconds: number }
+  );
+
+type SearchOutcome = SearchPosts &
+  (
+    | { status: "loading" }
+    | { status: "ready" }
+    | { status: "rateLimited"; cooldownSeconds: number }
+    | { status: "badRequest" }
+    | { status: "error" }
+  );
 
 const SEARCH_FAILURES = { rateLimited: "rateLimited", badRequest: "badRequest" } as const;
 

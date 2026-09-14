@@ -4,24 +4,13 @@ import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { Slice } from "@tiptap/pm/model";
 import { ReplaceStep } from "@tiptap/pm/transform";
 
-import { testSchema } from "@/test/schema";
+import { buildDoc } from "@/test/schema";
 import {
   createMirrorPlugin,
   mirrorPluginKey,
   wordInsertMode,
   wordInsertTransactionFor,
 } from "./mirror-extension";
-
-const buildDoc = (text: string) =>
-  testSchema.node(
-    "doc",
-    null,
-    text
-      .split("\n")
-      .map((paragraph) =>
-        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
-      ),
-  );
 
 const docText = (state: EditorState) =>
   state.doc.textBetween(0, state.doc.content.size, "\n", "\n");

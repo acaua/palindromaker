@@ -33,7 +33,7 @@ export interface DefaultedPrefs extends Prefs {
 // the validated stored preferences, without defaults: what writePrefs
 // merges onto, so a write stores only keys actually set — never the
 // defaults below
-const readStored = (storage: StorageLike | null): Prefs => {
+const decodePrefs = (storage: StorageLike | null): Prefs => {
   const parsed = readJson(storage, PREFS_STORAGE_KEY);
   if (typeof parsed !== "object" || parsed === null) return {};
 
@@ -63,7 +63,7 @@ const readStored = (storage: StorageLike | null): Prefs => {
 // anything unexpected falls back to the defaults above
 export const readPrefs = (storage: StorageLike | null): DefaultedPrefs => ({
   ...DEFAULT_PREFS,
-  ...readStored(storage),
+  ...decodePrefs(storage),
 });
 
 // merges a patch into the stored UI preferences: best effort, so storage
@@ -71,7 +71,7 @@ export const readPrefs = (storage: StorageLike | null): DefaultedPrefs => ({
 export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
   if (!storage) return;
   try {
-    const merged = { ...readStored(storage), ...patch };
+    const merged = { ...decodePrefs(storage), ...patch };
     storage.setItem(PREFS_STORAGE_KEY, JSON.stringify(merged));
   } catch {
     // storage full or blocked: best effort, keep going
