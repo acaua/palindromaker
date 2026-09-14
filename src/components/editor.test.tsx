@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/tes
 import Editor from "@/components/editor";
 import type { FinderHandle } from "@/components/editor";
 import type { EditorSession } from "@/lib/editor-session";
+import { readPrefs } from "@/lib/prefs";
 import { textToDoc } from "@/lib/share-link";
 
 // the real loader fetches megabytes; the panel only needs it to settle
@@ -20,13 +21,11 @@ beforeEach(() => {
 });
 
 // the editor is seeded from one resolved session and one finder handle — the
-// two props the page hands it; the write path starts as a spy so the toggle
-// can be observed without a storage double
+// two props the page hands it; writes go through the shared prefs store
 const makeSession = (overrides: Partial<EditorSession> = {}): EditorSession => ({
   content: textToDoc("A b, b a"),
   mirrorEnabled: false,
   finderOpen: false,
-  writePref: vi.fn(),
   ...overrides,
 });
 
@@ -79,7 +78,7 @@ describe("Editor", () => {
 
     fireEvent.click(toggle);
 
-    await waitFor(() => expect(session.writePref).toHaveBeenCalledWith({ mirrorEnabled: true }));
+    await waitFor(() => expect(readPrefs(localStorage).mirrorEnabled).toBe(true));
     expect(toggle.getAttribute("aria-pressed")).toBe("true");
   });
 

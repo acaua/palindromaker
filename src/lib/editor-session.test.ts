@@ -2,9 +2,10 @@ import { describe, expect, test, vi } from "vite-plus/test";
 
 import { testSchema } from "@/test/schema";
 import { MemoryStorage } from "@/test/storages";
-import { clearShareFragment, resolveEditorSession, resolveInitialContent } from "./editor-session";
+import { clearShareFragment, openEditorSession, resolveInitialContent } from "./editor-session";
 import { DOC_STORAGE_KEY } from "./persistence";
 import { PREFS_STORAGE_KEY } from "./prefs";
+import { prefsStore } from "./prefs-store";
 import { sampleContent } from "./sample";
 
 const doc = (text: string) => ({
@@ -57,12 +58,12 @@ describe("resolveInitialContent", () => {
   });
 });
 
-describe("resolveEditorSession", () => {
+describe("openEditorSession", () => {
   test("resolves the initial content and the remembered toggles together", () => {
     const storage = new MemoryStorage();
     storage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ mirrorEnabled: true, finderOpen: false }));
 
-    const session = resolveEditorSession({
+    const session = openEditorSession({
       fragment: "",
       storage,
       schema: testSchema,
@@ -75,7 +76,7 @@ describe("resolveEditorSession", () => {
   });
 
   test("falls back to the defaults when nothing is stored", () => {
-    const session = resolveEditorSession({
+    const session = openEditorSession({
       fragment: "",
       storage: new MemoryStorage(),
       schema: testSchema,
@@ -91,7 +92,7 @@ describe("resolveEditorSession", () => {
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc("stored")));
     storage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ mirrorEnabled: true, finderOpen: false }));
 
-    const session = resolveEditorSession({
+    const session = openEditorSession({
       fragment: `#t=${encodeURIComponent("A b, b a")}`,
       storage,
       schema: testSchema,
@@ -108,7 +109,7 @@ describe("resolveEditorSession", () => {
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc("stored")));
     storage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ mirrorEnabled: true }));
 
-    const session = resolveEditorSession({
+    const session = openEditorSession({
       fragment: "",
       storage,
       schema: testSchema,
@@ -119,16 +120,17 @@ describe("resolveEditorSession", () => {
     expect(session.mirrorEnabled).toBe(true);
   });
 
-  test("writePref persists a patch without replaying the defaults", () => {
+  test("binds the shared prefs store to the session's storage", () => {
     const storage = new MemoryStorage();
-    const session = resolveEditorSession({
+    openEditorSession({
       fragment: "",
       storage,
       schema: testSchema,
       uiLanguage: "en",
     });
 
-    session.writePref({ finderOpen: false });
+    // the store the session bound is the one every write goes through
+    prefsStore().write({ finderOpen: false });
 
     expect(storage.getItem(PREFS_STORAGE_KEY)).toBe('{"finderOpen":false}');
   });

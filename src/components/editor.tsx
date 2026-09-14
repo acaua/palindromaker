@@ -7,6 +7,7 @@ import { extensions, schema } from "@/lib/editor-schema";
 import type { EditorSession } from "@/lib/editor-session";
 import { getUiLanguage, translate } from "@/lib/i18n";
 import { mirrorEnabled } from "@/lib/mirror-extension";
+import { prefsStore } from "@/lib/prefs-store";
 import { DEFAULT_WORD_INSERT_MODE, wordInsertMode } from "@/lib/word-insert";
 import { localStorageOrNull } from "@/lib/storage";
 import { useEditorPersistence } from "@/hooks/use-editor-persistence";
@@ -28,7 +29,7 @@ export interface FinderHandle {
 // The TipTap view. It is seeded from the one EditorSession the page
 // resolved, so it never parses storage or prefs itself; the UI language is
 // mount-time too, since App has run initUiLanguage by now and the editor is
-// never recreated.
+// never recreated. Toggle writes go through the shared prefs store.
 export default function Editor({
   session,
   finder,
@@ -39,7 +40,7 @@ export default function Editor({
   const editor = useEditor({
     extensions: extensions({
       enabled: session.mirrorEnabled,
-      onChange: (enabled) => session.writePref({ mirrorEnabled: enabled }),
+      onChange: (enabled) => prefsStore().write({ mirrorEnabled: enabled }),
     }),
     content: session.content,
     autofocus: "end",
