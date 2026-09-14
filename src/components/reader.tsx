@@ -10,7 +10,7 @@ import { EditorLegend } from "@/components/legend";
 import { analyzeDoc } from "@/lib/doc-analysis";
 import { readerExtensions } from "@/lib/editor-schema";
 import { useI18n } from "@/hooks/use-i18n";
-import { textToDoc } from "@/lib/share-link";
+import { textHash, textToDoc } from "@/lib/share-link";
 
 // the read-only half of sharing: the same card and typography as the
 // editor, the same center/gap highlights, and the purple caret/mirror
@@ -123,7 +123,7 @@ export default function Reader({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/"
-              hash={`t=${encodeURIComponent(text)}`}
+              hash={textHash(text)}
               className="rounded-lg px-2 py-1.5 text-sm font-medium text-violet-700 hover:bg-gray-100"
             >
               {t("reader.edit")}

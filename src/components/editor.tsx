@@ -1,20 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { RefObject } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 
-import { wordInsertMode } from "@/lib/mirror-extension";
+import { EMPTY_FACTS, editorFacts } from "@/lib/editor-facts";
 import { extensions, schema } from "@/lib/editor-schema";
+import { clearShareFragment, resolveInitialContent } from "@/lib/editor-session";
 import { getUiLanguage, translate } from "@/lib/i18n";
-import {
-  createPersistence,
-  localStorageOrNull,
-  readStoredDoc,
-  readStoredPrefs,
-  writePrefs,
-} from "@/lib/persistence";
-import type { ConflictChoice, Persistence } from "@/lib/persistence";
-import { sampleContent } from "@/lib/sample";
-import { readShareText, textToDoc } from "@/lib/share-link";
+import { wordInsertMode } from "@/lib/mirror-extension";
+import { DEFAULT_WORD_INSERT_MODE } from "@/lib/word-insert";
+import { prefsFor } from "@/lib/prefs";
+import { localStorageOrNull } from "@/lib/storage";
+import { useEditorPersistence } from "@/hooks/use-editor-persistence";
 import ConflictNotice from "@/components/conflict-notice";
 import { EditorLegend } from "@/components/legend";
 import StatusBar from "@/components/status-bar";
@@ -32,40 +28,30 @@ export default function Editor({
   triggerRef: RefObject<HTMLButtonElement | null>;
 }) {
   const storage = localStorageOrNull();
+  const prefs = prefsFor(storage);
   // the editor keeps the content and the toggle state it was created with,
   // so storage is read once: re-reading every render would re-validate the
-  // stored doc against the schema on every keystroke. The UI language is
-  // also mount-time: App has run initUiLanguage by now, and the editor is
-  // never recreated, so switching the language mid-session cannot reseed it
-  const [restored] = useState(() => {
-    // a shared #t= fragment wins over the stored doc: the /p reader's
-    // "Edit this" lands here carrying one, and editing that shared
-    // palindrome replaces the local doc on the first edit — the hash
-    // content is not saved until then (accepted trade-off; the conflict
-    // rules that then govern saving live in persistence.ts)
-    const shared = readShareText();
-    return {
-      content: shared
-        ? textToDoc(shared)
-        : (readStoredDoc(storage, schema) ?? sampleContent(getUiLanguage())),
-      mirrorEnabled: readStoredPrefs(storage).mirrorEnabled ?? false,
-    };
-  });
+  // stored doc against the schema on every keystroke. The content
+  // precedence (shared #t= > stored > sample) lives in editor-session.ts;
+  // the UI language is mount-time too, since App has run initUiLanguage by
+  // now and the editor is never recreated
+  const [restored] = useState(() => ({
+    content: resolveInitialContent({ fragment: window.location.hash, storage, schema }),
+    mirrorEnabled: prefs.read().mirrorEnabled,
+  }));
 
-  // consume the share fragment once it has been read: without this,
-  // reloading after "Edit this" would load the shared text instead of
-  // whatever was edited and saved. replaceState (no history entry, no
-  // popstate, no scroll jump) keeps the switch invisible to the router
+  // the share fragment is consumed once it has been read, so a reload after
+  // "Edit this" falls back to storage; editing a shared palindrome replaces
+  // the stored doc on the first edit (accepted trade-off — the conflict
+  // rules that then govern saving live in persistence.ts)
   useEffect(() => {
-    if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
+    clearShareFragment();
   }, []);
 
   const editor = useEditor({
     extensions: extensions({
       enabled: restored.mirrorEnabled,
-      onChange: (enabled) => writePrefs(storage, { mirrorEnabled: enabled }),
+      onChange: (enabled) => prefs.write({ mirrorEnabled: enabled }),
     }),
     content: restored.content,
     autofocus: "end",
@@ -86,12 +72,19 @@ export default function Editor({
     },
   });
 
-  // what clicking a word in the finder will do. The selector returns the
-  // answer rather than the state it is derived from, so keystrokes that
-  // leave it unchanged never re-render the finder and its result list.
+  // what clicking a word in the finder will do. The selector reads only the
+  // mode — not the share fields — so keystrokes that leave it unchanged
+  // never re-render the finder and its result list. The rule stays
+  // single-owned in wordInsertMode, whose pre-mount answer is the default.
   const insertMode = useEditorState({
     editor,
-    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : "caret"),
+    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : DEFAULT_WORD_INSERT_MODE),
+  });
+
+  // everything the footer shows, through the one EditorFacts interface
+  const facts = useEditorState({
+    editor,
+    selector: ({ editor }) => (editor ? editorFacts(editor.state) : EMPTY_FACTS),
   });
 
   const insertWord = useCallback(
@@ -101,31 +94,17 @@ export default function Editor({
     [editor],
   );
 
+  const onToggleMirror = useCallback(() => {
+    editor?.commands.toggleMirrorEditing();
+  }, [editor]);
+
   // another tab saved a different palindrome while this one had edits of
   // its own; until the user answers, this tab holds off on saving
-  const [conflict, setConflict] = useState(false);
-  const persistenceRef = useRef<Persistence | null>(null);
-
-  useEffect(() => {
-    if (!editor) return;
-    const handle = createPersistence(editor, {
-      storage,
-      schema,
-      onConflict: () => setConflict(true),
-    });
-    persistenceRef.current = handle;
-    return () => {
-      handle.detach();
-      persistenceRef.current = null;
-    };
-  }, [editor, storage]);
-
-  const resolveConflict = useCallback((choice: ConflictChoice) => {
-    persistenceRef.current?.resolveConflict(choice);
-    setConflict(false);
-  }, []);
+  const { conflict, resolveConflict } = useEditorPersistence(editor, { storage, schema });
 
   if (!editor) return null;
+  // the selector's fallback covers only the pre-mount render
+  const currentFacts = facts ?? editorFacts(editor.state);
 
   return (
     <>
@@ -133,7 +112,9 @@ export default function Editor({
         {conflict && <ConflictNotice onResolve={resolveConflict} />}
         <EditorContent editor={editor} />
         <StatusBar
-          editor={editor}
+          facts={currentFacts}
+          origin={window.location.origin}
+          onToggleMirror={onToggleMirror}
           finderOpen={finderOpen}
           onToggleFinder={onToggleFinder}
           triggerRef={triggerRef}
@@ -144,7 +125,7 @@ export default function Editor({
         open={finderOpen}
         onClose={onCloseFinder}
         onInsertWord={insertWord}
-        insertMode={insertMode ?? "caret"}
+        insertMode={insertMode ?? DEFAULT_WORD_INSERT_MODE}
       />
     </>
   );

@@ -1,46 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 import type { JSONContent } from "@tiptap/core";
-import { Schema } from "@tiptap/pm/model";
 
-import {
-  createPersistence,
-  DOC_STORAGE_KEY,
-  localStorageOrNull,
-  PREFS_STORAGE_KEY,
-  readStoredDoc,
-  readStoredPrefs,
-  writePrefs,
-} from "./persistence";
-
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
-
-class MemoryStorage {
-  private map = new Map<string, string>();
-
-  getItem(key: string): string | null {
-    return this.map.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.map.set(key, value);
-  }
-}
-
-class FailingStorage {
-  getItem(): string | null {
-    return null;
-  }
-
-  setItem(): void {
-    throw new Error("quota exceeded");
-  }
-}
+import { testSchema } from "@/test/schema";
+import { FailingStorage, MemoryStorage, ThrowingStorage } from "@/test/storages";
+import { PREFS_STORAGE_KEY } from "./prefs";
+import { createPersistence, DOC_STORAGE_KEY, readStoredDoc } from "./persistence";
 
 type Handler = () => void;
 
@@ -98,27 +62,17 @@ const otherTabDoc = (text: string): JSONContent => ({
 // what a browser delivers to the *other* tabs after a write
 const storageEvent = (key: string) => Object.assign(new Event("storage"), { key });
 
-class ThrowingStorage {
-  getItem(): string | null {
-    throw new Error("access denied");
-  }
-
-  setItem(): void {
-    throw new Error("access denied");
-  }
-}
-
 describe("readStoredDoc", () => {
   test("returns null when storage is unavailable", () => {
-    expect(readStoredDoc(null, schema)).toBeNull();
+    expect(readStoredDoc(null, testSchema)).toBeNull();
   });
 
   test("returns null when the key is absent", () => {
-    expect(readStoredDoc(new MemoryStorage(), schema)).toBeNull();
+    expect(readStoredDoc(new MemoryStorage(), testSchema)).toBeNull();
   });
 
   test("returns null when storage refuses to be read", () => {
-    expect(readStoredDoc(new ThrowingStorage(), schema)).toBeNull();
+    expect(readStoredDoc(new ThrowingStorage(), testSchema)).toBeNull();
   });
 
   test("returns the parsed doc", () => {
@@ -126,21 +80,21 @@ describe("readStoredDoc", () => {
     const doc = { type: "doc", content: [{ type: "paragraph" }] };
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
 
-    expect(readStoredDoc(storage, schema)).toEqual(doc);
+    expect(readStoredDoc(storage, testSchema)).toEqual(doc);
   });
 
   test("returns null for corrupt JSON", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, "not json");
 
-    expect(readStoredDoc(storage, schema)).toBeNull();
+    expect(readStoredDoc(storage, testSchema)).toBeNull();
   });
 
   test("returns null for values that are not a doc", () => {
     const storage = new MemoryStorage();
     for (const value of ["null", '"hello"', "42", '{"type":"paragraph"}']) {
       storage.setItem(DOC_STORAGE_KEY, value);
-      expect(readStoredDoc(storage, schema)).toBeNull();
+      expect(readStoredDoc(storage, testSchema)).toBeNull();
     }
   });
 
@@ -148,7 +102,7 @@ describe("readStoredDoc", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, '{"type":"doc","content":[]}');
 
-    expect(readStoredDoc(storage, schema)).toBeNull();
+    expect(readStoredDoc(storage, testSchema)).toBeNull();
   });
 
   test("accepts schema-valid docs", () => {
@@ -159,7 +113,7 @@ describe("readStoredDoc", () => {
     };
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
 
-    expect(readStoredDoc(storage, schema)).toEqual(doc);
+    expect(readStoredDoc(storage, testSchema)).toEqual(doc);
   });
 
   test("rejects docs the schema cannot represent", () => {
@@ -173,43 +127,8 @@ describe("readStoredDoc", () => {
     ];
     for (const value of invalid) {
       storage.setItem(DOC_STORAGE_KEY, value);
-      expect(readStoredDoc(storage, schema)).toBeNull();
+      expect(readStoredDoc(storage, testSchema)).toBeNull();
     }
-  });
-});
-
-describe("localStorageOrNull", () => {
-  const defineLocalStorage = (descriptor: PropertyDescriptor) =>
-    Object.defineProperty(globalThis, "localStorage", {
-      configurable: true,
-      ...descriptor,
-    });
-
-  afterEach(() => {
-    Reflect.deleteProperty(globalThis, "localStorage");
-  });
-
-  test("returns null when there is no localStorage", () => {
-    expect(localStorageOrNull()).toBeNull();
-  });
-
-  test("returns null when the browser blocks site storage", () => {
-    // Chrome and Safari throw on *access* when storage is blocked; without
-    // this guard the exception escapes before the app renders
-    defineLocalStorage({
-      get() {
-        throw new Error("SecurityError");
-      },
-    });
-
-    expect(localStorageOrNull()).toBeNull();
-  });
-
-  test("returns the storage when it is available", () => {
-    const storage = new MemoryStorage();
-    defineLocalStorage({ value: storage });
-
-    expect(localStorageOrNull()).toBe(storage);
   });
 });
 
@@ -225,7 +144,7 @@ describe("createPersistence", () => {
   test("saves the doc after the debounce delay", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    const { detach } = createPersistence(editor, { storage, schema });
+    const { detach } = createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     expect(stored(storage)).toBeNull();
@@ -239,7 +158,7 @@ describe("createPersistence", () => {
   test("coalesces bursts of updates into one save", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    const { detach } = createPersistence(editor, { storage, schema });
+    const { detach } = createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     vi.advanceTimersByTime(200);
@@ -263,7 +182,7 @@ describe("createPersistence", () => {
   test("flushes a pending save when the editor is destroyed", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    createPersistence(editor, { storage, schema });
+    createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     editor.emit("destroy");
@@ -279,7 +198,7 @@ describe("createPersistence", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
     const original = editor.doc;
-    const { detach } = createPersistence(editor, { storage, schema });
+    const { detach } = createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     detach();
@@ -295,7 +214,7 @@ describe("createPersistence", () => {
     const editor = new FakeEditor();
     const { detach } = createPersistence(editor, {
       storage: new FailingStorage(),
-      schema,
+      schema: testSchema,
     });
 
     editor.emit("update");
@@ -306,7 +225,7 @@ describe("createPersistence", () => {
 
   test("does nothing when storage is unavailable", () => {
     const editor = new FakeEditor();
-    const { detach } = createPersistence(editor, { storage: null, schema });
+    const { detach } = createPersistence(editor, { storage: null, schema: testSchema });
 
     editor.emit("update");
     vi.advanceTimersByTime(1000);
@@ -332,7 +251,7 @@ describe("createPersistence across tabs", () => {
     const onConflict = vi.fn();
     const persistence = createPersistence(editor, {
       storage,
-      schema,
+      schema: testSchema,
       storageEvents,
       onConflict,
     });
@@ -478,84 +397,5 @@ describe("createPersistence across tabs", () => {
     otherTabSaves("racecar");
 
     expect(editor.applied).toEqual([]);
-  });
-});
-
-describe("readStoredPrefs", () => {
-  test("returns nothing when storage is unavailable or key is absent", () => {
-    expect(readStoredPrefs(null)).toEqual({});
-    expect(readStoredPrefs(new MemoryStorage())).toEqual({});
-  });
-
-  test("returns the stored prefs", () => {
-    const storage = new MemoryStorage();
-    storage.setItem(
-      PREFS_STORAGE_KEY,
-      JSON.stringify({
-        lang: "en",
-        uiLang: "es",
-        mirrorEnabled: true,
-        finderOpen: false,
-      }),
-    );
-
-    expect(readStoredPrefs(storage)).toEqual({
-      lang: "en",
-      uiLang: "es",
-      mirrorEnabled: true,
-      finderOpen: false,
-    });
-  });
-
-  test("drops unknown languages and mistyped values", () => {
-    const storage = new MemoryStorage();
-    storage.setItem(
-      PREFS_STORAGE_KEY,
-      JSON.stringify({
-        lang: "xx",
-        // the dictionary's pt code is not a UI language ("pt" is)
-        uiLang: "pt-br",
-        mirrorEnabled: "yes",
-        finderOpen: "open",
-      }),
-    );
-
-    expect(readStoredPrefs(storage)).toEqual({});
-  });
-
-  test("returns nothing for corrupt JSON", () => {
-    const storage = new MemoryStorage();
-    storage.setItem(PREFS_STORAGE_KEY, "not json");
-
-    expect(readStoredPrefs(storage)).toEqual({});
-  });
-
-  test("returns nothing when storage refuses to be read", () => {
-    expect(readStoredPrefs(new ThrowingStorage())).toEqual({});
-  });
-});
-
-describe("writePrefs", () => {
-  test("merges the patch into the stored prefs", () => {
-    const storage = new MemoryStorage();
-    writePrefs(storage, { lang: "de" });
-    writePrefs(storage, { mirrorEnabled: true });
-    writePrefs(storage, { finderOpen: false });
-
-    expect(readStoredPrefs(storage)).toEqual({
-      lang: "de",
-      mirrorEnabled: true,
-      finderOpen: false,
-    });
-  });
-
-  test("swallows storage failures", () => {
-    const storage = new FailingStorage();
-
-    expect(() => writePrefs(storage, { lang: "de" })).not.toThrow();
-  });
-
-  test("does nothing when storage is unavailable", () => {
-    expect(() => writePrefs(null, { lang: "de" })).not.toThrow();
   });
 });

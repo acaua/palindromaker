@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vite-plus/test";
-import { Schema } from "@tiptap/pm/model";
 import { history, undo } from "@tiptap/pm/history";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { Slice } from "@tiptap/pm/model";
 import { ReplaceStep } from "@tiptap/pm/transform";
 
+import { testSchema } from "@/test/schema";
 import {
   createMirrorPlugin,
   mirrorPluginKey,
@@ -12,22 +12,14 @@ import {
   wordInsertTransactionFor,
 } from "./mirror-extension";
 
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
-
 const buildDoc = (text: string) =>
-  schema.node(
+  testSchema.node(
     "doc",
     null,
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
+        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
       ),
   );
 

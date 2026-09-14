@@ -21,6 +21,11 @@ import { countLettersBefore, mirrorInsertDocPos } from "@/lib/mirror-edit";
 // same both ways again
 export type WordInsertMode = "mirrored" | "caret" | "paused";
 
+// the answer before an editor exists: mirroring off, so a click inserts at
+// the caret only. Consumers that render before mount use this instead of
+// deriving a mode from state.
+export const DEFAULT_WORD_INSERT_MODE: WordInsertMode = "caret";
+
 interface WordInsertion {
   // document positions in pre-edit coordinates, ordered so that applying
   // them in sequence leaves the remaining positions valid

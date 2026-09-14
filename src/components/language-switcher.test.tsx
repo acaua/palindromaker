@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import LanguageSwitcher from "@/components/language-switcher";
 import { getUiLanguage, setUiLanguage, UI_LANGUAGES, UI_LANGUAGE_LABELS } from "@/lib/i18n";
-import { readStoredPrefs } from "@/lib/persistence";
+import { readPrefs } from "@/lib/prefs";
 
 describe("LanguageSwitcher", () => {
   afterEach(() => {
@@ -36,6 +36,6 @@ describe("LanguageSwitcher", () => {
 
     expect(getUiLanguage()).toBe("pt");
     expect(select.value).toBe("pt");
-    expect(readStoredPrefs(localStorage).uiLang).toBe("pt");
+    expect(readPrefs(localStorage).uiLang).toBe("pt");
   });
 });

@@ -1,5 +1,6 @@
-import { BSKY_API } from "@/lib/bluesky-post";
-import type { FacetRange } from "@/lib/palindrome-extract";
+import { BSKY_API, atUriFor } from "@/lib/bluesky-post";
+import type { PostRef } from "@/lib/bluesky-post";
+import type { FacetRange } from "@/lib/annotated-text";
 
 // The slice of a Bluesky post view the app actually uses. The API returns
 // a lot more; mapping once (and validating) keeps the rest of the app type
@@ -46,15 +47,17 @@ export const failureStatus = <S extends string>(
 
 // one owner for "what did this response status mean": 404 is a real
 // not-found, 400 a malformed request, everything else a server/network
-// failure
-const statusFailure = (response: Response): ApiFailure => {
+// failure. Callers map the reasons they do not care about onto their own
+// status vocabulary through failureStatus.
+const httpFailure = (response: Response): ApiFailure => {
   if (response.status === 404) return { ok: false, reason: "notFound" };
   if (response.status === 400) return { ok: false, reason: "badRequest" };
   return { ok: false, reason: "error" };
 };
 
-// search adds its own vocabulary: a throttle is retryable, and only a 400
-// is actually a malformed request (401/404/422/... are errors)
+// search adds the throttle to that vocabulary: 403/429 is a back-off, and
+// only a 400 is a malformed request there (401/404/422/... are errors).
+// The throttle rule lives here, next to httpFailure, and nowhere else.
 const searchFailure = (response: Response): ApiFailure => {
   if (response.status === 403 || response.status === 429)
     return { ok: false, reason: "rateLimited" };
@@ -146,11 +149,20 @@ export const isRestrictedPost = (post: BlueskyPost): boolean =>
 
 // getPosts and searchPosts are both slow and throttled; an in-memory cache
 // keeps a route revisit or a gallery card from spending another request.
-// Only successful answers are remembered, so an explicit retry is never
-// served a stale failure.
+// Successful answers are remembered for minutes; throttle answers briefly,
+// so a retry storm stops spending budget instead of extending the block.
+// Any other failure is never cached, so an explicit retry really retries.
 const postCache = new Map<string, BlueskyPost>();
-const searchCache = new Map<string, { at: number; result: ApiResult<BlueskyPost[]> }>();
-const SEARCH_TTL = 60_000;
+const searchCache = new Map<
+  string,
+  { at: number; ttl: number; result: ApiResult<BlueskyPost[]> }
+>();
+const SEARCH_TTL = 5 * 60_000;
+// how long a throttle answer is remembered, in ms, for the cache below
+const RATE_LIMIT_TTL = 60_000;
+// the same window in whole seconds, what the UI holds its retry for: the
+// endpoint sends no Retry-After, so both sides share this one duration
+export const RATE_LIMIT_SECONDS = RATE_LIMIT_TTL / 1000;
 
 export const clearBlueskyCache = (): void => {
   postCache.clear();
@@ -167,7 +179,7 @@ export const fetchPost = async (
     const response = await fetchImpl(
       `${BSKY_API}/app.bsky.feed.getPosts?uris=${encodeURIComponent(uri)}`,
     );
-    if (!response.ok) return statusFailure(response);
+    if (!response.ok) return httpFailure(response);
     const body = asRecord(await response.json());
     const posts = Array.isArray(body?.posts) ? body.posts : [];
     const post = mapPost(posts[0]);
@@ -187,13 +199,25 @@ export const resolveHandle = async (
     const response = await fetchImpl(
       `${BSKY_API}/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
     );
-    if (!response.ok) return statusFailure(response);
+    if (!response.ok) return httpFailure(response);
     const body = asRecord(await response.json());
     const did = asString(body?.did);
     return did ? { ok: true, value: did } : { ok: false, reason: "notFound" };
   } catch {
     return { ok: false, reason: "error" };
   }
+};
+
+// Turn a parsed post reference into an at-uri: an at-uri is its own answer,
+// a handle needs a DID first. The post link form and the post reader both
+// go through here rather than re-walking the branch.
+export const resolvePostRef = async (
+  ref: PostRef,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ApiResult<string>> => {
+  if (ref.kind === "uri") return { ok: true, value: ref.uri };
+  const resolved = await resolveHandle(ref.handle, fetchImpl);
+  return resolved.ok ? { ok: true, value: atUriFor(resolved.value, ref.rkey) } : resolved;
 };
 
 export const searchTaggedPosts = async (
@@ -203,7 +227,7 @@ export const searchTaggedPosts = async (
 ): Promise<ApiResult<BlueskyPost[]>> => {
   const key = `${sort}|${query}`;
   const cached = searchCache.get(key);
-  if (cached && Date.now() - cached.at < SEARCH_TTL) return cached.result;
+  if (cached && Date.now() - cached.at < cached.ttl) return cached.result;
 
   let result: ApiResult<BlueskyPost[]>;
   try {
@@ -223,7 +247,11 @@ export const searchTaggedPosts = async (
     result = { ok: false, reason: "error" };
   }
 
-  if (result.ok) searchCache.set(key, { at: Date.now(), result });
+  if (result.ok) {
+    searchCache.set(key, { at: Date.now(), ttl: SEARCH_TTL, result });
+  } else if (result.reason === "rateLimited") {
+    searchCache.set(key, { at: Date.now(), ttl: RATE_LIMIT_TTL, result });
+  }
   return result;
 };
 

@@ -43,9 +43,11 @@ const NoticeBlock = ({ text, links }: { text: string; links: ReactNode }) => (
 export default function PostReader({ input }: { input: PostRef }) {
   const { t } = useI18n();
   const { status, post, retry } = useBlueskyPost(input);
+  // computed once per post: the viewer's fallback and the notice both need it
+  const restricted = post !== null && isRestrictedPost(post);
   const extracted = useMemo(
-    () => (post && !isRestrictedPost(post) ? extractPalindrome(post.text, post.facetRanges) : null),
-    [post],
+    () => (post && !restricted ? extractPalindrome(post.text, post.facetRanges) : null),
+    [post, restricted],
   );
 
   // The router only moves focus on a pathname change; the paste form
@@ -87,7 +89,6 @@ export default function PostReader({ input }: { input: PostRef }) {
     );
   }
 
-  const restricted = isRestrictedPost(post);
   const pageUrl = postPageUrl(post.uri, post.author.handle);
   const links = (
     <>

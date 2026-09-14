@@ -1,25 +1,16 @@
 import { describe, expect, test } from "vite-plus/test";
-import { Schema } from "@tiptap/pm/model";
 
+import { testSchema } from "@/test/schema";
 import { analyzeDoc } from "./doc-analysis";
 
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    blockquote: { group: "block", content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
-
 const buildDoc = (text: string) =>
-  schema.node(
+  testSchema.node(
     "doc",
     null,
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
+        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
       ),
   );
 
@@ -59,10 +50,10 @@ describe("text and positions", () => {
   test("only text blocks separate content", () => {
     // a wrapping block must not add a separator of its own: "ab" and "ba"
     // are two paragraphs inside one blockquote
-    const doc = schema.node("doc", null, [
-      schema.node("blockquote", null, [
-        schema.node("paragraph", null, [schema.text("ab")]),
-        schema.node("paragraph", null, [schema.text("ba")]),
+    const doc = testSchema.node("doc", null, [
+      testSchema.node("blockquote", null, [
+        testSchema.node("paragraph", null, [testSchema.text("ab")]),
+        testSchema.node("paragraph", null, [testSchema.text("ba")]),
       ]),
     ]);
 

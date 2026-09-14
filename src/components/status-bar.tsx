@@ -1,6 +1,4 @@
 import { useLayoutEffect } from "react";
-import { useEditorState } from "@tiptap/react";
-import type { Editor } from "@tiptap/core";
 import type { ReactNode, RefObject } from "react";
 import {
   CheckCircleIcon,
@@ -13,77 +11,38 @@ import {
 
 import { CopyStatus } from "@/components/copy-button";
 import { planBlueskyShare } from "@/lib/bluesky-share";
-import { mirrorPluginKey } from "@/lib/mirror-extension";
-import { palindromePluginKey } from "@/lib/palindrome-extension";
-import { MAX_SHARE_TEXT, buildShareUrl } from "@/lib/share-link";
+import type { EditorFacts } from "@/lib/editor-facts";
+import { buildShareUrl } from "@/lib/share-link";
 import { useI18n } from "@/hooks/use-i18n";
 import { useCopyFeedback } from "@/hooks/use-copy-feedback";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
-// what the Share dropdown needs from the document analysis
-type ShareState = {
-  raw: string;
-  shareable: boolean;
-  overLimit: boolean;
-  blueskyUrl: string | null;
-};
-
-// the card's footer: what the text is now, and the three controls
+// the card's footer: what the text is now, and the three controls. It is
+// presentational — the editor state arrives as `facts` and the origin as a
+// prop, so it can be tested without ProseMirror or a real location and the
+// derivation lives in editor-facts.ts.
 export default function StatusBar({
-  editor,
+  facts,
+  origin,
+  onToggleMirror,
   finderOpen,
   onToggleFinder,
   triggerRef,
 }: {
-  editor: Editor;
+  facts: EditorFacts;
+  origin: string;
+  onToggleMirror: () => void;
   finderOpen: boolean;
   onToggleFinder: () => void;
   triggerRef: RefObject<HTMLButtonElement | null>;
 }) {
-  const { hasLetters, isPalindrome, mirrorEnabled, share } = useEditorState({
-    editor,
-    selector: ({
-      editor,
-    }): {
-      hasLetters: boolean;
-      isPalindrome: boolean;
-      mirrorEnabled: boolean;
-      share: ShareState;
-    } => {
-      const analysis = palindromePluginKey.getState(editor.state)?.analysis;
-      const hasLetters = (analysis?.letterPositions.length ?? 0) > 0;
-      const isPalindrome = analysis?.result.isPalindrome ?? false;
-      // hasLetters, because an empty document is vacuously a palindrome;
-      // the cap rides the analysis's normalized text (already in plugin
-      // state) instead of a second getText walk per keystroke — the
-      // reader's decode cap is the gate that really binds
-      const overLimit = (analysis?.text.length ?? 0) > MAX_SHARE_TEXT;
-      const shareable = hasLetters && isPalindrome && !overLimit;
-      // both share actions read the analysis's raw text; it is memoized
-      // with the document, so a caret move does not re-walk it
-      const raw = analysis?.raw ?? "";
-      const bluesky = shareable ? planBlueskyShare(raw, location.origin) : null;
-      return {
-        hasLetters,
-        isPalindrome,
-        mirrorEnabled: mirrorPluginKey.getState(editor.state)?.enabled ?? false,
-        share: {
-          raw,
-          shareable,
-          overLimit,
-          blueskyUrl: bluesky?.composeUrl ?? null,
-        },
-      };
-    },
-  });
-
   return (
     <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 md:justify-between md:px-5">
-      <StatusState hasLetters={hasLetters} isPalindrome={isPalindrome} />
+      <StatusState hasLetters={facts.hasLetters} isPalindrome={facts.isPalindrome} />
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-        <MirrorSwitch editor={editor} enabled={mirrorEnabled} />
+        <MirrorSwitch enabled={facts.mirrorEnabled} onToggle={onToggleMirror} />
         <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
-        <ShareMenu share={share} />
+        <ShareMenu facts={facts} origin={origin} />
         <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
         <FindWordsTrigger ref={triggerRef} expanded={finderOpen} onToggle={onToggleFinder} />
       </div>
@@ -134,11 +93,15 @@ const MenuAction = ({
 // link, or opens Bluesky's composer. It is position:fixed so the card's
 // overflow-hidden cannot clip it; it follows the trigger on scroll and
 // flips below when there is no room above.
-const ShareMenu = ({ share }: { share: ShareState }) => {
+const ShareMenu = ({ facts, origin }: { facts: EditorFacts; origin: string }) => {
   const { t } = useI18n();
   const { copied, copy } = useCopyFeedback();
   const { open, toggle, close, triggerRef, panelRef, panelId } = useDisclosure();
-  const { raw, shareable, overLimit, blueskyUrl } = share;
+  const { raw, shareable, overLimit } = facts;
+  // built here, not in the facts: it needs a grapheme count, and the post is
+  // only worth planning once the text is shareable. The origin arrives as a
+  // prop so the component stays free of the location global.
+  const blueskyUrl = shareable ? (planBlueskyShare(raw, origin)?.composeUrl ?? null) : null;
 
   // Place the fixed panel above the trigger, or below when it would not fit,
   // and keep it anchored on scroll. Written straight to the node: the
@@ -221,7 +184,7 @@ const ShareMenu = ({ share }: { share: ShareState }) => {
           icon={<LinkIcon className="h-4 w-4 text-gray-500" />}
           onClick={() => {
             close(true);
-            copy(buildShareUrl(raw, location.origin));
+            copy(buildShareUrl(raw, origin));
           }}
           title={t("share.copyLink")}
         >
@@ -269,14 +232,14 @@ const FindWordsTrigger = ({
   );
 };
 
-const MirrorSwitch = ({ editor, enabled }: { editor: Editor; enabled: boolean }) => {
+const MirrorSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => {
   const { t } = useI18n();
   return (
     <button
       type="button"
       aria-pressed={enabled}
       // the extension remembers the new state across reloads
-      onClick={() => editor.commands.toggleMirrorEditing()}
+      onClick={onToggle}
       // keep the editor focus (and caret) when toggling
       onMouseDown={(event) => event.preventDefault()}
       title={enabled ? t("mirror.on") : t("mirror.off")}
