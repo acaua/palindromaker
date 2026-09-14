@@ -1,33 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowsRightLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
 
+import { MIRROR_MATCH_MARKERS } from "@/components/mirror-match-markers";
 import { useI18n } from "@/hooks/use-i18n";
 import type { Dictionary, MirrorMatch } from "@/lib/dictionary";
 import { mirrorMatch } from "@/lib/dictionary";
 import { mirrorWord } from "@/lib/mirror-word";
 import { resultCount } from "@/lib/i18n";
-import type { MessageKey } from "@/lib/i18n";
 
 const ROW_HEIGHT = 32;
 const OVERSCAN = 6;
-
-// how a result's mirror is marked; the same colors the finder legend shows
-const markers: Record<
-  Exclude<MirrorMatch, null>,
-  { className: string; key: MessageKey; Icon: typeof ArrowsRightLeftIcon }
-> = {
-  pair: {
-    className: "text-purple-700",
-    key: "legend.pair",
-    Icon: ArrowsRightLeftIcon,
-  },
-  palindrome: {
-    className: "text-green-700",
-    key: "legend.palindromeWord",
-    Icon: CheckCircleIcon,
-  },
-};
 
 // exported for its unit test: a virtualizer measures its scroll container,
 // and a headless DOM has no layout, so no row is ever in view there
@@ -48,7 +30,7 @@ export const ResultRow = ({
 }) => {
   const { t } = useI18n();
   const mirror = mirrorWord(word);
-  const marker = match ? markers[match] : null;
+  const marker = match ? MIRROR_MATCH_MARKERS[match] : null;
   const markerLabel = marker ? t(marker.key) : null;
 
   return (

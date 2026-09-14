@@ -1,5 +1,4 @@
-import { ArrowsRightLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
-
+import { MIRROR_MATCH_MARKERS, MIRROR_MATCH_ORDER } from "@/components/mirror-match-markers";
 import { useI18n } from "@/hooks/use-i18n";
 
 const item = "flex items-center gap-1.5";
@@ -14,14 +13,15 @@ export function FinderLegend() {
       aria-label={t("finder.legendAria")}
       className="flex flex-wrap gap-x-4 gap-y-1 border-t border-gray-100 px-4 py-3 text-xs text-gray-500"
     >
-      <span className={item}>
-        <ArrowsRightLeftIcon aria-hidden="true" className={`${icon} text-purple-700`} />
-        {t("legend.pair")}
-      </span>
-      <span className={item}>
-        <CheckCircleIcon aria-hidden="true" className={`${icon} text-green-700`} />
-        {t("legend.palindromeWord")}
-      </span>
+      {MIRROR_MATCH_ORDER.map((match) => {
+        const { Icon, className, key } = MIRROR_MATCH_MARKERS[match];
+        return (
+          <span key={match} className={item}>
+            <Icon aria-hidden="true" className={`${icon} ${className}`} />
+            {t(key)}
+          </span>
+        );
+      })}
     </footer>
   );
 }
