@@ -8,10 +8,9 @@ import PageHeading from "@/components/page-heading";
 import Reader from "@/components/reader";
 import { useI18n } from "@/hooks/use-i18n";
 import { useBlueskyPost } from "@/hooks/use-bluesky-post";
-import { isRestrictedPost } from "@/lib/bluesky-api";
+import { describePost } from "@/lib/bluesky-post-view";
 import { postPageUrl } from "@/lib/bluesky-post";
 import type { PostRef } from "@/lib/bluesky-post";
-import { extractPalindrome } from "@/lib/palindrome-extract";
 
 // The post view is one 600px column: the official embed is designed for
 // that width, and the hint, reader and links all align to it. No vertical
@@ -43,12 +42,11 @@ const NoticeBlock = ({ text, links }: { text: string; links: ReactNode }) => (
 export default function PostReader({ input }: { input: PostRef }) {
   const { t } = useI18n();
   const { status, post, retry } = useBlueskyPost(input);
-  // computed once per post: the reader's fallback and the notice both need it
-  const restricted = post !== null && isRestrictedPost(post);
-  const extracted = useMemo(
-    () => (post && !restricted ? extractPalindrome(post.text, post.facetRanges) : null),
-    [post, restricted],
-  );
+  // computed once per post: restricted, the palindrome, and the fallback
+  // notice all come from the one post view (the card asks the same)
+  const view = useMemo(() => (post ? describePost(post) : null), [post]);
+  const restricted = view?.restricted ?? false;
+  const extracted = view?.palindrome ?? null;
 
   // The router only moves focus on a pathname change; the paste form
   // navigates to this same route with a new hash, so the moment the post

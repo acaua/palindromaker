@@ -76,6 +76,9 @@ The reference a reader link carries to a Bluesky post. Opens the post and the pa
 **Annotation**:
 A span a Bluesky post declares over its text (a link, mention or tag). Its letters are kept out when the palindrome inside the post is extracted.
 
+**Post view**:
+How the app presents one post: whether it is restricted, the palindrome it contains (absent when restricted or when there is none), and its text split into plain and annotated spans. The card and the reader share it.
+
 ### Word finder
 
 **Dictionary language**:
