@@ -1,27 +1,19 @@
 import { describe, expect, test } from "vite-plus/test";
-import { Schema } from "@tiptap/pm/model";
 import { EditorState } from "@tiptap/pm/state";
 
+import { testSchema } from "@/test/schema";
 import { EMPTY_FACTS, editorFacts } from "./editor-facts";
 import { createMirrorPlugin, mirrorPluginKey } from "./mirror-extension";
 import { MAX_SHARE_TEXT } from "./share-link";
 
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
-
 const buildDoc = (text: string) =>
-  schema.node(
+  testSchema.node(
     "doc",
     null,
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
+        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
       ),
   );
 
@@ -77,22 +69,16 @@ describe("editorFacts", () => {
     expect(editorFacts(createState("ab\nba")).raw).toBe("ab\nba");
   });
 
-  test("derives the insert mode from the mirror toggle and the palindrome", () => {
-    expect(editorFacts(createState("aba")).insertMode).toBe("caret");
+  test("reports the mirror toggle from the mirror plugin", () => {
+    expect(editorFacts(createState("aba"))).toMatchObject({ mirrorEnabled: false });
     expect(editorFacts(enableMirror(createState("aba")))).toMatchObject({
       mirrorEnabled: true,
-      insertMode: "mirrored",
-    });
-    expect(editorFacts(enableMirror(createState("abc")))).toMatchObject({
-      mirrorEnabled: true,
-      insertMode: "paused",
     });
   });
 
   test("defaults to mirror off when the mirror plugin is absent", () => {
     expect(editorFacts(createState("aba", { mirror: false }))).toMatchObject({
       mirrorEnabled: false,
-      insertMode: "caret",
     });
   });
 

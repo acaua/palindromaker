@@ -36,6 +36,7 @@ describe("useBlueskySearch", () => {
     mockedSearch.mockResolvedValue({ ok: false, reason: "rateLimited" });
     const limited = renderHook(() => useBlueskySearch("en", "latest"));
     await waitFor(() => expect(limited.result.current.status).toBe("rateLimited"));
+    expect(limited.result.current).toMatchObject({ cooldownSeconds: 60 });
 
     mockedSearch.mockResolvedValue({ ok: false, reason: "badRequest" });
     const bad = renderHook(() => useBlueskySearch("en", "top"));

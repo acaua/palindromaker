@@ -9,7 +9,6 @@ import { useOpenPost } from "@/hooks/use-open-post";
 import { useBlueskySearch } from "@/hooks/use-bluesky-search";
 import { useCountdown } from "@/hooks/use-countdown";
 import { retryIn } from "@/lib/i18n";
-import { RATE_LIMIT_TTL } from "@/lib/bluesky-api";
 import type { SearchSort } from "@/lib/bluesky-api";
 
 // the shared status line for the failures that offer a retry
@@ -41,11 +40,11 @@ const RetryLine = ({
 
 // The throttle retry: mounted fresh on every rateLimited episode, so its
 // countdown always starts over. The endpoint sends no Retry-After, so the
-// window matches RATE_LIMIT_TTL — what the API remembers a throttle for —
-// and firing straight back in only spends.
-const ThrottledRetry = ({ onRetry }: { onRetry: () => void }) => {
+// cooldown comes from the search hook — the API's throttle window — and
+// firing straight back in only spends.
+const ThrottledRetry = ({ onRetry, cooldown }: { onRetry: () => void; cooldown: number }) => {
   const { lang, t } = useI18n();
-  const remaining = useCountdown(RATE_LIMIT_TTL / 1000);
+  const remaining = useCountdown(cooldown);
   return (
     <RetryLine
       message={t("explore.rateLimited")}
@@ -124,7 +123,9 @@ export default function ExplorePage() {
             <BlueskyPostList posts={state.posts} onCheck={openPost} />
           )}
 
-          {state.status === "rateLimited" && <ThrottledRetry onRetry={state.retry} />}
+          {state.status === "rateLimited" && (
+            <ThrottledRetry onRetry={state.retry} cooldown={state.cooldownSeconds} />
+          )}
 
           {(state.status === "error" || state.status === "badRequest") && (
             <RetryLine

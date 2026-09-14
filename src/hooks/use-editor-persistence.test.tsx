@@ -1,20 +1,12 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 import type { JSONContent } from "@tiptap/core";
-import { Schema } from "@tiptap/pm/model";
 
 import { useEditorPersistence } from "@/hooks/use-editor-persistence";
 import { DOC_STORAGE_KEY } from "@/lib/persistence";
 import type { PersistenceEditor } from "@/lib/persistence";
+import { testSchema } from "@/test/schema";
 import { MemoryStorage } from "@/test/storages";
-
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
 
 type Handler = () => void;
 
@@ -77,7 +69,7 @@ afterEach(() => {
 describe("useEditorPersistence", () => {
   test("does nothing with a null editor", () => {
     const { result } = renderHook(() =>
-      useEditorPersistence(null, { storage: new MemoryStorage(), schema }),
+      useEditorPersistence(null, { storage: new MemoryStorage(), schema: testSchema }),
     );
 
     expect(result.current.conflict).toBe(false);
@@ -86,7 +78,9 @@ describe("useEditorPersistence", () => {
   test("saves edits through the editor", () => {
     const storage = new MemoryStorage();
     const editor = new StubEditor();
-    const { unmount } = renderHook(() => useEditorPersistence(editor, { storage, schema }));
+    const { unmount } = renderHook(() =>
+      useEditorPersistence(editor, { storage, schema: testSchema }),
+    );
 
     editor.emit("update");
     vi.advanceTimersByTime(500);
@@ -98,7 +92,9 @@ describe("useEditorPersistence", () => {
   test("stops listening when unmounted", () => {
     const storage = new MemoryStorage();
     const editor = new StubEditor();
-    const { unmount } = renderHook(() => useEditorPersistence(editor, { storage, schema }));
+    const { unmount } = renderHook(() =>
+      useEditorPersistence(editor, { storage, schema: testSchema }),
+    );
 
     unmount();
     editor.emit("update");
@@ -110,7 +106,9 @@ describe("useEditorPersistence", () => {
   test("raises a conflict and clears it when resolved", () => {
     const storage = new MemoryStorage();
     const editor = new StubEditor();
-    const { result } = renderHook(() => useEditorPersistence(editor, { storage, schema }));
+    const { result } = renderHook(() =>
+      useEditorPersistence(editor, { storage, schema: testSchema }),
+    );
 
     // this tab edited, then another tab wrote
     editor.emit("update");

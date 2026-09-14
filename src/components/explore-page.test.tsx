@@ -70,7 +70,7 @@ describe("ExplorePage", () => {
 
   test("a throttle gets its own message and a held retry", async () => {
     const retry = vi.fn();
-    mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry });
+    mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry, cooldownSeconds: 60 });
     await renderRouted(<ExplorePage />);
 
     expect(await screen.findByText(/rate-limiting/)).not.toBeNull();
@@ -80,7 +80,7 @@ describe("ExplorePage", () => {
 
   test("the held retry releases at zero and fires", async () => {
     const retry = vi.fn();
-    mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry });
+    mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry, cooldownSeconds: 60 });
     mockedCountdown.mockReturnValue(0);
     await renderRouted(<ExplorePage />);
 

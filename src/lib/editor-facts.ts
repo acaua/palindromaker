@@ -1,9 +1,8 @@
 import type { EditorState } from "@tiptap/pm/state";
 
 import { analyzeDoc } from "@/lib/doc-analysis";
-import { mirrorPluginKey, wordInsertMode } from "@/lib/mirror-extension";
+import { mirrorPluginKey } from "@/lib/mirror-extension";
 import { MAX_SHARE_TEXT } from "@/lib/share-link";
-import type { WordInsertMode } from "@/lib/word-insert";
 
 // Everything the card's footer needs to know about the editor, derived from
 // one pass over the state. The palindrome plugin stores the analysis and the
@@ -16,8 +15,6 @@ export interface EditorFacts {
   hasLetters: boolean;
   isPalindrome: boolean;
   mirrorEnabled: boolean;
-  // what a click in the word finder will do
-  insertMode: WordInsertMode;
   // the document's original text, blocks joined with "\n"
   raw: string;
   overLimit: boolean;
@@ -31,7 +28,6 @@ export const EMPTY_FACTS: EditorFacts = {
   hasLetters: false,
   isPalindrome: true,
   mirrorEnabled: false,
-  insertMode: "caret",
   raw: "",
   overLimit: false,
   shareable: false,
@@ -48,7 +44,6 @@ export const editorFacts = (state: EditorState): EditorFacts => {
     hasLetters,
     isPalindrome,
     mirrorEnabled: mirrorPluginKey.getState(state)?.enabled ?? false,
-    insertMode: wordInsertMode(state),
     raw: analysis.raw,
     overLimit,
     shareable: hasLetters && isPalindrome && !overLimit,

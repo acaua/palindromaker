@@ -18,16 +18,19 @@ import { useCopyFeedback } from "@/hooks/use-copy-feedback";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
 // the card's footer: what the text is now, and the three controls. It is
-// presentational — the editor state arrives as `facts`, so it can be tested
-// without ProseMirror and the derivation lives in editor-facts.ts.
+// presentational — the editor state arrives as `facts` and the origin as a
+// prop, so it can be tested without ProseMirror or a real location and the
+// derivation lives in editor-facts.ts.
 export default function StatusBar({
   facts,
+  origin,
   onToggleMirror,
   finderOpen,
   onToggleFinder,
   triggerRef,
 }: {
   facts: EditorFacts;
+  origin: string;
   onToggleMirror: () => void;
   finderOpen: boolean;
   onToggleFinder: () => void;
@@ -39,7 +42,7 @@ export default function StatusBar({
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <MirrorSwitch enabled={facts.mirrorEnabled} onToggle={onToggleMirror} />
         <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
-        <ShareMenu facts={facts} />
+        <ShareMenu facts={facts} origin={origin} />
         <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
         <FindWordsTrigger ref={triggerRef} expanded={finderOpen} onToggle={onToggleFinder} />
       </div>
@@ -90,16 +93,15 @@ const MenuAction = ({
 // link, or opens Bluesky's composer. It is position:fixed so the card's
 // overflow-hidden cannot clip it; it follows the trigger on scroll and
 // flips below when there is no room above.
-const ShareMenu = ({ facts }: { facts: EditorFacts }) => {
+const ShareMenu = ({ facts, origin }: { facts: EditorFacts; origin: string }) => {
   const { t } = useI18n();
   const { copied, copy } = useCopyFeedback();
   const { open, toggle, close, triggerRef, panelRef, panelId } = useDisclosure();
   const { raw, shareable, overLimit } = facts;
-  // built here, not in the facts: it needs the impure origin and a grapheme
-  // count, and the post is only worth planning once the text is shareable
-  const blueskyUrl = shareable
-    ? (planBlueskyShare(raw, location.origin)?.composeUrl ?? null)
-    : null;
+  // built here, not in the facts: it needs a grapheme count, and the post is
+  // only worth planning once the text is shareable. The origin arrives as a
+  // prop so the component stays free of the location global.
+  const blueskyUrl = shareable ? (planBlueskyShare(raw, origin)?.composeUrl ?? null) : null;
 
   // Place the fixed panel above the trigger, or below when it would not fit,
   // and keep it anchored on scroll. Written straight to the node: the
@@ -182,7 +184,7 @@ const ShareMenu = ({ facts }: { facts: EditorFacts }) => {
           icon={<LinkIcon className="h-4 w-4 text-gray-500" />}
           onClick={() => {
             close(true);
-            copy(buildShareUrl(raw, location.origin));
+            copy(buildShareUrl(raw, origin));
           }}
           title={t("share.copyLink")}
         >

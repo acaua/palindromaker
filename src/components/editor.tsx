@@ -7,6 +7,7 @@ import { extensions, schema } from "@/lib/editor-schema";
 import { clearShareFragment, resolveInitialContent } from "@/lib/editor-session";
 import { getUiLanguage, translate } from "@/lib/i18n";
 import { wordInsertMode } from "@/lib/mirror-extension";
+import { DEFAULT_WORD_INSERT_MODE } from "@/lib/word-insert";
 import { prefsFor } from "@/lib/prefs";
 import { localStorageOrNull } from "@/lib/storage";
 import { useEditorPersistence } from "@/hooks/use-editor-persistence";
@@ -73,11 +74,11 @@ export default function Editor({
 
   // what clicking a word in the finder will do. The selector reads only the
   // mode — not the share fields — so keystrokes that leave it unchanged
-  // never re-render the finder and its result list. The rule itself stays
-  // single-owned: editorFacts delegates to wordInsertMode too.
+  // never re-render the finder and its result list. The rule stays
+  // single-owned in wordInsertMode, whose pre-mount answer is the default.
   const insertMode = useEditorState({
     editor,
-    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : EMPTY_FACTS.insertMode),
+    selector: ({ editor }) => (editor ? wordInsertMode(editor.state) : DEFAULT_WORD_INSERT_MODE),
   });
 
   // everything the footer shows, through the one EditorFacts interface
@@ -112,6 +113,7 @@ export default function Editor({
         <EditorContent editor={editor} />
         <StatusBar
           facts={currentFacts}
+          origin={window.location.origin}
           onToggleMirror={onToggleMirror}
           finderOpen={finderOpen}
           onToggleFinder={onToggleFinder}
@@ -123,7 +125,7 @@ export default function Editor({
         open={finderOpen}
         onClose={onCloseFinder}
         onInsertWord={insertWord}
-        insertMode={insertMode ?? EMPTY_FACTS.insertMode}
+        insertMode={insertMode ?? DEFAULT_WORD_INSERT_MODE}
       />
     </>
   );

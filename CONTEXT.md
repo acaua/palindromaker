@@ -26,6 +26,6 @@ The inclusive range of letters that could not be paired because the two sides di
 The document as the palindrome checker sees it: one normalized text with every index mapped back to the document position it came from. The shared grounding for the highlights, the mirror edits and the editor's facts.
 
 **EditorFacts**:
-The single derived answer to "how does the editor read right now" — whether there are letters, whether the text is a palindrome, whether mirror editing is on, and what inserting a word from the word finder would do. The one interface the card's footer consumes.
+The single derived answer to "how does the editor read right now" — whether there are letters, whether the text is a palindrome, whether mirror editing is on, and whether the text can be shared. The one interface the card's footer consumes.
 
 _Avoid_: using "mirror" for the toggle; the toggle switches **mirror editing**, a mirror is a paired letter.

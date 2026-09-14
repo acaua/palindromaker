@@ -1,27 +1,19 @@
 import { describe, expect, test } from "vite-plus/test";
-import { Schema } from "@tiptap/pm/model";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import type { DecorationSet } from "@tiptap/pm/view";
 
+import { testSchema } from "@/test/schema";
 import { analyzeDoc } from "./doc-analysis";
 import { createPalindromePlugin, palindromePluginKey } from "./palindrome-extension";
 
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
-
 const buildDoc = (text: string) =>
-  schema.node(
+  testSchema.node(
     "doc",
     null,
     text
       .split("\n")
       .map((paragraph) =>
-        schema.node("paragraph", null, paragraph ? [schema.text(paragraph)] : []),
+        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
       ),
   );
 

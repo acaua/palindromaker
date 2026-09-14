@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import {
-  RATE_LIMIT_TTL,
+  RATE_LIMIT_SECONDS,
   clearBlueskyCache,
   fetchPost,
   isRestrictedPost,
@@ -233,7 +233,7 @@ describe("searchTaggedPosts", () => {
       await searchTaggedPosts("#p", "top", fetchImpl);
       expect(fetchImpl).toHaveBeenCalledTimes(1);
 
-      vi.setSystemTime(Date.now() + RATE_LIMIT_TTL + 1);
+      vi.setSystemTime(Date.now() + RATE_LIMIT_SECONDS * 1000 + 1);
       await searchTaggedPosts("#p", "top", fetchImpl);
       expect(fetchImpl).toHaveBeenCalledTimes(2);
     } finally {

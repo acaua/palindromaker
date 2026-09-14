@@ -1,18 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 import type { JSONContent } from "@tiptap/core";
-import { Schema } from "@tiptap/pm/model";
 
+import { testSchema } from "@/test/schema";
 import { FailingStorage, MemoryStorage, ThrowingStorage } from "@/test/storages";
 import { PREFS_STORAGE_KEY } from "./prefs";
 import { createPersistence, DOC_STORAGE_KEY, readStoredDoc } from "./persistence";
-
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
 
 type Handler = () => void;
 
@@ -72,15 +64,15 @@ const storageEvent = (key: string) => Object.assign(new Event("storage"), { key 
 
 describe("readStoredDoc", () => {
   test("returns null when storage is unavailable", () => {
-    expect(readStoredDoc(null, schema)).toBeNull();
+    expect(readStoredDoc(null, testSchema)).toBeNull();
   });
 
   test("returns null when the key is absent", () => {
-    expect(readStoredDoc(new MemoryStorage(), schema)).toBeNull();
+    expect(readStoredDoc(new MemoryStorage(), testSchema)).toBeNull();
   });
 
   test("returns null when storage refuses to be read", () => {
-    expect(readStoredDoc(new ThrowingStorage(), schema)).toBeNull();
+    expect(readStoredDoc(new ThrowingStorage(), testSchema)).toBeNull();
   });
 
   test("returns the parsed doc", () => {
@@ -88,21 +80,21 @@ describe("readStoredDoc", () => {
     const doc = { type: "doc", content: [{ type: "paragraph" }] };
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
 
-    expect(readStoredDoc(storage, schema)).toEqual(doc);
+    expect(readStoredDoc(storage, testSchema)).toEqual(doc);
   });
 
   test("returns null for corrupt JSON", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, "not json");
 
-    expect(readStoredDoc(storage, schema)).toBeNull();
+    expect(readStoredDoc(storage, testSchema)).toBeNull();
   });
 
   test("returns null for values that are not a doc", () => {
     const storage = new MemoryStorage();
     for (const value of ["null", '"hello"', "42", '{"type":"paragraph"}']) {
       storage.setItem(DOC_STORAGE_KEY, value);
-      expect(readStoredDoc(storage, schema)).toBeNull();
+      expect(readStoredDoc(storage, testSchema)).toBeNull();
     }
   });
 
@@ -110,7 +102,7 @@ describe("readStoredDoc", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, '{"type":"doc","content":[]}');
 
-    expect(readStoredDoc(storage, schema)).toBeNull();
+    expect(readStoredDoc(storage, testSchema)).toBeNull();
   });
 
   test("accepts schema-valid docs", () => {
@@ -121,7 +113,7 @@ describe("readStoredDoc", () => {
     };
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc));
 
-    expect(readStoredDoc(storage, schema)).toEqual(doc);
+    expect(readStoredDoc(storage, testSchema)).toEqual(doc);
   });
 
   test("rejects docs the schema cannot represent", () => {
@@ -135,7 +127,7 @@ describe("readStoredDoc", () => {
     ];
     for (const value of invalid) {
       storage.setItem(DOC_STORAGE_KEY, value);
-      expect(readStoredDoc(storage, schema)).toBeNull();
+      expect(readStoredDoc(storage, testSchema)).toBeNull();
     }
   });
 });
@@ -152,7 +144,7 @@ describe("createPersistence", () => {
   test("saves the doc after the debounce delay", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    const { detach } = createPersistence(editor, { storage, schema });
+    const { detach } = createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     expect(stored(storage)).toBeNull();
@@ -166,7 +158,7 @@ describe("createPersistence", () => {
   test("coalesces bursts of updates into one save", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    const { detach } = createPersistence(editor, { storage, schema });
+    const { detach } = createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     vi.advanceTimersByTime(200);
@@ -190,7 +182,7 @@ describe("createPersistence", () => {
   test("flushes a pending save when the editor is destroyed", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
-    createPersistence(editor, { storage, schema });
+    createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     editor.emit("destroy");
@@ -206,7 +198,7 @@ describe("createPersistence", () => {
     const storage = new MemoryStorage();
     const editor = new FakeEditor();
     const original = editor.doc;
-    const { detach } = createPersistence(editor, { storage, schema });
+    const { detach } = createPersistence(editor, { storage, schema: testSchema });
 
     editor.emit("update");
     detach();
@@ -222,7 +214,7 @@ describe("createPersistence", () => {
     const editor = new FakeEditor();
     const { detach } = createPersistence(editor, {
       storage: new FailingStorage(),
-      schema,
+      schema: testSchema,
     });
 
     editor.emit("update");
@@ -233,7 +225,7 @@ describe("createPersistence", () => {
 
   test("does nothing when storage is unavailable", () => {
     const editor = new FakeEditor();
-    const { detach } = createPersistence(editor, { storage: null, schema });
+    const { detach } = createPersistence(editor, { storage: null, schema: testSchema });
 
     editor.emit("update");
     vi.advanceTimersByTime(1000);
@@ -259,7 +251,7 @@ describe("createPersistence across tabs", () => {
     const onConflict = vi.fn();
     const persistence = createPersistence(editor, {
       storage,
-      schema,
+      schema: testSchema,
       storageEvents,
       onConflict,
     });

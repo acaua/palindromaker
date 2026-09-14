@@ -10,12 +10,14 @@ afterEach(cleanup);
 afterEach(() => vi.restoreAllMocks());
 
 const raw = "A b, b a";
+// passed to the component instead of reading the environment's location, so
+// the share URLs the test asserts on are deterministic
+const origin = "https://example.test";
 
 const facts = (overrides: Partial<EditorFacts> = {}): EditorFacts => ({
   hasLetters: true,
   isPalindrome: true,
   mirrorEnabled: false,
-  insertMode: "mirrored",
   raw,
   overLimit: false,
   shareable: true,
@@ -29,6 +31,7 @@ const Harness = ({ value }: { value: EditorFacts }) => {
   return (
     <StatusBar
       facts={value}
+      origin={origin}
       onToggleMirror={() => {}}
       finderOpen={false}
       onToggleFinder={() => {}}
@@ -84,7 +87,7 @@ describe("StatusBar share menu", () => {
       fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     });
 
-    expect(written).toEqual([`${location.origin}/p#t=${encodeURIComponent(raw)}`]);
+    expect(written).toEqual([`${origin}/p#t=${encodeURIComponent(raw)}`]);
   });
 
   test("opens the Bluesky composer from the menu", async () => {
@@ -94,7 +97,7 @@ describe("StatusBar share menu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Post to Bluesky" }));
 
-    const text = `${raw}\n\n${location.origin}/p#t=${encodeURIComponent(raw)}`;
+    const text = `${raw}\n\n${origin}/p#t=${encodeURIComponent(raw)}`;
     expect(open).toHaveBeenCalledWith(
       `https://bsky.app/intent/compose?text=${encodeURIComponent(text)}`,
       "_blank",

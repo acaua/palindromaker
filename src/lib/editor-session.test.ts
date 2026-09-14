@@ -1,18 +1,10 @@
 import { describe, expect, test, vi } from "vite-plus/test";
-import { Schema } from "@tiptap/pm/model";
 
+import { testSchema } from "@/test/schema";
 import { MemoryStorage } from "@/test/storages";
 import { clearShareFragment, resolveInitialContent } from "./editor-session";
 import { DOC_STORAGE_KEY } from "./persistence";
 import { sampleContent } from "./sample";
-
-const schema = new Schema({
-  nodes: {
-    doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*" },
-    text: { group: "inline" },
-  },
-});
 
 const doc = (text: string) => ({
   type: "doc",
@@ -28,7 +20,7 @@ describe("resolveInitialContent", () => {
       resolveInitialContent({
         fragment: `#t=${encodeURIComponent("A b, b a")}`,
         storage,
-        schema,
+        schema: testSchema,
         uiLanguage: "en",
       }),
     ).toEqual(doc("A b, b a"));
@@ -38,9 +30,9 @@ describe("resolveInitialContent", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, JSON.stringify(doc("stored")));
 
-    expect(resolveInitialContent({ fragment: "", storage, schema, uiLanguage: "en" })).toEqual(
-      doc("stored"),
-    );
+    expect(
+      resolveInitialContent({ fragment: "", storage, schema: testSchema, uiLanguage: "en" }),
+    ).toEqual(doc("stored"));
   });
 
   test("the language's sample is used when storage holds nothing usable", () => {
@@ -48,7 +40,7 @@ describe("resolveInitialContent", () => {
       resolveInitialContent({
         fragment: "",
         storage: new MemoryStorage(),
-        schema,
+        schema: testSchema,
         uiLanguage: "de",
       }),
     ).toBe(sampleContent("de"));
@@ -58,9 +50,9 @@ describe("resolveInitialContent", () => {
     const storage = new MemoryStorage();
     storage.setItem(DOC_STORAGE_KEY, '{"type":"doc","content":[{"type":"bogus"}]}');
 
-    expect(resolveInitialContent({ fragment: "", storage, schema, uiLanguage: "fr" })).toBe(
-      sampleContent("fr"),
-    );
+    expect(
+      resolveInitialContent({ fragment: "", storage, schema: testSchema, uiLanguage: "fr" }),
+    ).toBe(sampleContent("fr"));
   });
 });
 

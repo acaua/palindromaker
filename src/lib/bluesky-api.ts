@@ -158,9 +158,11 @@ const searchCache = new Map<
   { at: number; ttl: number; result: ApiResult<BlueskyPost[]> }
 >();
 const SEARCH_TTL = 5 * 60_000;
-// how long a throttle answer is remembered — and the UI holds its retry:
-// the endpoint sends no Retry-After, so both sides share this one window
-export const RATE_LIMIT_TTL = 60_000;
+// how long a throttle answer is remembered, in ms, for the cache below
+const RATE_LIMIT_TTL = 60_000;
+// the same window in whole seconds, what the UI holds its retry for: the
+// endpoint sends no Retry-After, so both sides share this one duration
+export const RATE_LIMIT_SECONDS = RATE_LIMIT_TTL / 1000;
 
 export const clearBlueskyCache = (): void => {
   postCache.clear();
