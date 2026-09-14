@@ -1,18 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { testSchema } from "@/test/schema";
+import { buildDoc, testSchema } from "@/test/schema";
 import { analyzeDoc } from "./doc-analysis";
-
-const buildDoc = (text: string) =>
-  testSchema.node(
-    "doc",
-    null,
-    text
-      .split("\n")
-      .map((paragraph) =>
-        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
-      ),
-  );
 
 describe("text and positions", () => {
   test("maps each character to its doc position", () => {

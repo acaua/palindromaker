@@ -1,21 +1,10 @@
 import { describe, expect, test } from "vite-plus/test";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 
-import { testSchema } from "@/test/schema";
+import { buildDoc } from "@/test/schema";
 import { analyzeDoc } from "./doc-analysis";
 import { wordInsertTransaction } from "./word-insert";
 import type { WordInsertMode } from "./word-insert";
-
-const buildDoc = (text: string) =>
-  testSchema.node(
-    "doc",
-    null,
-    text
-      .split("\n")
-      .map((paragraph) =>
-        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
-      ),
-  );
 
 // the document with the caret at doc position `caret`, then the word
 // inserted: the text with "|" marking where the caret ended up, so both

@@ -45,25 +45,24 @@ export const failureStatus = <S extends string>(
   fallback: S,
 ): S => overrides[reason] ?? fallback;
 
-// one owner for "what did this response status mean": 404 is a real
-// not-found, 400 a malformed request, everything else a server/network
-// failure. Callers map the reasons they do not care about onto their own
-// status vocabulary through failureStatus.
-const httpFailure = (response: Response): ApiFailure => {
-  if (response.status === 404) return { ok: false, reason: "notFound" };
-  if (response.status === 400) return { ok: false, reason: "badRequest" };
-  return { ok: false, reason: "error" };
-};
+// the tail both contracts share: a 400 is our own malformed request (a bug),
+// anything else a server/network failure
+const malformedOrError = (response: Response): ApiFailure =>
+  response.status === 400 ? { ok: false, reason: "badRequest" } : { ok: false, reason: "error" };
 
-// search adds the throttle to that vocabulary: 403/429 is a back-off, and
-// only a 400 is a malformed request there (401/404/422/... are errors).
-// The throttle rule lives here, next to httpFailure, and nowhere else.
-const searchFailure = (response: Response): ApiFailure => {
-  if (response.status === 403 || response.status === 429)
-    return { ok: false, reason: "rateLimited" };
-  if (response.status === 400) return { ok: false, reason: "badRequest" };
-  return { ok: false, reason: "error" };
-};
+// one owner for "what did this response status mean": 404 is a real
+// not-found, then malformedOrError. Callers map the reasons they do not care
+// about onto their own status vocabulary through failureStatus.
+const httpFailure = (response: Response): ApiFailure =>
+  response.status === 404 ? { ok: false, reason: "notFound" } : malformedOrError(response);
+
+// search adds the throttle to that vocabulary: 403/429 is a back-off
+// (401/404/422/... are errors). The throttle rule lives here, next to
+// httpFailure, and nowhere else.
+const searchFailure = (response: Response): ApiFailure =>
+  response.status === 403 || response.status === 429
+    ? { ok: false, reason: "rateLimited" }
+    : malformedOrError(response);
 
 export const SEARCH_LIMIT = 100;
 
@@ -209,8 +208,9 @@ export const resolveHandle = async (
 };
 
 // Turn a parsed post reference into an at-uri: an at-uri is its own answer,
-// a handle needs a DID first. The post link form and the post reader both
-// go through here rather than re-walking the branch.
+// a handle needs a DID first. The post reader always routes through here;
+// the link form only calls it for the handle case, short-circuiting an
+// at-uri to skip the busy state.
 export const resolvePostRef = async (
   ref: PostRef,
   fetchImpl: typeof fetch = fetch,

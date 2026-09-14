@@ -11,3 +11,16 @@ export const testSchema = new Schema({
     text: { group: "inline" },
   },
 });
+
+// a doc of paragraphs, one per "\n"-separated line: the block shape every
+// node-level test starts from
+export const buildDoc = (text: string) =>
+  testSchema.node(
+    "doc",
+    null,
+    text
+      .split("\n")
+      .map((paragraph) =>
+        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
+      ),
+  );

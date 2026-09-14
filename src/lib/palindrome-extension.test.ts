@@ -2,20 +2,9 @@ import { describe, expect, test } from "vite-plus/test";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import type { DecorationSet } from "@tiptap/pm/view";
 
-import { testSchema } from "@/test/schema";
+import { buildDoc } from "@/test/schema";
 import { analyzeDoc } from "./doc-analysis";
 import { createPalindromePlugin, palindromePluginKey } from "./palindrome-extension";
-
-const buildDoc = (text: string) =>
-  testSchema.node(
-    "doc",
-    null,
-    text
-      .split("\n")
-      .map((paragraph) =>
-        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
-      ),
-  );
 
 const createState = (text: string) =>
   EditorState.create({

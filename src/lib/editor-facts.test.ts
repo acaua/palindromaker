@@ -1,21 +1,10 @@
 import { describe, expect, test } from "vite-plus/test";
 import { EditorState } from "@tiptap/pm/state";
 
-import { testSchema } from "@/test/schema";
+import { buildDoc } from "@/test/schema";
 import { EMPTY_FACTS, editorFacts } from "./editor-facts";
 import { createMirrorPlugin, mirrorPluginKey } from "./mirror-extension";
 import { MAX_SHARE_TEXT } from "./share-link";
-
-const buildDoc = (text: string) =>
-  testSchema.node(
-    "doc",
-    null,
-    text
-      .split("\n")
-      .map((paragraph) =>
-        testSchema.node("paragraph", null, paragraph ? [testSchema.text(paragraph)] : []),
-      ),
-  );
 
 const createState = (text: string, options?: { enabled?: boolean; mirror?: boolean }) =>
   EditorState.create({
