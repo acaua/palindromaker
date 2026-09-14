@@ -1,13 +1,12 @@
 import { useI18n } from "@/hooks/use-i18n";
 import { setUiLanguage, UI_LANGUAGES, UI_LANGUAGE_LABELS } from "@/lib/i18n";
 import type { UiLanguage } from "@/lib/i18n";
-import { prefsFor } from "@/lib/prefs";
-import { localStorageOrNull } from "@/lib/storage";
+import { prefsStore } from "@/lib/prefs-store";
 
 // the header's language picker, styled like the finder's dictionary
 // select; the choice is remembered like the mirror-editing toggle
 export default function LanguageSwitcher() {
-  const prefs = prefsFor(localStorageOrNull());
+  const prefs = prefsStore();
   const { lang, t } = useI18n();
 
   return (

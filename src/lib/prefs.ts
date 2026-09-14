@@ -78,9 +78,7 @@ export const writePrefs = (storage: StorageLike | null, patch: Prefs): void => {
   }
 };
 
-// The storage-bound view every component uses, so a call site no longer
-// pairs localStorageOrNull() with the codec itself: one module owns the
-// key, the shape and the merge.
+// The storage-bound view of the codec above.
 export interface PrefsStore {
   read: () => DefaultedPrefs;
   write: (patch: Prefs) => void;

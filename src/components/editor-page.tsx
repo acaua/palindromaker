@@ -3,8 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Editor from "@/components/editor";
 import type { FinderHandle } from "@/components/editor";
 import { useI18n } from "@/hooks/use-i18n";
-import { clearShareFragment, resolveEditorSession } from "@/lib/editor-session";
+import { clearShareFragment, openEditorSession } from "@/lib/editor-session";
 import { schema } from "@/lib/editor-schema";
+import { prefsStore } from "@/lib/prefs-store";
 import { localStorageOrNull } from "@/lib/storage";
 
 // the home route: today's page minus the header row, which the site header
@@ -15,7 +16,7 @@ export default function EditorPage() {
   // the editor's mount-time decisions are resolved once, from the one owner
   // (content precedence, the remembered toggles, the write path back)
   const [session] = useState(() =>
-    resolveEditorSession({
+    openEditorSession({
       fragment: window.location.hash,
       storage: localStorageOrNull(),
       schema,
@@ -35,13 +36,10 @@ export default function EditorPage() {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   // shown and remembered together: the panel's state and its pref
-  const setFinder = useCallback(
-    (open: boolean) => {
-      setFinderOpen(open);
-      session.writePref({ finderOpen: open });
-    },
-    [session],
-  );
+  const setFinder = useCallback((open: boolean) => {
+    setFinderOpen(open);
+    prefsStore().write({ finderOpen: open });
+  }, []);
 
   const toggleFinder = useCallback(() => setFinder(!finderOpen), [setFinder, finderOpen]);
 

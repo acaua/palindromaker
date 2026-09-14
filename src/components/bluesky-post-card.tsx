@@ -2,8 +2,7 @@ import { useMemo } from "react";
 
 import { useI18n } from "@/hooks/use-i18n";
 import type { BlueskyPost } from "@/lib/bluesky-api";
-import { splitAnnotations } from "@/lib/bluesky-text";
-import { extractPalindrome } from "@/lib/palindrome-extract";
+import { describePost } from "@/lib/bluesky-post-view";
 import { formatRelativeTime } from "@/lib/relative-time";
 
 // A hand-rendered result row: 100 official embeds would be 100 iframes,
@@ -16,8 +15,7 @@ export default function BlueskyPostCard({
   onCheck: (uri: string) => void;
 }) {
   const { lang, t } = useI18n();
-  const palindrome = useMemo(() => extractPalindrome(post.text, post.facetRanges), [post]);
-  const segments = useMemo(() => splitAnnotations(post.text, post.facetRanges), [post]);
+  const view = useMemo(() => describePost(post), [post]);
   const relative = formatRelativeTime(post.createdAt, lang);
 
   return (
@@ -29,14 +27,14 @@ export default function BlueskyPostCard({
           </p>
           <p className="truncate text-xs text-gray-500">@{post.author.handle}</p>
         </div>
-        {palindrome && (
+        {view.palindrome && (
           <span className="ml-auto shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
             {t("post.palindromeBadge")}
           </span>
         )}
       </header>
       <p className="mt-2 line-clamp-6 text-sm whitespace-pre-wrap break-words text-gray-700">
-        {segments.map((segment) =>
+        {view.segments.map((segment) =>
           segment.annotation ? (
             <span key={segment.start} className="text-gray-500">
               {segment.text}
@@ -57,7 +55,7 @@ export default function BlueskyPostCard({
           onClick={() => onCheck(post.uri)}
           className="mt-2 w-full cursor-pointer rounded-lg bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100"
         >
-          {palindrome ? t("post.checkCard") : t("post.viewCard")}
+          {view.palindrome ? t("post.checkCard") : t("post.viewCard")}
         </button>
       </div>
     </li>
