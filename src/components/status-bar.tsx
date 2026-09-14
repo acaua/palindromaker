@@ -255,7 +255,7 @@ const MirrorSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
           className={`h-5 w-5 rounded-full bg-white shadow transition ${enabled ? "ml-auto" : ""}`}
         />
       </span>
-      <span className="text-sm font-medium text-gray-700">{t("mirror.typing")}</span>
+      <span className="text-sm font-medium text-gray-700">{t("mirror.editing")}</span>
     </button>
   );
 };

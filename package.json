@@ -9,6 +9,7 @@
     "deploy": "wrangler deploy",
     "check": "vp check && vp test run",
     "test": "vp test run",
+    "test:coverage": "vp test run --coverage",
     "test:e2e": "playwright test",
     "prepare": "vp config --no-agent"
   },
@@ -33,6 +34,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "4.1.11",
     "happy-dom": "^20.14.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",

@@ -55,7 +55,7 @@ const en = {
   "about.body1":
     "Palindromaker is a small editor for crafting palindromes: phrases that read the same backwards and forwards, ignoring spaces, punctuation and accents.",
   "about.body2":
-    "As you type, the editor colors the mirror: letters that agree glow blue around the center, and the stretch that still breaks the symmetry is marked in red. With mirror typing on, every letter you write is echoed at its symmetric position, so symmetry is never more than one keystroke away.",
+    "As you type, the editor colors the mirror: letters that agree glow blue around the center, and the stretch that still breaks the symmetry is marked in red. With mirror editing on, every letter you write is echoed at its symmetric position, so symmetry is never more than one keystroke away.",
   "about.body3":
     "The word finder searches dictionaries in six languages and inserts words straight into the mirror. Everything stays in your browser — nothing is sent anywhere.",
   "about.body4":
@@ -96,9 +96,9 @@ const en = {
   "legend.caretMirror": "mirror of your caret",
   "legend.pair": "mirror is also a word",
   "legend.palindromeWord": "palindrome word",
-  "mirror.typing": "Mirror typing",
-  "mirror.on": "Mirror typing is on",
-  "mirror.off": "Mirror typing is off",
+  "mirror.editing": "Mirror editing",
+  "mirror.on": "Mirror editing is on",
+  "mirror.off": "Mirror editing is off",
   "conflict.message": "This palindrome was edited in another tab.",
   "conflict.loadTheirs": "Load that version",
   "conflict.keepMine": "Keep this one",
@@ -172,7 +172,7 @@ const pt: Table = {
   "about.body1":
     "O Palindromaker é um pequeno editor para criar palíndromos: frases que se leem da mesma forma de trás para frente, ignorando espaços, pontuação e acentos.",
   "about.body2":
-    "Enquanto você digita, o editor pinta o espelho: as letras que se correspondem brilham em azul ao redor do centro, e o trecho que ainda quebra a simetria fica marcado em vermelho. Com a digitação espelhada ligada, cada letra que você escreve é repetida na sua posição simétrica — a simetria fica a um toque de distância.",
+    "Enquanto você digita, o editor pinta o espelho: as letras que se correspondem brilham em azul ao redor do centro, e o trecho que ainda quebra a simetria fica marcado em vermelho. Com a edição espelhada ligada, cada letra que você escreve é repetida na sua posição simétrica — a simetria fica a um toque de distância.",
   "about.body3":
     "O buscador de palavras consulta dicionários em seis idiomas e insere palavras direto no espelho. Tudo fica no seu navegador — nada é enviado a lugar algum.",
   "about.body4":
@@ -214,9 +214,9 @@ const pt: Table = {
   "legend.caretMirror": "espelho do seu cursor",
   "legend.pair": "o espelho também é palavra",
   "legend.palindromeWord": "palavra palíndromo",
-  "mirror.typing": "Digitação espelhada",
-  "mirror.on": "Digitação espelhada ativada",
-  "mirror.off": "Digitação espelhada desativada",
+  "mirror.editing": "Edição espelhada",
+  "mirror.on": "Edição espelhada ativada",
+  "mirror.off": "Edição espelhada desativada",
   "conflict.message": "Este palíndromo foi editado em outra aba.",
   "conflict.loadTheirs": "Carregar aquela versão",
   "conflict.keepMine": "Manter esta",
@@ -285,7 +285,7 @@ const es: Table = {
   "about.body1":
     "Palindromaker es un pequeño editor para crear palíndromos: frases que se leen igual al derecho y al revés, ignorando espacios, puntuación y acentos.",
   "about.body2":
-    "Mientras escribes, el editor pinta el espejo: las letras que coinciden brillan en azul alrededor del centro, y el tramo que aún rompe la simetría queda marcado en rojo. Con la escritura en espejo activada, cada letra que escribes se repite en su posición simétrica — la simetría queda a una tecla de distancia.",
+    "Mientras escribes, el editor pinta el espejo: las letras que coinciden brillan en azul alrededor del centro, y el tramo que aún rompe la simetría queda marcado en rojo. Con la edición en espejo activada, cada letra que escribes se repite en su posición simétrica — la simetría queda a una tecla de distancia.",
   "about.body3":
     "El buscador de palabras consulta diccionarios en seis idiomas e inserta palabras directamente en el espejo. Todo queda en tu navegador — nada se envía a ningún lado.",
   "about.body4":
@@ -327,9 +327,9 @@ const es: Table = {
   "legend.caretMirror": "espejo de tu cursor",
   "legend.pair": "el espejo también es palabra",
   "legend.palindromeWord": "palabra palíndromo",
-  "mirror.typing": "Escritura en espejo",
-  "mirror.on": "La escritura en espejo está activada",
-  "mirror.off": "La escritura en espejo está desactivada",
+  "mirror.editing": "Edición en espejo",
+  "mirror.on": "La edición en espejo está activada",
+  "mirror.off": "La edición en espejo está desactivada",
   "conflict.message": "Este palíndromo fue editado en otra pestaña.",
   "conflict.loadTheirs": "Cargar esa versión",
   "conflict.keepMine": "Conservar esta",
@@ -400,7 +400,7 @@ const de: Table = {
   "about.body1":
     "Palindromaker ist ein kleiner Editor für Palindrome: Sätze, die vorwärts wie rückwärts gleich lauten — Leerzeichen, Satzzeichen und Akzente bleiben dabei außer Acht.",
   "about.body2":
-    "Während du tippst, färbt der Editor den Spiegel: übereinstimmende Buchstaben leuchten um den Mittelpunkt blau auf, und der Abschnitt, der die Symmetrie noch bricht, ist rot markiert. Mit eingeschaltetem gespiegeltem Tippen wiederholt sich jeder Buchstabe an seiner symmetrischen Stelle — die Symmetrie ist nie mehr als einen Tastenschlag entfernt.",
+    "Während du tippst, färbt der Editor den Spiegel: übereinstimmende Buchstaben leuchten um den Mittelpunkt blau auf, und der Abschnitt, der die Symmetrie noch bricht, ist rot markiert. Mit eingeschaltetem gespiegeltem Bearbeiten wiederholt sich jeder Buchstabe an seiner symmetrischen Stelle — die Symmetrie ist nie mehr als einen Tastenschlag entfernt.",
   "about.body3":
     "Die Wortsuche durchsucht Wörterbücher in sechs Sprachen und fügt Wörter direkt in den Spiegel ein. Alles bleibt in deinem Browser — nichts wird irgendwohin gesendet.",
   "about.body4":
@@ -442,9 +442,9 @@ const de: Table = {
   "legend.caretMirror": "Spiegel deiner Einfügemarke",
   "legend.pair": "der Spiegel ist auch ein Wort",
   "legend.palindromeWord": "Palindrom-Wort",
-  "mirror.typing": "Gespiegeltes Tippen",
-  "mirror.on": "Gespiegeltes Tippen ist aktiviert",
-  "mirror.off": "Gespiegeltes Tippen ist deaktiviert",
+  "mirror.editing": "Gespiegeltes Bearbeiten",
+  "mirror.on": "Gespiegeltes Bearbeiten ist aktiviert",
+  "mirror.off": "Gespiegeltes Bearbeiten ist deaktiviert",
   "conflict.message": "Dieses Palindrom wurde in einem anderen Tab bearbeitet.",
   "conflict.loadTheirs": "Andere Version laden",
   "conflict.keepMine": "Diese behalten",
@@ -515,7 +515,7 @@ const fr: Table = {
   "about.body1":
     "Palindromaker est un petit éditeur pour composer des palindromes : des phrases qui se lisent de la même façon dans les deux sens, en ignorant espaces, ponctuation et accents.",
   "about.body2":
-    "Pendant que vous tapez, l’éditeur colorie le miroir : les lettres qui se répondent s’illuminent en bleu autour du centre, et le passage qui brise encore la symétrie est marqué en rouge. Avec l’écriture en miroir activée, chaque lettre tapée se reflète à sa position symétrique — la symétrie n’est jamais à plus d’une touche.",
+    "Pendant que vous tapez, l’éditeur colorie le miroir : les lettres qui se répondent s’illuminent en bleu autour du centre, et le passage qui brise encore la symétrie est marqué en rouge. Avec l’édition en miroir activée, chaque lettre tapée se reflète à sa position symétrique — la symétrie n’est jamais à plus d’une touche.",
   "about.body3":
     "La recherche de mots interroge des dictionnaires en six langues et insère les mots directement dans le miroir. Tout reste dans votre navigateur — rien n’est envoyé nulle part.",
   "about.body4":
@@ -557,9 +557,9 @@ const fr: Table = {
   "legend.caretMirror": "miroir de votre curseur",
   "legend.pair": "le miroir est aussi un mot",
   "legend.palindromeWord": "mot palindrome",
-  "mirror.typing": "Écriture en miroir",
-  "mirror.on": "L’écriture en miroir est activée",
-  "mirror.off": "L’écriture en miroir est désactivée",
+  "mirror.editing": "Édition en miroir",
+  "mirror.on": "L’édition en miroir est activée",
+  "mirror.off": "L’édition en miroir est désactivée",
   "conflict.message": "Ce palindrome a été modifié dans un autre onglet.",
   "conflict.loadTheirs": "Charger cette version",
   "conflict.keepMine": "Garder celle-ci",
@@ -630,7 +630,7 @@ const it: Table = {
   "about.body1":
     "Palindromaker è un piccolo editor per comporre palindromi: frasi che si leggono allo stesso modo in entrambe le direzioni, ignorando spazi, punteggiatura e accenti.",
   "about.body2":
-    "Mentre scrivi, l’editor colora lo specchio: le lettere che si corrispondono brillano di blu attorno al centro, e il tratto che ancora rompe la simmetria è evidenziato in rosso. Con la digitazione speculare attiva, ogni lettera scritta viene ripetuta nella sua posizione simmetrica — la simmetria è sempre a un tasto di distanza.",
+    "Mentre scrivi, l’editor colora lo specchio: le lettere che si corrispondono brillano di blu attorno al centro, e il tratto che ancora rompe la simmetria è evidenziato in rosso. Con la modifica speculare attiva, ogni lettera scritta viene ripetuta nella sua posizione simmetrica — la simmetria è sempre a un tasto di distanza.",
   "about.body3":
     "Il cercatore di parole interroga dizionari in sei lingue e inserisce le parole direttamente nello specchio. Tutto resta nel tuo browser — nulla viene inviato altrove.",
   "about.body4":
@@ -672,9 +672,9 @@ const it: Table = {
   "legend.caretMirror": "specchio del tuo cursore",
   "legend.pair": "lo specchio è anche una parola",
   "legend.palindromeWord": "parola palindromo",
-  "mirror.typing": "Digitazione speculare",
-  "mirror.on": "La digitazione speculare è attiva",
-  "mirror.off": "La digitazione speculare è disattivata",
+  "mirror.editing": "Modifica speculare",
+  "mirror.on": "La modifica speculare è attiva",
+  "mirror.off": "La modifica speculare è disattivata",
   "conflict.message": "Questo palindromo è stato modificato in un’altra scheda.",
   "conflict.loadTheirs": "Carica quella versione",
   "conflict.keepMine": "Mantieni questa",

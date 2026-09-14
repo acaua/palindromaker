@@ -24,12 +24,12 @@ afterEach(() => {
 describe("Reader", () => {
   // the reader's view is editable so ProseMirror's caret machinery runs;
   // read-only-ness lives in the claimed input events, not the attribute
-  const viewer = (container: HTMLElement) => container.querySelector('[role="region"]');
+  const reader = (container: HTMLElement) => container.querySelector('[role="region"]');
 
   test("renders the shared text with center marks kept, mutably shielded", async () => {
     const view = await renderRouted(<Reader text="A b, b a" />);
     await screen.findByText("Copy text");
-    const view1 = viewer(view.container);
+    const view1 = reader(view.container);
     expect(view1?.textContent).toContain("A b, b a");
     // the shared content is always a palindrome when produced by the
     // share button, so both center halves stay marked
@@ -59,7 +59,7 @@ describe("Reader", () => {
     // editable:true — the caret machinery needs it (PM gates keydown
     // handling on view.editable); mutations are cancelled in reader.tsx
     expect(editor.isEditable).toBe(true);
-    const view1 = viewer(view.container);
+    const view1 = reader(view.container);
     expect(view1).not.toBeNull();
 
     // the state-level quarantine: a doc-changing transaction is dropped
@@ -103,8 +103,8 @@ describe("ReaderPage", () => {
     await renderRouted(<ReaderPage />, "/p#t=A%20b%2C%20b%20a");
 
     expect(await screen.findByText("Copy text")).not.toBeNull();
-    const viewer = document.querySelector('[role="region"]');
-    expect(viewer?.textContent).toContain("A b, b a");
+    const reader = document.querySelector('[role="region"]');
+    expect(reader?.textContent).toContain("A b, b a");
   });
 
   test("shows the empty card for a missing, empty or broken hash", async () => {

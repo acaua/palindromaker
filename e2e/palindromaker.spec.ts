@@ -121,7 +121,7 @@ test("handles multiple paragraphs without crashing", async ({ page }) => {
 
 test("mirror editing duplicates and removes mirrored characters", async ({ page }) => {
   // the status bar switch, not the word "mirror" inside result rows
-  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
+  const mirrorToggle = page.getByRole("button", { name: "Mirror editing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 
@@ -154,9 +154,11 @@ test("persists editor content across reloads", async ({ page }) => {
   await expect(editor(page)).toContainText("racecar");
 });
 
-test("persists the mirror toggle, the panel, and the language across reloads", async ({ page }) => {
+test("persists the mirror-editing toggle, the panel, and the language across reloads", async ({
+  page,
+}) => {
   // the status bar switch, not the word "mirror" inside result rows
-  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
+  const mirrorToggle = page.getByRole("button", { name: "Mirror editing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 
@@ -317,7 +319,7 @@ test("keeps working when the browser blocks site storage", async ({ page }) => {
   await expect(redStatus(page)).toBeVisible();
 
   // the status bar switch, not the word "mirror" inside result rows
-  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
+  const mirrorToggle = page.getByRole("button", { name: "Mirror editing" });
   await mirrorToggle.click();
   await expect(mirrorToggle).toHaveAttribute("aria-pressed", "true");
 });
@@ -348,7 +350,7 @@ test("word finder searches the pt-br dictionary and shows mirrors", async ({ pag
 });
 
 test("loading a dictionary does not block the page", async ({ page }) => {
-  // the largest dictionary is 7 MB / 635k words: normalizing and
+  // the largest dictionary is 7 MB / 637k words: normalizing and
   // deduplicating it used to block the main thread for ~250ms
   await page.evaluate(() => {
     const durations: number[] = [];
@@ -422,7 +424,7 @@ test("word finder marks mirror pairs and palindromes", async ({ page }) => {
 
 test("clicking a result inserts the word, and its mirror opposite", async ({ page }) => {
   // the status bar switch, not the word "mirror" inside result rows
-  const mirrorToggle = page.getByRole("button", { name: "Mirror typing" });
+  const mirrorToggle = page.getByRole("button", { name: "Mirror editing" });
   await mirrorToggle.click();
   await clearEditor(page);
 
@@ -510,7 +512,7 @@ test("the header switch changes the language and remembers it", async ({ page })
   await expect(html).toHaveAttribute("lang", "pt-BR");
   await expect(greenStatus(page)).toContainText("Palíndromo");
 
-  // the choice survives a reload, like the mirror toggle
+  // the choice survives a reload, like the mirror-editing toggle
   await page.reload();
   await expect(html).toHaveAttribute("lang", "pt-BR");
 

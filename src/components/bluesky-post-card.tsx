@@ -7,7 +7,7 @@ import { extractPalindrome } from "@/lib/palindrome-extract";
 import { formatRelativeTime } from "@/lib/relative-time";
 
 // A hand-rendered result row: 100 official embeds would be 100 iframes,
-// so the gallery stays light and opens the post in the viewer on demand.
+// so the gallery stays light and opens the post in the reader on demand.
 export default function BlueskyPostCard({
   post,
   onCheck,

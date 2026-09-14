@@ -7,7 +7,7 @@ import type { DocAnalysis } from "@/lib/doc-analysis";
 import { countLettersBefore, mirrorInsertDocPos } from "@/lib/mirror-edit";
 import { mirrorWord, mirrorsItself } from "@/lib/mirror-word";
 
-// Putting a whole word into the document, the way mirror typing puts a
+// Putting a whole word into the document, the way mirror editing puts a
 // single character into it: the word goes in at the caret and its mirror at
 // the symmetric point in letter space, so a palindrome stays a palindrome.
 //

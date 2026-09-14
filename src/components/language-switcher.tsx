@@ -5,7 +5,7 @@ import { prefsFor } from "@/lib/prefs";
 import { localStorageOrNull } from "@/lib/storage";
 
 // the header's language picker, styled like the finder's dictionary
-// select; the choice is remembered like the mirror toggle
+// select; the choice is remembered like the mirror-editing toggle
 export default function LanguageSwitcher() {
   const prefs = prefsFor(localStorageOrNull());
   const { lang, t } = useI18n();

@@ -2,23 +2,37 @@
 
 A tiny editor for crafting palindromes with live feedback: it highlights the
 center characters, marks the gap that breaks the palindrome, and mirrors your
-caret position against its matching character. The optional mirror mode
-(toggle it in the card's status bar) duplicates every character you type — and
-every character you delete — at its mirror position, keeping the text a
+caret position against its matching character. The optional mirror editing
+(toggle it in the card's status bar) duplicates every letter you type — and
+every letter you delete — at its mirror position, keeping the text a
 palindrome as you write.
+
+Beyond the editor: the word finder inserts dictionary words straight into the
+mirror; a finished palindrome can be shared as a link (the text rides in the
+URL fragment) and opens in a read-only reader; and Bluesky posts can be read
+for the palindrome inside them, browsed by palindrome hashtag on the Explore
+page, or posted straight from the share menu. The interface speaks the same six
+languages as the dictionaries, and an About page explains the idea.
 
 ## Stack
 
 - [Vite+](https://viteplus.dev/) (Vite 8 + Vitest + Oxlint + Oxfmt through the
   `vp` CLI) + [React 19](https://react.dev/) + TypeScript (strict)
-- [TipTap 3](https://tiptap.dev/) (ProseMirror) with a custom `Palindrome`
-  extension that drives the highlighting via ProseMirror decorations
+- [TipTap 3](https://tiptap.dev/) (ProseMirror) with two custom extensions: a
+  `Palindrome` extension that drives the highlights via ProseMirror
+  decorations, and `MirrorEditing`, which reproduces each typed letter at its
+  mirror position
+- [TanStack Router](https://tanstack.com/router) (code-based routes) and
+  [TanStack Virtual](https://tanstack.com/virtual) for the finder's result list
 - [Tailwind CSS 4](https://tailwindcss.com/)
 - [GoatCounter](https://www.goatcounter.com/) for privacy-friendly analytics
+- Vitest (unit, split between a node and a happy-dom environment) and Playwright
+  (Chromium e2e, including axe accessibility sweeps)
 
 ## Getting started
 
-Requires Node 20+ and [pnpm](https://pnpm.io/).
+Requires a Node the Vite+ toolchain supports — 20.19+, 22.18+, or 24.11+ — and
+[pnpm](https://pnpm.io/) (CI runs Node 24).
 
 ```bash
 pnpm install
@@ -29,15 +43,16 @@ Open http://localhost:5173.
 
 ## Scripts
 
-| Script          | What it does                         |
-| --------------- | ------------------------------------ |
-| `pnpm dev`      | Start the dev server                 |
-| `pnpm build`    | Production build to `dist/`          |
-| `pnpm preview`  | Serve the production build           |
-| `pnpm deploy`   | Build and deploy to Cloudflare       |
-| `pnpm test`     | Unit tests (Vitest)                  |
-| `pnpm test:e2e` | Browser tests (Playwright, Chromium) |
-| `pnpm check`    | Format, lint, type-check, unit tests |
+| Script               | What it does                         |
+| -------------------- | ------------------------------------ |
+| `pnpm dev`           | Start the dev server                 |
+| `pnpm build`         | Production build to `dist/`          |
+| `pnpm preview`       | Serve the production build           |
+| `pnpm deploy`        | Build and deploy to Cloudflare       |
+| `pnpm test`          | Unit tests (Vitest)                  |
+| `pnpm test:coverage` | Unit tests with a coverage summary   |
+| `pnpm test:e2e`      | Browser tests (Playwright, Chromium) |
+| `pnpm check`         | Format, lint, type-check, unit tests |
 
 ## Word finder
 
@@ -77,10 +92,12 @@ as a static-asset Worker, with builds triggered by pushes to GitHub:
 - **`main`** deploys to production at `palindromaker.<subdomain>.workers.dev`
 - Any other branch gets a preview URL
 
-GitHub Actions CI (`.github/workflows/ci.yml`) runs on every push and pull
-request: a check job (`vp check` + unit tests on Node 24, via
-`voidzero-dev/setup-vp`) followed by a Playwright e2e job. It only checks —
-deploys belong to Workers Builds.
+GitHub Actions CI (`.github/workflows/ci.yml`) runs on every pull request and
+on pushes to `main`: a check job (`vp check` + unit tests on Node 24, via
+`voidzero-dev/setup-vp`) followed by a Playwright e2e job. Other branches are
+built by Workers Builds as previews. CI only checks — deploys belong to Workers
+Builds, whose build command (`pnpm check && vp build` in `wrangler.jsonc`) runs
+the unit tests too.
 
 Dictionary files are cached in the browser for a week (then
 stale-while-revalidate for a day) via a `_headers` file shipped from
@@ -92,8 +109,9 @@ stale-while-revalidate for a day) via a `_headers` file shipped from
 pnpm deploy
 ```
 
-Type-checks, runs the unit tests, builds (`build.command` in
-`wrangler.jsonc`), and uploads `dist/` — a failing check blocks the deploy.
+Runs `pnpm check` (format, lint, type-check, unit tests), builds (`build.command`
+in `wrangler.jsonc`), and uploads `dist/` — a failing check or test blocks the
+deploy.
 
 ### CI setup (Workers Builds)
 
@@ -104,7 +122,7 @@ Type-checks, runs the unit tests, builds (`build.command` in
    | Variable               | Value                                         |
    | ---------------------- | --------------------------------------------- |
    | `VITE_GOATCOUNTER_URL` | `https://palindromaker.goatcounter.com/count` |
-   | `NODE_VERSION`         | `22`                                          |
+   | `NODE_VERSION`         | `24`                                          |
 
 Build and deploy commands are read from `wrangler.jsonc`, so no other
 configuration is needed.

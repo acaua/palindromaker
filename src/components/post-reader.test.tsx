@@ -57,7 +57,7 @@ describe("PostReader", () => {
     expect(container.querySelector('[role="region"]')?.textContent).toContain(
       "A man, a plan, a canal: Panama",
     );
-    // the viewer footer carries all three share actions
+    // the reader footer carries all three share actions
     expect(screen.getByRole("link", { name: "Edit this" })).not.toBeNull();
     expect(screen.getByRole("button", { name: "Copy link" })).not.toBeNull();
     expect(screen.getByRole("link", { name: "View on Bluesky" })).not.toBeNull();
