@@ -58,7 +58,7 @@ describe("editorFacts", () => {
     expect(editorFacts(createState("ab\nba")).raw).toBe("ab\nba");
   });
 
-  test("reports the mirror toggle from the mirror plugin", () => {
+  test("reports the mirror-editing toggle from the mirror plugin", () => {
     expect(editorFacts(createState("aba"))).toMatchObject({ mirrorEnabled: false });
     expect(editorFacts(enableMirror(createState("aba")))).toMatchObject({
       mirrorEnabled: true,

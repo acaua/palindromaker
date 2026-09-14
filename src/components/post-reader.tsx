@@ -14,7 +14,7 @@ import type { PostRef } from "@/lib/bluesky-post";
 import { extractPalindrome } from "@/lib/palindrome-extract";
 
 // The post view is one 600px column: the official embed is designed for
-// that width, and the hint, viewer and links all align to it. No vertical
+// that width, and the hint, reader and links all align to it. No vertical
 // auto-margin, so the content sits against the top rather than floating.
 const COLUMN = "mx-auto w-full max-w-[600px]";
 
@@ -28,7 +28,7 @@ const Notice = ({ text }: { text: string }) => {
   );
 };
 
-// the shared shape of the two "no viewer" cases: a notice plus the links
+// the shared shape of the two "no reader" cases: a notice plus the links
 const NoticeBlock = ({ text, links }: { text: string; links: ReactNode }) => (
   <>
     <Notice text={text} />
@@ -38,12 +38,12 @@ const NoticeBlock = ({ text, links }: { text: string; links: ReactNode }) => (
 
 // The post-view half of a #b= link: the original post as an official
 // embed, and — only the palindrome the post contains — in the same
-// viewer the #t= path uses. A post with no palindrome (or a restricted
-// one) still shows its embed, just without a viewer.
+// reader the #t= path uses. A post with no palindrome (or a restricted
+// one) still shows its embed, just without a reader.
 export default function PostReader({ input }: { input: PostRef }) {
   const { t } = useI18n();
   const { status, post, retry } = useBlueskyPost(input);
-  // computed once per post: the viewer's fallback and the notice both need it
+  // computed once per post: the reader's fallback and the notice both need it
   const restricted = post !== null && isRestrictedPost(post);
   const extracted = useMemo(
     () => (post && !restricted ? extractPalindrome(post.text, post.facetRanges) : null),
@@ -53,7 +53,7 @@ export default function PostReader({ input }: { input: PostRef }) {
   // The router only moves focus on a pathname change; the paste form
   // navigates to this same route with a new hash, so the moment the post
   // resolves (or fails) the heading takes focus and is announced. (When
-  // there is a viewer, its own autofocus wins — also announced, by name.)
+  // there is a reader, its own autofocus wins — also announced, by name.)
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (status === "loading" || status === "idle") return;

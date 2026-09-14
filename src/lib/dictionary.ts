@@ -27,7 +27,7 @@ export interface Dictionary {
 }
 
 // how many lines to read before offering to yield; ~10ms of work for the
-// largest dictionary (635k words, measured at ~0.45µs per word)
+// largest dictionary (637k words, measured at ~0.45µs per word)
 const LINES_PER_SLICE = 20_000;
 
 // The build itself, in resumable slices. Normalizing and deduplicating a

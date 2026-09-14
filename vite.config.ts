@@ -277,5 +277,14 @@ export default defineConfig({
         },
       },
     ],
+    // `pnpm test:coverage` reports over every source file, tests and the
+    // test-only helpers aside; no threshold is pinned yet, so it stays a
+    // measuring tool rather than a gate
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/main.tsx"],
+      reporter: ["text-summary"],
+    },
   },
 });

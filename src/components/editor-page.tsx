@@ -29,7 +29,7 @@ export default function EditorPage() {
     clearShareFragment();
   }, []);
   const { t } = useI18n();
-  // open by default; the choice is remembered like the mirror toggle
+  // open by default; the choice is remembered like the mirror-editing toggle
   const [finderOpen, setFinderOpen] = useState(session.finderOpen);
   // the status bar's "Find words" trigger; the panel's ✕ returns focus to it
   const triggerRef = useRef<HTMLButtonElement>(null);

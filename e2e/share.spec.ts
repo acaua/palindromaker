@@ -10,10 +10,10 @@ test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 
 const shareUrl = (text: string) => `http://localhost:5173/p#t=${encodeURIComponent(text)}`;
 
-// the viewer carries an aria-label + role=region (contenteditable is
+// the reader carries an aria-label + role=region (contenteditable is
 // deliberately true so PM's caret machinery runs — reader.tsx), so the
 // role is also the stable way to scope its decorations
-const viewer = (page: Page) => page.getByRole("region", { name: "Shared palindrome" });
+const reader = (page: Page) => page.getByRole("region", { name: "Shared palindrome" });
 
 const shareButton = (page: Page) => page.getByRole("button", { name: "Share" });
 
@@ -21,10 +21,10 @@ const shareButton = (page: Page) => page.getByRole("button", { name: "Share" });
 // the legend swatches that share the color
 const greenStatus = (page: Page) => page.locator('span[role="status"].text-green-700');
 
-// the decorations live inside the viewer; scoping keeps them apart from
+// the decorations live inside the reader; scoping keeps them apart from
 // the legend, whose swatches reuse the same classes
 const readerDecoration = (page: Page, className: string) =>
-  viewer(page).locator(`span.${className}`);
+  reader(page).locator(`span.${className}`);
 
 // the clipboard read races the copy; poll until it agrees
 const clipboard = (page: Page) =>
@@ -70,18 +70,18 @@ test("share is disabled for the empty editor despite its vacuous palindrome", as
   await expect(shareButton(page)).toBeDisabled();
 });
 
-test("the shared link opens the protective viewer", async ({ page }) => {
+test("the shared link opens the protective reader", async ({ page }) => {
   await page.goto(shareUrl(SAMPLE_CONTENT));
 
-  await expect(viewer(page)).toContainText(SAMPLE_CONTENT);
-  // the viewer's surface is editable so PM's caret machinery runs, but
+  await expect(reader(page)).toContainText(SAMPLE_CONTENT);
+  // the reader's surface is editable so PM's caret machinery runs, but
   // reader.tsx claims every mutation event and editor-schema.ts drops
   // surviving doc-changing transactions — typing and a keydown edit
   // (Backspace) must both leave the text alone
-  await viewer(page).pressSequentially("x");
-  await expect(viewer(page)).toContainText(SAMPLE_CONTENT);
-  await viewer(page).press("Backspace");
-  await expect(viewer(page)).toContainText(SAMPLE_CONTENT);
+  await reader(page).pressSequentially("x");
+  await expect(reader(page)).toContainText(SAMPLE_CONTENT);
+  await reader(page).press("Backspace");
+  await expect(reader(page)).toContainText(SAMPLE_CONTENT);
   // no editor chrome: the status bar stays home
   await expect(shareButton(page)).toHaveCount(0);
   await expect(page.getByText("Find words")).toHaveCount(0);
@@ -89,14 +89,14 @@ test("the shared link opens the protective viewer", async ({ page }) => {
   await expect(readerDecoration(page, "bg-blue-200")).toHaveCount(2);
 });
 
-test("the viewer's purple decorations follow the selection", async ({ page }) => {
+test("the reader's purple decorations follow the selection", async ({ page }) => {
   await page.goto(shareUrl(SAMPLE_CONTENT));
 
   // clicking the bounding box's center can land past the line's end, and
   // clicks inside a decoration span are swallowed by the observer's
   // ignore-selection logic; a small offset onto the first (undecorated)
   // glyph always lands on a mirrored letter
-  await viewer(page)
+  await reader(page)
     .locator("p")
     .first()
     .click({ position: { x: 2, y: 14 } });
@@ -107,7 +107,7 @@ test("the viewer's purple decorations follow the selection", async ({ page }) =>
 
 test("arrow keys move the caret like an editable editor", async ({ page }) => {
   await page.goto(shareUrl(SAMPLE_CONTENT));
-  await viewer(page)
+  await reader(page)
     .locator("p")
     .first()
     .click({ position: { x: 2, y: 14 } });
@@ -124,7 +124,7 @@ test("arrow keys move the caret like an editable editor", async ({ page }) => {
 
 test("vertical arrows cross the shared paragraphs", async ({ page }) => {
   await page.goto(shareUrl(`${SAMPLE_CONTENT}\n${SAMPLE_CONTENT}`));
-  await viewer(page)
+  await reader(page)
     .locator("p")
     .first()
     .click({ position: { x: 2, y: 14 } });
@@ -196,13 +196,13 @@ test("multi-paragraph palindromes round-trip through the fragment", async ({ pag
   // the edges are the accepted round-trip loss and none are involved here
   await page.goto(shareUrl(`${SAMPLE_CONTENT}\n${SAMPLE_CONTENT}`));
 
-  const view = viewer(page);
+  const view = reader(page);
   await expect(view.locator("p")).toHaveCount(2);
   // the junction pair is the center
   await expect(readerDecoration(page, "bg-blue-200")).toHaveCount(2);
 });
 
-test("the viewer passes the accessibility audit", async ({ page }) => {
+test("the reader passes the accessibility audit", async ({ page }) => {
   await page.goto(shareUrl(SAMPLE_CONTENT));
 
   const results = await new AxeBuilder({ page }).analyze();

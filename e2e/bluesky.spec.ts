@@ -61,7 +61,7 @@ const stubBluesky = async (page: Page) => {
   await stubEmbed(page);
 };
 
-const viewer = (page: Page) => page.getByRole("region", { name: "Shared palindrome" });
+const reader = (page: Page) => page.getByRole("region", { name: "Shared palindrome" });
 
 test("a #b= link embeds the post and shows only its palindrome", async ({ page }) => {
   await stubBluesky(page);
@@ -70,8 +70,8 @@ test("a #b= link embeds the post and shows only its palindrome", async ({ page }
   await expect(
     page.locator(`iframe[src*="/embed/${DID}/app.bsky.feed.post/${RKEY}"]`),
   ).toBeVisible();
-  await expect(viewer(page)).toContainText("A man, a plan, a canal: Panama");
-  await expect(viewer(page)).not.toContainText("My favourite");
+  await expect(reader(page)).toContainText("A man, a plan, a canal: Panama");
+  await expect(reader(page)).not.toContainText("My favourite");
 
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
@@ -88,14 +88,14 @@ test("the empty card checks a pasted post link in place", async ({ page }) => {
   await page.getByRole("button", { name: "Show palindrome" }).click();
 
   // same route, new hash: the reader must re-render, not sit on the empty card
-  await expect(viewer(page)).toContainText("A man, a plan, a canal: Panama");
+  await expect(reader(page)).toContainText("A man, a plan, a canal: Panama");
   expect(page.url()).toContain("b=");
-  // the resolved post moves focus into the viewer (announced by its
+  // the resolved post moves focus into the reader (announced by its
   // accessible name), so a screen reader learns the page changed
-  await expect(viewer(page)).toBeFocused();
+  await expect(reader(page)).toBeFocused();
 });
 
-test("Explore lists tagged posts and opens one in the viewer", async ({ page }) => {
+test("Explore lists tagged posts and opens one in the reader", async ({ page }) => {
   await stubBluesky(page);
   await page.goto("/explore");
 
@@ -107,7 +107,7 @@ test("Explore lists tagged posts and opens one in the viewer", async ({ page }) 
   expect(results.violations).toEqual([]);
 
   await check.click();
-  await expect(viewer(page)).toContainText("A man, a plan, a canal: Panama");
+  await expect(reader(page)).toContainText("A man, a plan, a canal: Panama");
 });
 
 test("Explore reports a throttle and offers a retry", async ({ page }) => {

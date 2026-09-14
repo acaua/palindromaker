@@ -10,7 +10,7 @@ import { Palindrome } from "@/lib/palindrome-extension";
 // palindrome — the editor (src/components/editor.tsx), the read-only
 // reader (src/components/reader.tsx), and the schema persistence
 // validates stored docs against — must speak it. StarterKit with most
-// extensions disabled: paragraphs and text only, so mirror typing, the
+// extensions disabled: paragraphs and text only, so mirror editing, the
 // palindrome checker and the share round-trip never meet a node or mark
 // the palindrome logic cannot mirror.
 export const disabledStarterKitExtensions = {

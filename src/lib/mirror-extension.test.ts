@@ -52,7 +52,7 @@ describe("initial state", () => {
   });
 });
 
-describe("mirror typing", () => {
+describe("mirror editing", () => {
   const enabled = (text: string) => enableMirror(createState(text));
 
   test("typing at the end duplicates the char at the start", () => {
@@ -180,7 +180,7 @@ describe("inserting a word", () => {
   });
 
   test("a one-letter word is not mirrored twice", () => {
-    // the insertion is a single-character step, which mirror typing would
+    // the insertion is a single-character step, which mirror editing would
     // duplicate if the transaction were not marked as the plugin's own
     const state = insertWord(enabled("a,,a"), 3, "a");
 
