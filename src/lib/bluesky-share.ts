@@ -23,7 +23,7 @@ export const graphemeCount = (text: string): number => {
 export const blueskyComposeUrl = (text: string): string =>
   `${BLUESKY_COMPOSE}?text=${encodeURIComponent(text)}`;
 
-export interface BlueskyPost {
+export interface BlueskyPostShare {
   text: string;
   composeUrl: string;
 }
@@ -35,7 +35,7 @@ export const planBlueskyPost = (
   text: string,
   shareUrl: string,
   siteUrl: string,
-): BlueskyPost | null => {
+): BlueskyPostShare | null => {
   if (text.trim() === "") return null;
   for (const body of [`${text}\n\n${shareUrl}`, `${text}\n\n${siteUrl}`, text]) {
     if (graphemeCount(body) <= BLUESKY_POST_LIMIT) {
@@ -45,5 +45,5 @@ export const planBlueskyPost = (
   return null;
 };
 
-export const planBlueskyShare = (text: string, origin: string): BlueskyPost | null =>
+export const planBlueskyShare = (text: string, origin: string): BlueskyPostShare | null =>
   planBlueskyPost(text, buildShareUrl(text, origin), `${origin}/`);
