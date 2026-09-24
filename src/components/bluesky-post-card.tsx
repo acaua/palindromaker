@@ -1,22 +1,20 @@
 import { useMemo } from "react";
 
+import { Link } from "@tanstack/react-router";
+
 import { useI18n } from "@/hooks/use-i18n";
 import type { BlueskyPost } from "@/lib/bluesky-api";
+import { postHash } from "@/lib/bluesky-post";
 import { describePost } from "@/lib/bluesky-post-view";
 import { formatRelativeTime } from "@/lib/relative-time";
 
 // A hand-rendered result row: 100 official embeds would be 100 iframes,
 // so the gallery stays light and opens the post in the reader on demand.
-export default function BlueskyPostCard({
-  post,
-  onCheck,
-}: {
-  post: BlueskyPost;
-  onCheck: (uri: string) => void;
-}) {
+export default function BlueskyPostCard({ post }: { post: BlueskyPost }) {
   const { lang, t } = useI18n();
   const view = useMemo(() => describePost(post), [post]);
   const relative = formatRelativeTime(post.createdAt, lang);
+  const actionLabel = view.palindrome ? t("post.viewPalindromeCard") : t("post.viewCard");
 
   return (
     <li className="flex flex-col rounded-xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_10px_30px_-20px_rgba(0,0,0,0.18)]">
@@ -50,13 +48,14 @@ export default function BlueskyPostCard({
             {relative}
           </time>
         )}
-        <button
-          type="button"
-          onClick={() => onCheck(post.uri)}
-          className="mt-2 w-full cursor-pointer rounded-lg bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100"
+        <Link
+          to="/p"
+          hash={postHash(post.uri)}
+          aria-label={`${actionLabel} — @${post.author.handle}`}
+          className="mt-2 block w-full cursor-pointer rounded-lg bg-violet-50 px-3 py-2 text-center text-sm font-medium text-violet-700 transition hover:bg-violet-100"
         >
-          {view.palindrome ? t("post.checkCard") : t("post.viewCard")}
-        </button>
+          {actionLabel}
+        </Link>
       </div>
     </li>
   );

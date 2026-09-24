@@ -110,6 +110,6 @@ export const it: Table = {
   "post.viewOnBluesky": "Vedi su Bluesky",
   "post.copyLink": "Copia link",
   "post.palindromeBadge": "palindromo",
-  "post.checkCard": "Controlla palindromo",
+  "post.viewPalindromeCard": "Vedi palindromo",
   "post.viewCard": "Vedi post",
 };

@@ -95,19 +95,53 @@ test("the empty card checks a pasted post link in place", async ({ page }) => {
   await expect(reader(page)).toBeFocused();
 });
 
-test("Explore lists tagged posts and opens one in the reader", async ({ page }) => {
+test("Explore result links use SPA navigation and leave modifier clicks native", async ({
+  page,
+}) => {
   await stubBluesky(page);
   await page.goto("/explore");
 
   await expect(page.getByRole("heading", { name: "Palindromes on Bluesky" })).toBeVisible();
-  const check = page.getByRole("button", { name: "Check palindrome" }).first();
-  await expect(check).toBeVisible();
+  const palindromeLink = page.getByRole("link", { name: /View palindrome/ }).first();
+  await expect(palindromeLink).toBeVisible();
+  await expect(palindromeLink).toHaveAttribute("href", `/p#b=${encodeURIComponent(URI)}`);
 
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 
-  await check.click();
+  const spaMarker = `explore-spa-${Date.now()}`;
+  await page.evaluate((marker) => {
+    document.documentElement.dataset.exploreSpaProbe = marker;
+    const probe = { seen: false, appDefaultPrevented: true };
+    (window as unknown as { __exploreLinkProbe: typeof probe }).__exploreLinkProbe = probe;
+    window.addEventListener(
+      "click",
+      (event) => {
+        probe.seen = true;
+        probe.appDefaultPrevented = event.defaultPrevented;
+        event.preventDefault();
+      },
+      { once: true },
+    );
+  }, spaMarker);
+
+  await palindromeLink.click({ modifiers: ["ControlOrMeta"] });
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __exploreLinkProbe: { seen: boolean; appDefaultPrevented: boolean };
+          }
+        ).__exploreLinkProbe,
+    ),
+  ).toEqual({ seen: true, appDefaultPrevented: false });
+  await expect(page).toHaveURL(/\/explore$/);
+
+  await palindromeLink.click();
   await expect(reader(page)).toContainText("A man, a plan, a canal: Panama");
+  await expect(page).toHaveURL(`/p#b=${encodeURIComponent(URI)}`);
+  await expect(page.locator("html")).toHaveAttribute("data-explore-spa-probe", spaMarker);
 });
 
 test("Explore reports a throttle and offers a retry", async ({ page }) => {

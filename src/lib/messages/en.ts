@@ -107,7 +107,7 @@ export const en = {
   "post.viewOnBluesky": "View on Bluesky",
   "post.copyLink": "Copy link",
   "post.palindromeBadge": "palindrome",
-  "post.checkCard": "Check palindrome",
+  "post.viewPalindromeCard": "View palindrome",
   "post.viewCard": "View post",
 } as const;
 

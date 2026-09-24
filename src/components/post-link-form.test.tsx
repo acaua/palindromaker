@@ -57,6 +57,22 @@ describe("PostLinkForm", () => {
   test("junk shows an error and submits nothing", () => {
     const onSubmitUrl = submitLink("hello world");
     expect(onSubmitUrl).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert").textContent).toContain("Bluesky post link");
+    const input = screen.getByRole("textbox");
+    const alert = screen.getByRole("alert");
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(input.getAttribute("aria-describedby")).toBe(alert.getAttribute("id"));
+    expect(alert.textContent).toContain("Bluesky post link");
+  });
+
+  test("marks the form busy while resolving a handle", async () => {
+    mockedResolvePostRef.mockReturnValue(new Promise<{ ok: true; value: string }>(() => {}));
+    render(<PostLinkForm onSubmitUrl={vi.fn()} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, {
+      target: { value: "https://bsky.app/profile/bsky.app/post/3kq7aeuwbg42k" },
+    });
+    fireEvent.submit(input.closest("form")!);
+
+    await vi.waitFor(() => expect(input.closest("form")?.getAttribute("aria-busy")).toBe("true"));
   });
 });

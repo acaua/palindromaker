@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 
@@ -14,6 +14,8 @@ export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: strin
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const titleId = useId();
+  const errorId = useId();
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -38,12 +40,12 @@ export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: strin
   };
 
   return (
-    <section aria-labelledby="post-check-title">
-      <h2 id="post-check-title" className="text-lg font-semibold text-gray-900">
+    <section aria-labelledby={titleId}>
+      <h2 id={titleId} className="text-lg font-semibold text-gray-900">
         {t("post.checkTitle")}
       </h2>
       <p className="mt-1 text-sm text-gray-600">{t("post.checkHint")}</p>
-      <form onSubmit={submit} className="mt-3 flex flex-col gap-2 sm:flex-row">
+      <form onSubmit={submit} aria-busy={busy} className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           inputMode="url"
@@ -53,7 +55,9 @@ export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: strin
             setError(false);
           }}
           placeholder={t("post.checkPlaceholder")}
-          aria-labelledby="post-check-title"
+          aria-labelledby={titleId}
+          aria-invalid={error}
+          aria-describedby={error ? errorId : undefined}
           spellCheck="false"
           className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
         />
@@ -67,7 +71,7 @@ export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: strin
         </button>
       </form>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-700">
+        <p id={errorId} role="alert" className="mt-2 text-sm text-red-700">
           {t("post.checkError")}
         </p>
       )}

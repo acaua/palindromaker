@@ -1,19 +1,13 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import type { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import Reader from "@/components/reader";
 import ReaderPage from "@/components/reader-page";
+import { renderWithRouter } from "@/test/render-with-router";
 
 afterEach(cleanup);
 
@@ -141,11 +135,10 @@ async function renderRouted(ui: ReactElement, entry = "/p") {
     path: "/p",
     component: () => ui,
   });
-  const router = createRouter({
+  const view = renderWithRouter({
     routeTree: rootRoute.addChildren([homeRoute, pRoute]),
-    history: createMemoryHistory({ initialEntries: [entry] }),
+    initialEntry: entry,
   });
-  const view = render(<RouterProvider router={router} />);
   // RouterProvider resolves its initial location asynchronously and its
   // first paint is empty; callers await their own routed signal
   await Promise.resolve();
