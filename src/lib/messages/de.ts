@@ -111,6 +111,6 @@ export const de: Table = {
   "post.viewOnBluesky": "Auf Bluesky ansehen",
   "post.copyLink": "Link kopieren",
   "post.palindromeBadge": "Palindrom",
-  "post.checkCard": "Palindrom prüfen",
+  "post.viewPalindromeCard": "Palindrom ansehen",
   "post.viewCard": "Beitrag ansehen",
 };

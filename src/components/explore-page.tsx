@@ -120,7 +120,7 @@ export default function ExplorePage() {
           )}
 
           {state.status === "ready" && state.posts.length > 0 && (
-            <BlueskyPostList posts={state.posts} onCheck={openPost} />
+            <BlueskyPostList posts={state.posts} />
           )}
 
           {state.status === "rateLimited" && (

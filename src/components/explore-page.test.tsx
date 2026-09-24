@@ -1,12 +1,5 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
@@ -14,6 +7,7 @@ import ExplorePage from "@/components/explore-page";
 import { useBlueskySearch } from "@/hooks/use-bluesky-search";
 import { useCountdown } from "@/hooks/use-countdown";
 import { makePost } from "@/test/bluesky-post";
+import { renderWithRouter } from "@/test/render-with-router";
 
 vi.mock("@/hooks/use-bluesky-search", () => ({ useBlueskySearch: vi.fn() }));
 vi.mock("@/hooks/use-countdown", () => ({ useCountdown: vi.fn() }));
@@ -41,11 +35,10 @@ async function renderRouted(ui: ReactElement) {
     path: "/p",
     component: () => null,
   });
-  const router = createRouter({
+  const view = renderWithRouter({
     routeTree: rootRoute.addChildren([exploreRoute, pRoute]),
-    history: createMemoryHistory({ initialEntries: ["/explore"] }),
+    initialPath: "/explore",
   });
-  const view = render(<RouterProvider router={router} />);
   await Promise.resolve();
   return view;
 }

@@ -1,18 +1,12 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { act, fireEvent, screen, within } from "@testing-library/react";
+import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import SiteHeader from "@/components/site-header";
 import { messages, setUiLanguage, UI_LANGUAGES } from "@/lib/i18n";
 import type { UiLanguage } from "@/lib/i18n";
 import { NAV_ENTRIES } from "@/lib/navigation";
+import { renderWithRouter } from "@/test/render-with-router";
 
 // the header wrapped in a router, with stub pages standing in for the real
 // routes: the header is the unit under test, and stubs keep TipTap out of
@@ -37,11 +31,10 @@ const renderHeader = async (initial: string = "/") => {
     path: "/about",
     component: () => <p>about page</p>,
   });
-  const router = createRouter({
+  renderWithRouter({
     routeTree: rootRoute.addChildren([homeRoute, aboutRoute]),
-    history: createMemoryHistory({ initialEntries: [initial] }),
+    initialPath: initial,
   });
-  render(<RouterProvider router={router} />);
   await screen.findByText(initial === "/about" ? "about page" : "home page");
 };
 

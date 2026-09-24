@@ -3,8 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { postHash } from "@/lib/bluesky-post";
 
-// Opening a post in the reader is the same #b= navigation wherever a
-// gallery card or a pasted link starts it.
+// Opening a post from the pasted-link form is the same #b= navigation
+// wherever that form appears.
 export const useOpenPost = (): ((uri: string) => void) => {
   const navigate = useNavigate();
   return useCallback(

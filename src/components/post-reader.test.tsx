@@ -1,12 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { cleanup, screen } from "@testing-library/react";
+import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
@@ -14,6 +7,7 @@ import PostReader from "@/components/post-reader";
 import { useBlueskyPost } from "@/hooks/use-bluesky-post";
 import type { PostRef } from "@/lib/bluesky-post";
 import { makePost } from "@/test/bluesky-post";
+import { renderWithRouter } from "@/test/render-with-router";
 
 vi.mock("@/hooks/use-bluesky-post", () => ({ useBlueskyPost: vi.fn() }));
 // the real embed mounts an iframe, which happy-dom would try to load
@@ -38,11 +32,10 @@ async function renderRouted(ui: ReactElement) {
     path: "/p",
     component: () => ui,
   });
-  const router = createRouter({
+  const view = renderWithRouter({
     routeTree: rootRoute.addChildren([pRoute]),
-    history: createMemoryHistory({ initialEntries: ["/p"] }),
+    initialPath: "/p",
   });
-  const view = render(<RouterProvider router={router} />);
   await Promise.resolve();
   return view;
 }
