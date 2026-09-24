@@ -1,14 +1,20 @@
-import { BSKY_API, atUriFor } from "@/lib/bluesky-post";
-import type { PostRef } from "@/lib/bluesky-post";
+import { BSKY_API, atUriFor, parseAtUri } from "@/lib/bluesky-post";
 import type { FacetRange } from "@/lib/annotated-text";
+import { isDidAccount, isHandleAccount } from "@/lib/bluesky-account";
+import {
+  activeLabels,
+  authorLabelValues,
+  MALFORMED_LABEL,
+  recordLabelValues,
+} from "@/lib/bluesky-labels";
+import { sharedRequest } from "@/lib/shared-request";
 
-// The slice of a Bluesky post view the app actually uses. The API returns
-// a lot more; mapping once (and validating) keeps the rest of the app type
-// safe against an external, untyped payload.
 export interface BlueskyAuthor {
   did: string;
   handle: string;
   displayName?: string;
+  accountLabels: readonly string[];
+  profileLabels: readonly string[];
 }
 
 export interface BlueskyPost {
@@ -18,6 +24,7 @@ export interface BlueskyPost {
   facetRanges: readonly FacetRange[];
   tags: readonly string[];
   labels: readonly string[];
+  recordLabels: readonly string[];
   author: BlueskyAuthor;
   createdAt: string;
   likeCount: number;
@@ -25,40 +32,53 @@ export interface BlueskyPost {
   replyCount: number;
 }
 
+export interface BlueskyAuthorFeedPage {
+  posts: readonly BlueskyPost[];
+  cursor: string | null;
+}
+
 export type SearchSort = "top" | "latest";
 
-// A failure reason the UI must tell apart: "notFound" is a real answer
-// (deleted post, unknown handle), "rateLimited" is a throttle to back off
-// from, "badRequest" is our own malformed query (a bug), and "error" is
-// the network or a server error.
 export type ApiFailureReason = "notFound" | "rateLimited" | "badRequest" | "error";
 
 export type ApiResult<T> = { ok: true; value: T } | ApiFailure;
 
-export type ApiFailure = { ok: false; reason: ApiFailureReason };
+export type ApiFailure = {
+  ok: false;
+  reason: ApiFailureReason;
+  retryAt?: number;
+};
 
-// map a failure reason onto a caller's status vocabulary, with a fallback
-// for reasons the caller treats the same way
+export class BlueskyRequestError extends Error {
+  constructor(
+    public readonly reason: ApiFailureReason,
+    public readonly retryAt?: number,
+  ) {
+    super(`Bluesky request failed: ${reason}`);
+    this.name = "BlueskyRequestError";
+  }
+}
+
+export const unwrapApiResult = <T>(result: ApiResult<T>): T => {
+  if (!result.ok) throw new BlueskyRequestError(result.reason, result.retryAt);
+  return result.value;
+};
+
 export const failureStatus = <S extends string>(
   reason: ApiFailureReason,
   overrides: Partial<Record<ApiFailureReason, S>>,
   fallback: S,
 ): S => overrides[reason] ?? fallback;
 
-// the tail both contracts share: a 400 is our own malformed request (a bug),
-// anything else a server/network failure
 const malformedOrError = (response: Response): ApiFailure =>
   response.status === 400 ? { ok: false, reason: "badRequest" } : { ok: false, reason: "error" };
 
-// one owner for "what did this response status mean": 404 is a real
-// not-found, then malformedOrError. Callers map the reasons they do not care
-// about onto their own status vocabulary through failureStatus.
 const httpFailure = (response: Response): ApiFailure =>
   response.status === 404 ? { ok: false, reason: "notFound" } : malformedOrError(response);
 
-// search adds the throttle to that vocabulary: 403/429 is a back-off
-// (401/404/422/... are errors). The throttle rule lives here, next to
-// httpFailure, and nowhere else.
+const resolveHandleFailure = (response: Response): ApiFailure =>
+  response.status === 400 ? { ok: false, reason: "notFound" } : httpFailure(response);
+
 const searchFailure = (response: Response): ApiFailure =>
   response.status === 403 || response.status === 429
     ? { ok: false, reason: "rateLimited" }
@@ -76,16 +96,33 @@ const asString = (value: unknown): string | undefined =>
 
 const asNumber = (value: unknown): number => (typeof value === "number" ? value : 0);
 
-const mapPost = (view: unknown): BlueskyPost | null => {
+const mapPost = (view: unknown, expected?: { did: string; rkey: string }): BlueskyPost | null => {
   const post = asRecord(view);
   const author = asRecord(post?.author);
   const rec = asRecord(post?.record);
-  const uri = asString(post?.uri);
+  const rawUri = asString(post?.uri);
   const text = asString(rec?.text);
-  if (!post || !author || !rec || !uri || text === undefined) return null;
+  const parsed = rawUri ? parseAtUri(rawUri) : null;
+  const did = asString(author?.did);
+  if (
+    !post ||
+    !author ||
+    !rec ||
+    !rawUri ||
+    !parsed ||
+    !did ||
+    !isDidAccount(did) ||
+    text === undefined
+  ) {
+    return null;
+  }
+  if (!isDidAccount(parsed.authority) && !isHandleAccount(parsed.authority)) return null;
+  if (isDidAccount(parsed.authority) && parsed.authority !== did) return null;
+  if (expected && (expected.did !== did || expected.rkey !== parsed.rkey)) return null;
 
+  const uri = atUriFor(did, parsed.rkey);
   const facetRanges: FacetRange[] = [];
-  const tags: string[] = [];
+  const tags = new Set<string>();
   if (Array.isArray(rec.facets)) {
     for (const facet of rec.facets) {
       const index = asRecord(asRecord(facet)?.index);
@@ -98,32 +135,28 @@ const mapPost = (view: unknown): BlueskyPost | null => {
       if (Array.isArray(features)) {
         for (const feature of features) {
           const tag = asString(asRecord(feature)?.tag);
-          if (tag) tags.push(tag);
+          if (tag) tags.add(tag);
         }
       }
     }
   }
 
-  const labels: string[] = [];
-  if (Array.isArray(post.labels)) {
-    for (const label of post.labels) {
-      const value = asString(asRecord(label)?.val);
-      if (value) labels.push(value);
-    }
-  }
-
-  const did = asString(author.did) ?? "";
+  const cid = asString(post.cid) ?? "";
+  const authorLabels = authorLabelValues(author.labels, did);
   return {
     uri,
-    cid: asString(post.cid) ?? "",
+    cid,
     text,
     facetRanges,
-    tags,
-    labels,
+    tags: [...tags],
+    labels: activeLabels(post.labels, [rawUri, uri], cid),
+    recordLabels: recordLabelValues(rec.labels),
     author: {
       did,
       handle: asString(author.handle) ?? did,
       displayName: asString(author.displayName),
+      accountLabels: authorLabels.accountLabels,
+      profileLabels: authorLabels.profileLabels,
     },
     createdAt: asString(rec.createdAt) ?? "",
     likeCount: asNumber(post.likeCount),
@@ -132,155 +165,252 @@ const mapPost = (view: unknown): BlueskyPost | null => {
   };
 };
 
-// labels that mean the post should not be shown to logged-out viewers, or
-// that it is adult/graphic; our hand-rendered cards apply this themselves
-// (the official embed iframe enforces its own policy)
-const RESTRICTED_LABELS = new Set([
+const LEGACY_HASHTAG_LABELS = new Set([
   "porn",
   "sexual",
   "nudity",
   "graphic-media",
   "!no-unauthenticated",
 ]);
+const RESTRICTED_LABELS = new Set([...LEGACY_HASHTAG_LABELS, "!hide", MALFORMED_LABEL]);
+const ACCESS_LABELS = new Set(["!hide", "!no-unauthenticated", MALFORMED_LABEL]);
 
-export const isRestrictedPost = (post: BlueskyPost): boolean =>
-  post.labels.some((label) => RESTRICTED_LABELS.has(label));
+export type ModerationMode = "loggedOut" | "accountExplore" | "hashtagExplore";
 
-// getPosts and searchPosts are both slow and throttled; an in-memory cache
-// keeps a route revisit or a gallery card from spending another request.
-// Successful answers are remembered for minutes; throttle answers briefly,
-// so a retry storm stops spending budget instead of extending the block.
-// Any other failure is never cached, so an explicit retry really retries.
-const postCache = new Map<string, BlueskyPost>();
-const searchCache = new Map<
-  string,
-  { at: number; ttl: number; result: ApiResult<BlueskyPost[]> }
->();
-const SEARCH_TTL = 5 * 60_000;
-// how long a throttle answer is remembered, in ms, for the cache below
+export const isRestrictedPost = (
+  post: BlueskyPost,
+  mode: ModerationMode = "loggedOut",
+): boolean => {
+  if (mode === "hashtagExplore") {
+    return post.labels.some((label) => LEGACY_HASHTAG_LABELS.has(label));
+  }
+  const labels = [...post.labels, ...post.recordLabels];
+  if (mode === "loggedOut") {
+    labels.push(...post.author.accountLabels);
+    labels.push(
+      ...post.author.profileLabels.filter(
+        (label) => label === "!no-unauthenticated" || label === MALFORMED_LABEL,
+      ),
+    );
+  } else {
+    labels.push(...post.author.accountLabels.filter((label) => ACCESS_LABELS.has(label)));
+    labels.push(
+      ...post.author.profileLabels.filter(
+        (label) => label === "!no-unauthenticated" || label === MALFORMED_LABEL,
+      ),
+    );
+  }
+  return labels.some((label) => RESTRICTED_LABELS.has(label));
+};
+
 const RATE_LIMIT_TTL = 60_000;
-// the same window in whole seconds, what the UI holds its retry for: the
-// endpoint sends no Retry-After, so both sides share this one duration
 export const RATE_LIMIT_SECONDS = RATE_LIMIT_TTL / 1000;
+const rateLimitUntil = new Map<string, number>();
 
-export const clearBlueskyCache = (): void => {
-  postCache.clear();
-  searchCache.clear();
+const rateLimitFailure = (key: string): ApiFailure | null => {
+  const retryAt = rateLimitUntil.get(key);
+  if (retryAt === undefined) return null;
+  if (Date.now() < retryAt) return { ok: false, reason: "rateLimited", retryAt };
+  rateLimitUntil.delete(key);
+  return null;
+};
+
+const rememberRateLimit = (key: string): number => {
+  const retryAt = Date.now() + RATE_LIMIT_TTL;
+  rateLimitUntil.set(key, retryAt);
+  return retryAt;
+};
+
+export const clearBlueskyRateLimits = (): void => {
+  rateLimitUntil.clear();
 };
 
 export const fetchPost = async (
   uri: string,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<ApiResult<BlueskyPost>> => {
-  const cached = postCache.get(uri);
-  if (cached) return { ok: true, value: cached };
+  const requested = parseAtUri(uri);
+  if (!requested || !isDidAccount(requested.authority)) return { ok: false, reason: "badRequest" };
   try {
     const response = await fetchImpl(
       `${BSKY_API}/app.bsky.feed.getPosts?uris=${encodeURIComponent(uri)}`,
+      { signal },
     );
     if (!response.ok) return httpFailure(response);
     const body = asRecord(await response.json());
     const posts = Array.isArray(body?.posts) ? body.posts : [];
-    const post = mapPost(posts[0]);
+    const post = mapPost(posts[0], { did: requested.authority, rkey: requested.rkey });
     if (!post) return { ok: false, reason: "notFound" };
-    postCache.set(uri, post);
     return { ok: true, value: post };
-  } catch {
+  } catch (error) {
+    if (signal?.aborted) throw error;
     return { ok: false, reason: "error" };
   }
 };
 
-export const resolveHandle = async (
+const requestResolveHandle = async (
   handle: string,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch,
+  signal?: AbortSignal,
 ): Promise<ApiResult<string>> => {
+  const normalizedHandle = handle.toLowerCase();
   try {
     const response = await fetchImpl(
-      `${BSKY_API}/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
+      `${BSKY_API}/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(normalizedHandle)}`,
+      { signal },
     );
-    if (!response.ok) return httpFailure(response);
+    if (!response.ok) return resolveHandleFailure(response);
     const body = asRecord(await response.json());
     const did = asString(body?.did);
-    return did ? { ok: true, value: did } : { ok: false, reason: "notFound" };
-  } catch {
+
+    return did && isDidAccount(did) ? { ok: true, value: did } : { ok: false, reason: "notFound" };
+  } catch (error) {
+    if (signal?.aborted) throw error;
     return { ok: false, reason: "error" };
   }
 };
 
-// Turn a parsed post reference into an at-uri: an at-uri is its own answer,
-// a handle needs a DID first. The post reader always routes through here;
-// the link form only calls it for the handle case, short-circuiting an
-// at-uri to skip the busy state.
-export const resolvePostRef = async (
-  ref: PostRef,
+export const resolveHandle = (
+  handle: string,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<ApiResult<string>> => {
-  if (ref.kind === "uri") return { ok: true, value: ref.uri };
-  const resolved = await resolveHandle(ref.handle, fetchImpl);
-  return resolved.ok ? { ok: true, value: atUriFor(resolved.value, ref.rkey) } : resolved;
+  if (!isHandleAccount(handle)) return Promise.resolve({ ok: false, reason: "badRequest" });
+  return sharedRequest(
+    fetchImpl,
+    `handle|${handle.toLowerCase()}`,
+    (requestSignal) => requestResolveHandle(handle, fetchImpl, requestSignal),
+    signal,
+  );
 };
+
+export const AUTHOR_FEED_LIMIT = 100;
+
+const authorFeedFailure = (response: Response): ApiFailure => {
+  if (response.status === 403 || response.status === 429) {
+    return { ok: false, reason: "rateLimited" };
+  }
+  if (response.status === 400) return { ok: false, reason: "notFound" };
+  return httpFailure(response);
+};
+
+const requestAuthorFeed = async (
+  actor: string,
+  cursor: string | null,
+  fetchImpl: typeof fetch,
+  signal: AbortSignal,
+): Promise<ApiResult<BlueskyAuthorFeedPage>> => {
+  if (!isDidAccount(actor)) return { ok: false, reason: "badRequest" };
+  const key = `author|${actor}`;
+  const limited = rateLimitFailure(key);
+  if (limited) return limited;
+  try {
+    const params = new URLSearchParams({
+      actor,
+      filter: "posts_with_replies",
+      includePins: "false",
+      limit: String(AUTHOR_FEED_LIMIT),
+    });
+    if (cursor !== null) params.set("cursor", cursor);
+    const response = await fetchImpl(
+      `${BSKY_API}/app.bsky.feed.getAuthorFeed?${params.toString()}`,
+      { signal },
+    );
+    if (!response.ok) {
+      const result = authorFeedFailure(response);
+      if (result.reason === "rateLimited") return { ...result, retryAt: rememberRateLimit(key) };
+      return result;
+    }
+    const body = asRecord(await response.json());
+    if (!Array.isArray(body?.feed)) return { ok: false, reason: "error" };
+    const posts: BlueskyPost[] = [];
+    for (const item of body.feed) {
+      const entry = asRecord(item);
+      if (entry?.reason) continue;
+      const post = mapPost(entry?.post);
+      const parsed = post ? parseAtUri(post.uri) : null;
+      if (post && post.author.did === actor && parsed?.authority === actor) posts.push(post);
+    }
+    const nextCursor = asString(body.cursor);
+    return { ok: true, value: { posts, cursor: nextCursor ?? null } };
+  } catch (error) {
+    if (signal.aborted) throw error;
+    return { ok: false, reason: "error" };
+  }
+};
+
+export const fetchAuthorFeed = (
+  actor: string,
+  cursor: string | null = null,
+  fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
+): Promise<ApiResult<BlueskyAuthorFeedPage>> =>
+  sharedRequest(
+    fetchImpl,
+    JSON.stringify([actor, cursor]),
+    (requestSignal) => requestAuthorFeed(actor, cursor, fetchImpl, requestSignal),
+    signal,
+  );
 
 export const searchTaggedPosts = async (
   query: string,
   sort: SearchSort,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<ApiResult<BlueskyPost[]>> => {
-  const key = `${sort}|${query}`;
-  const cached = searchCache.get(key);
-  if (cached && Date.now() - cached.at < cached.ttl) return cached.result;
-
-  let result: ApiResult<BlueskyPost[]>;
+  const key = `search|${sort}|${query}`;
+  const limited = rateLimitFailure(key);
+  if (limited) return limited;
   try {
     const response = await fetchImpl(
       `${BSKY_API}/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&limit=${SEARCH_LIMIT}&sort=${sort}`,
+      { signal },
     );
     if (!response.ok) {
-      result = searchFailure(response);
-    } else {
-      const body = asRecord(await response.json());
-      const raw = Array.isArray(body?.posts) ? body.posts : [];
-      const posts = raw.map(mapPost).filter((post): post is BlueskyPost => post !== null);
-      for (const post of posts) postCache.set(post.uri, post);
-      result = { ok: true, value: posts };
+      const result = searchFailure(response);
+      if (result.reason === "rateLimited") return { ...result, retryAt: rememberRateLimit(key) };
+      return result;
     }
-  } catch {
-    result = { ok: false, reason: "error" };
+    const body = asRecord(await response.json());
+    const raw = Array.isArray(body?.posts) ? body.posts : [];
+    return {
+      ok: true,
+      value: raw.map((view) => mapPost(view)).filter((post): post is BlueskyPost => post !== null),
+    };
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    return { ok: false, reason: "error" };
   }
-
-  if (result.ok) {
-    searchCache.set(key, { at: Date.now(), ttl: SEARCH_TTL, result });
-  } else if (result.reason === "rateLimited") {
-    searchCache.set(key, { at: Date.now(), ttl: RATE_LIMIT_TTL, result });
-  }
-  return result;
 };
 
-// One request per query, merged. Bluesky's search has no boolean OR and is
-// accent-sensitive, so distinct spellings (#palindromo / #palíndromo) must
-// be asked for separately; the single-query cache keeps a revisit cheap.
-// A partial throttle still returns what succeeded.
 export const searchQueries = async (
   queries: readonly string[],
   sort: SearchSort,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<ApiResult<BlueskyPost[]>> => {
   const lists: BlueskyPost[][] = [];
-  const reasons: ApiFailureReason[] = [];
+  const failures: ApiFailure[] = [];
   for (const query of queries) {
-    const result = await searchTaggedPosts(query, sort, fetchImpl);
+    const result = await searchTaggedPosts(query, sort, fetchImpl, signal);
     if (result.ok) lists.push(result.value);
-    else reasons.push(result.reason);
+    else failures.push(result);
   }
   if (lists.length === 0) {
-    const reason = reasons.includes("rateLimited")
+    const reason = failures.some((failure) => failure.reason === "rateLimited")
       ? "rateLimited"
-      : reasons.includes("badRequest")
+      : failures.some((failure) => failure.reason === "badRequest")
         ? "badRequest"
         : "error";
-    return { ok: false, reason };
+    const retryAt = Math.max(
+      ...failures
+        .filter((failure) => failure.reason === "rateLimited" && failure.retryAt !== undefined)
+        .map((failure) => failure.retryAt!),
+    );
+    return retryAt > 0 ? { ok: false, reason, retryAt } : { ok: false, reason };
   }
 
-  // round-robin across queries so each tag contributes before the cap
   const seen = new Set<string>();
   const merged: BlueskyPost[] = [];
   const longest = Math.max(...lists.map((list) => list.length));

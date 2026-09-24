@@ -1,43 +1,69 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 
+import { useBlueskyHandle } from "@/hooks/use-bluesky-handle";
 import { useI18n } from "@/hooks/use-i18n";
-import { resolvePostRef } from "@/lib/bluesky-api";
-import { parsePostInput } from "@/lib/bluesky-post";
+import { atUriFor, parsePostInput } from "@/lib/bluesky-post";
 
-// Paste a bsky.app post link (or an at-uri) and hand the resolved at-uri
-// back; how it navigates is the caller's business, which keeps this
-// testable without a router.
+type Attempt = { id: number; handle: string; rkey: string };
+
 export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: string) => void }) {
   const { t } = useI18n();
   const [value, setValue] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState<Attempt | null>(null);
+  const [parseError, setParseError] = useState(false);
+  const nextAttemptIdRef = useRef(0);
+  const navigatedAttemptRef = useRef<number | null>(null);
   const titleId = useId();
   const errorId = useId();
+  const handleQuery = useBlueskyHandle(attempt?.handle ?? null);
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (
+      !attempt ||
+      !handleQuery.data ||
+      handleQuery.isFetching ||
+      handleQuery.isPending ||
+      handleQuery.isError ||
+      navigatedAttemptRef.current === attempt.id
+    ) {
+      return;
+    }
+    navigatedAttemptRef.current = attempt.id;
+    onSubmitUrl(atUriFor(handleQuery.data, attempt.rkey));
+  }, [
+    attempt,
+    handleQuery.data,
+    handleQuery.isError,
+    handleQuery.isFetching,
+    handleQuery.isPending,
+    onSubmitUrl,
+  ]);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const ref = parsePostInput(value);
     if (!ref) {
-      setError(true);
+      setParseError(true);
+      setAttempt(null);
       return;
     }
-    setError(false);
+    setParseError(false);
     if (ref.kind === "uri") {
+      setAttempt(null);
       onSubmitUrl(ref.uri);
       return;
     }
-    setBusy(true);
-    const resolved = await resolvePostRef(ref);
-    setBusy(false);
-    if (!resolved.ok) {
-      setError(true);
+    if (attempt?.handle === ref.handle && attempt.rkey === ref.rkey && handleQuery.isError) {
+      void handleQuery.refetch();
       return;
     }
-    onSubmitUrl(resolved.value);
+    setAttempt({ id: ++nextAttemptIdRef.current, handle: ref.handle, rkey: ref.rkey });
   };
+
+  const busy = attempt !== null && handleQuery.isPending;
+  const error = parseError || (attempt !== null && handleQuery.isError);
 
   return (
     <section aria-labelledby={titleId}>
@@ -52,7 +78,8 @@ export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: strin
           value={value}
           onChange={(event) => {
             setValue(event.target.value);
-            setError(false);
+            setParseError(false);
+            setAttempt(null);
           }}
           placeholder={t("post.checkPlaceholder")}
           aria-labelledby={titleId}

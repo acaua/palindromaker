@@ -13,6 +13,7 @@ import ExplorePage from "@/components/explore-page";
 import ReaderPage from "@/components/reader-page";
 import SiteHeader from "@/components/site-header";
 import { countRoute } from "@/lib/goatcounter";
+import { validateExploreSearch } from "@/lib/explore-search";
 
 // the shell every route renders inside: the sticky header plus the routed
 // page. The router owns the chrome, pages own their content.
@@ -79,6 +80,7 @@ const exploreRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/explore",
   component: ExplorePage,
+  validateSearch: validateExploreSearch,
 });
 
 export const routeTree = rootRoute.addChildren([indexRoute, readerRoute, aboutRoute, exploreRoute]);

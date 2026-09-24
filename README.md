@@ -10,9 +10,9 @@ palindrome as you write.
 Beyond the editor: the word finder inserts dictionary words straight into the
 mirror; a finished palindrome can be shared as a link (the text rides in the
 URL fragment) and opens in a read-only reader; and Bluesky posts can be read
-for the palindrome inside them, browsed by palindrome hashtag on the Explore
-page, or posted straight from the share menu. The interface speaks the same six
-languages as the dictionaries, and an About page explains the idea.
+for the palindrome inside them, browsed by palindrome hashtag or by account on
+the Explore page, or posted straight from the share menu. The interface speaks
+the same six languages as the dictionaries, and an About page explains the idea.
 
 ## Stack
 
@@ -22,7 +22,8 @@ languages as the dictionaries, and an About page explains the idea.
   `Palindrome` extension that drives the highlights via ProseMirror
   decorations, and `MirrorEditing`, which reproduces each typed letter at its
   mirror position
-- [TanStack Router](https://tanstack.com/router) (code-based routes) and
+- [TanStack Router](https://tanstack.com/router) (code-based routes),
+  [TanStack Query](https://tanstack.com/query) for remote-resource lifecycle, and
   [TanStack Virtual](https://tanstack.com/virtual) for the finder's result list
 - [Tailwind CSS 4](https://tailwindcss.com/)
 - [GoatCounter](https://www.goatcounter.com/) for privacy-friendly analytics

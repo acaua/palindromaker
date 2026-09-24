@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { replaceAll } from "./helpers";
 
-const DID = "did:plc:test";
+const DID = "did:plc:z72i7hdynmk6r22z27h6tvur";
 const RKEY = "3abc";
 const URI = `at://${DID}/app.bsky.feed.post/${RKEY}`;
 const TEXT = "My favourite: A man, a plan, a canal: Panama! #palindrome";
@@ -48,6 +48,20 @@ const stubSearch = (page: Page, posts: unknown[], cursor?: string) =>
   page.route("**/xrpc/app.bsky.feed.searchPosts*", (route) =>
     route.fulfill({ json: cursor ? { posts, cursor } : { posts } }),
   );
+
+const stubAuthorFeed = async (page: Page, first: unknown[], older: unknown[]) => {
+  let requests = 0;
+  await page.route("**/xrpc/app.bsky.feed.getAuthorFeed*", (route) => {
+    requests += 1;
+    const cursor = new URL(route.request().url()).searchParams.get("cursor");
+    return route.fulfill({
+      json: cursor
+        ? { feed: older.map((item) => ({ post: item })) }
+        : { feed: first.map((item) => ({ post: item })), cursor: "older" },
+    });
+  });
+  return () => requests;
+};
 
 const stubResolveHandle = (page: Page) =>
   page.route("**/xrpc/com.atproto.identity.resolveHandle*", (route) =>
@@ -142,6 +156,34 @@ test("Explore result links use SPA navigation and leave modifier clicks native",
   await expect(reader(page)).toContainText("A man, a plan, a canal: Panama");
   await expect(page).toHaveURL(`/p#b=${encodeURIComponent(URI)}`);
   await expect(page.locator("html")).toHaveAttribute("data-explore-spa-probe", spaMarker);
+});
+
+test("an account view lists palindrome posts and loads older pages explicitly", async ({
+  page,
+}) => {
+  const older = {
+    ...post,
+    uri: `${URI}older`,
+    record: { ...post.record, text: "Level" },
+  };
+  const requestCount = await stubAuthorFeed(page, [post], [older]);
+  await stubResolveHandle(page);
+  await page.goto("/explore?account=pal.bsky.social");
+
+  await expect(
+    page.getByRole("heading", { name: /Palindromes by @pal\.bsky\.social/ }),
+  ).toBeVisible();
+  await expect(page.getByText("A man, a plan, a canal: Panama").first()).toBeVisible();
+  expect(requestCount()).toBe(1);
+
+  const loadOlder = page.getByRole("button", { name: "Load older posts" });
+  await expect(loadOlder).toBeVisible();
+  await loadOlder.click();
+  await expect(page.getByText("Level").first()).toBeVisible();
+  expect(requestCount()).toBe(2);
+
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test("Explore reports a throttle and offers a retry", async ({ page }) => {

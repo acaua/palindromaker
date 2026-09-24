@@ -1,9 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import EditorPage from "@/components/editor-page";
 import { readPrefs } from "@/lib/prefs";
 import { DOC_STORAGE_KEY } from "@/lib/persistence";
+import { renderWithQuery } from "@/test/query-client";
 
 vi.mock("@/lib/dictionary", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/dictionary")>();
@@ -24,7 +25,7 @@ describe("EditorPage", () => {
   test("opens on the shared #t= fragment and consumes it", async () => {
     window.location.hash = "#t=A%20b%2C%20b%20a";
 
-    render(<EditorPage />);
+    renderWithQuery(<EditorPage />);
 
     const textbox = await screen.findByRole("textbox", { name: "Palindrome editor" });
     expect(textbox.textContent).toContain("A b, b a");
@@ -41,14 +42,14 @@ describe("EditorPage", () => {
       }),
     );
 
-    render(<EditorPage />);
+    renderWithQuery(<EditorPage />);
 
     const textbox = await screen.findByRole("textbox", { name: "Palindrome editor" });
     expect(textbox.textContent).toContain("roma é amor");
   });
 
   test("closing the finder remembers it and returns focus to the trigger", async () => {
-    render(<EditorPage />);
+    renderWithQuery(<EditorPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Close word finder" }));
 

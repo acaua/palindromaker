@@ -1,12 +1,12 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import { useDictionary } from "@/hooks/use-dictionary";
 import { buildDictionary, loadDictionary } from "@/lib/dictionary";
 import type { Dictionary, Language } from "@/lib/dictionary";
+import { createTestQueryClient, queryWrapper } from "@/test/query-client";
 
-// the real loader fetches megabytes and caches the promise per language;
-// every other export (buildDictionary here) stays real
+// the real loader fetches megabytes; every other export stays real
 vi.mock("@/lib/dictionary", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/dictionary")>()),
   loadDictionary: vi.fn(),
@@ -22,6 +22,7 @@ interface Pending {
 
 // the newest load per language, which is the one the hook is waiting on
 let pending: Map<Language, Pending>;
+let client: ReturnType<typeof createTestQueryClient>;
 
 const loadOf = (language: Language): Pending => {
   const load = pending.get(language);
@@ -30,6 +31,7 @@ const loadOf = (language: Language): Pending => {
 };
 
 beforeEach(() => {
+  client = createTestQueryClient();
   pending = new Map();
   vi.mocked(loadDictionary).mockReset();
   vi.mocked(loadDictionary).mockImplementation(
@@ -44,6 +46,7 @@ describe("useDictionary", () => {
   test("loads nothing until enabled", async () => {
     const { result, rerender } = renderHook(({ enabled }) => useDictionary("en", enabled), {
       initialProps: { enabled: false },
+      wrapper: queryWrapper(client),
     });
 
     expect(result.current).toEqual({ status: "idle" });
@@ -53,29 +56,30 @@ describe("useDictionary", () => {
     expect(result.current).toEqual({ status: "loading" });
 
     await act(async () => loadOf("en").resolve(buildDictionary("hello")));
-    expect(result.current.status).toBe("ready");
+    await waitFor(() => expect(result.current.status).toBe("ready"));
   });
 
   test("closing the panel goes back to idle without dropping the load", async () => {
     const { result, rerender } = renderHook(({ enabled }) => useDictionary("en", enabled), {
       initialProps: { enabled: true },
+      wrapper: queryWrapper(client),
     });
 
     await act(async () => loadOf("en").resolve(buildDictionary("hello")));
-    expect(result.current.status).toBe("ready");
+    await waitFor(() => expect(result.current.status).toBe("ready"));
 
     rerender({ enabled: false });
     expect(result.current).toEqual({ status: "idle" });
 
     // reopening shows the words again rather than reloading from scratch
     rerender({ enabled: true });
-    expect(result.current.status).toBe("ready");
+    await waitFor(() => expect(result.current.status).toBe("ready"));
   });
 
   test("a response for the previous language never replaces a newer one", async () => {
     const { result, rerender } = renderHook(
       ({ language }: { language: Language }) => useDictionary(language, true),
-      { initialProps: { language: "pt-br" } },
+      { initialProps: { language: "pt-br" }, wrapper: queryWrapper(client) },
     );
 
     rerender({ language: "en" });
@@ -86,16 +90,18 @@ describe("useDictionary", () => {
     expect(result.current).toEqual({ status: "loading" });
 
     await act(async () => loadOf("en").resolve(buildDictionary("hello")));
-    expect(result.current).toMatchObject({
-      status: "ready",
-      dictionary: { words: ["hello"] },
-    });
+    await waitFor(() =>
+      expect(result.current).toMatchObject({
+        status: "ready",
+        dictionary: { words: ["hello"] },
+      }),
+    );
   });
 
   test("switching back to a language that already answered shows it at once", async () => {
     const { result, rerender } = renderHook(
       ({ language }: { language: Language }) => useDictionary(language, true),
-      { initialProps: { language: "pt-br" } },
+      { initialProps: { language: "pt-br" }, wrapper: queryWrapper(client) },
     );
 
     await act(async () => loadOf("pt-br").resolve(buildDictionary("ovo")));
@@ -103,7 +109,7 @@ describe("useDictionary", () => {
     expect(result.current).toEqual({ status: "loading" });
 
     // the last outcome is still pt-br's, so going back needs no loading
-    // flash — the underlying loader caches the built dictionary anyway
+    // flash — the Query cache keeps the built dictionary
     rerender({ language: "pt-br" });
     expect(result.current).toMatchObject({
       status: "ready",
@@ -112,33 +118,38 @@ describe("useDictionary", () => {
   });
 
   test("a failed load offers a retry, and the retry can succeed", async () => {
-    const { result } = renderHook(() => useDictionary("en", true));
+    const { result } = renderHook(() => useDictionary("en", true), {
+      wrapper: queryWrapper(client),
+    });
 
     await act(async () => loadOf("en").reject(new Error("offline")));
-    expect(result.current.status).toBe("error");
+    await waitFor(() => expect(result.current.status).toBe("error"));
 
     act(() => {
       if (result.current.status === "error") result.current.retry();
     });
     // the answer that already arrived belongs to the previous attempt
-    expect(result.current).toEqual({ status: "loading" });
+    await waitFor(() => expect(result.current).toEqual({ status: "loading" }));
     expect(loadDictionary).toHaveBeenCalledTimes(2);
 
     await act(async () => loadOf("en").resolve(buildDictionary("hello")));
-    expect(result.current.status).toBe("ready");
+    await waitFor(() => expect(result.current.status).toBe("ready"));
   });
 
   test("a failed load can fail again", async () => {
-    const { result } = renderHook(() => useDictionary("en", true));
+    const { result } = renderHook(() => useDictionary("en", true), {
+      wrapper: queryWrapper(client),
+    });
 
     await act(async () => loadOf("en").reject(new Error("offline")));
+    await waitFor(() => expect(result.current.status).toBe("error"));
     const first = result.current;
-    expect(first.status).toBe("error");
 
     act(() => {
       if (first.status === "error") first.retry();
     });
+    await waitFor(() => expect(loadDictionary).toHaveBeenCalledTimes(2));
     await act(async () => loadOf("en").reject(new Error("still offline")));
-    expect(result.current.status).toBe("error");
+    await waitFor(() => expect(result.current.status).toBe("error"));
   });
 });

@@ -61,6 +61,23 @@ describe("buildDictionaryIncrementally", () => {
     expect(yields).toBeGreaterThan(0);
   });
 
+  test("stops at the next slice boundary after cancellation", async () => {
+    const controller = new AbortController();
+    let yields = 0;
+    const result = buildDictionaryIncrementally(
+      many,
+      () => {
+        yields += 1;
+        controller.abort();
+        return Promise.resolve();
+      },
+      controller.signal,
+    );
+
+    await expect(result).rejects.toMatchObject({ name: "AbortError" });
+    expect(yields).toBe(1);
+  });
+
   test("a short word list needs no slicing at all", async () => {
     let yields = 0;
     const dictionary = await buildDictionaryIncrementally("casa\nasa", () => {
@@ -153,18 +170,40 @@ describe("loadDictionary", () => {
 
     await loadDictionary("de");
 
-    expect(fetchMock).toHaveBeenCalledWith("/dictionary/de.txt");
+    expect(fetchMock).toHaveBeenCalledWith("/dictionary/de.txt", expect.anything());
   });
 
-  test("caches the dictionary per language", async () => {
+  test("does not cache the dictionary at the loader seam", async () => {
     const fetchMock = vi.fn(async () => new Response("a\nb\n", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const first = await loadDictionary("en");
     const second = await loadDictionary("en");
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(first).toEqual(second);
+  });
+
+  test("shares an in-flight load without caching the result", async () => {
+    let resolveResponse!: (response: Response) => void;
+    let calls = 0;
+    const fetchMock = vi.fn(() => {
+      if (calls++ === 0) {
+        return new Promise<Response>((resolve) => {
+          resolveResponse = resolve;
+        });
+      }
+      return Promise.resolve(new Response("b\n", { status: 200 }));
+    });
+    const first = loadDictionary("en", undefined, fetchMock);
+    const second = loadDictionary("en", undefined, fetchMock);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    resolveResponse(new Response("a\n", { status: 200 }));
+    await expect(first).resolves.toEqual(buildDictionary("a"));
+    await expect(second).resolves.toEqual(buildDictionary("a"));
+
+    await expect(loadDictionary("en", undefined, fetchMock)).resolves.toEqual(buildDictionary("b"));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   test("retries after a failed load", async () => {

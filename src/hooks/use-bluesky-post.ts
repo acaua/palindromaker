@@ -1,7 +1,12 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { atUriFor } from "@/lib/bluesky-post";
 import type { PostRef } from "@/lib/bluesky-post";
-import { failureStatus, fetchPost, resolvePostRef } from "@/lib/bluesky-api";
+import { BlueskyRequestError, failureStatus, fetchPost, unwrapApiResult } from "@/lib/bluesky-api";
 import type { BlueskyPost } from "@/lib/bluesky-api";
-import { useKeyedResource } from "@/hooks/use-keyed-resource";
+import { useBlueskyHandle } from "@/hooks/use-bluesky-handle";
+import { blueskyKeys } from "@/queries/query-keys";
+import { REMOTE_GC_TIME, REMOTE_STALE_TIME } from "@/queries/query-client";
 
 export interface BlueskyPostState {
   status: "idle" | "loading" | "ready" | "notFound" | "badRequest" | "error";
@@ -9,45 +14,55 @@ export interface BlueskyPostState {
   retry: () => void;
 }
 
-const postRefKey = (ref: PostRef): string =>
-  ref.kind === "uri" ? `uri:${ref.uri}` : `handle:${ref.handle}/${ref.rkey}`;
-
-type PostOutcome =
-  | { status: "idle"; post: null }
-  | { status: "loading"; post: null }
-  | { status: "ready"; post: BlueskyPost }
-  | { status: "notFound"; post: null }
-  | { status: "badRequest"; post: null }
-  | { status: "error"; post: null };
-
-// a failed lookup is "notFound" only when the post truly is not there; a
-// malformed request is its own status, and a throttle or network failure
-// is an error
 const POST_FAILURES = { notFound: "notFound", badRequest: "badRequest" } as const;
 
-// Loads the post a #b= fragment points at. A handle form needs a DID first
-// (resolvePostRef), an at-uri goes straight to getPosts.
 export const useBlueskyPost = (ref: PostRef | null): BlueskyPostState => {
-  const { state, retry } = useKeyedResource<PostOutcome>(
-    ref ? postRefKey(ref) : null,
-    async (): Promise<PostOutcome> => {
-      if (!ref) return { status: "error", post: null };
-      const uri = await resolvePostRef(ref);
-      if (!uri.ok) {
-        return { status: failureStatus(uri.reason, POST_FAILURES, "error"), post: null };
-      }
-      const result = await fetchPost(uri.value);
-      if (!result.ok) {
-        return { status: failureStatus(result.reason, POST_FAILURES, "error"), post: null };
-      }
-      return { status: "ready", post: result.value };
+  const queryClient = useQueryClient();
+  const handle = ref?.kind === "handle" ? ref.handle : null;
+  const identity = useBlueskyHandle(handle);
+  const canonicalUri =
+    ref?.kind === "uri"
+      ? ref.uri
+      : ref?.kind === "handle" && !identity.isError && identity.data
+        ? atUriFor(identity.data, ref.rkey)
+        : null;
+  const query = useQuery<BlueskyPost, BlueskyRequestError>({
+    queryKey: canonicalUri ? blueskyKeys.post(canonicalUri) : blueskyKeys.postIdle,
+    enabled: canonicalUri !== null,
+    queryFn: async ({ signal }) => {
+      if (!canonicalUri) throw new Error("Post query ran without a canonical reference");
+      const post = unwrapApiResult(await fetchPost(canonicalUri, fetch, signal));
+      queryClient.setQueryData(blueskyKeys.post(post.uri), post);
+      return post;
     },
-    {
-      idle: { status: "idle", post: null },
-      loading: { status: "loading", post: null },
-      error: { status: "error", post: null },
-    },
-  );
+    staleTime: REMOTE_STALE_TIME,
+    gcTime: REMOTE_GC_TIME,
+  });
+  const retry = () => {
+    if (identity.isError) void identity.refetch();
+    else void query.refetch();
+  };
 
-  return { ...state, retry };
+  if (!ref) return { status: "idle", post: null, retry };
+  const postPending = query.isPending && canonicalUri !== null;
+  if ((handle !== null && identity.isPending) || postPending) {
+    return { status: "loading", post: null, retry };
+  }
+  if (identity.isError) {
+    const reason = identity.error instanceof BlueskyRequestError ? identity.error.reason : "error";
+    return {
+      status: failureStatus(reason, POST_FAILURES, "error"),
+      post: null,
+      retry,
+    };
+  }
+  if (query.isError) {
+    const reason = query.error instanceof BlueskyRequestError ? query.error.reason : "error";
+    return {
+      status: failureStatus(reason, POST_FAILURES, "error"),
+      post: null,
+      retry,
+    };
+  }
+  return { status: "ready", post: query.data ?? null, retry };
 };

@@ -16,6 +16,14 @@ describe("parsePostInput", () => {
     expect(parsePostInput(URI)).toEqual({ kind: "uri", uri: URI });
   });
 
+  test("keeps a handle authority unresolved", () => {
+    expect(parsePostInput("at://Alice.BSky.Social/app.bsky.feed.post/3abc")).toEqual({
+      kind: "handle",
+      handle: "alice.bsky.social",
+      rkey: "3abc",
+    });
+  });
+
   test("accepts a bsky.app URL and resolves a DID inline", () => {
     expect(parsePostInput(`https://bsky.app/profile/${DID}/post/${RKEY}`)).toEqual({
       kind: "uri",
@@ -88,7 +96,7 @@ describe("share link", () => {
 
 describe("parseAtUri", () => {
   test("reads the DID and record key, rejecting other records", () => {
-    expect(parseAtUri(URI)).toEqual({ did: DID, rkey: RKEY });
+    expect(parseAtUri(URI)).toEqual({ authority: DID, rkey: RKEY });
     expect(parseAtUri(`at://${DID}/app.bsky.feed.like/${RKEY}`)).toBeNull();
     expect(parseAtUri("not-a-uri")).toBeNull();
   });

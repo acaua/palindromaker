@@ -6,13 +6,22 @@ import { useI18n } from "@/hooks/use-i18n";
 import type { BlueskyPost } from "@/lib/bluesky-api";
 import { postHash } from "@/lib/bluesky-post";
 import { describePost } from "@/lib/bluesky-post-view";
+import type { PostViewMode } from "@/lib/bluesky-post-view";
 import { formatRelativeTime } from "@/lib/relative-time";
 
-// A hand-rendered result row: 100 official embeds would be 100 iframes,
-// so the gallery stays light and opens the post in the reader on demand.
-export default function BlueskyPostCard({ post }: { post: BlueskyPost }) {
+export default function BlueskyPostCard({
+  post,
+  showPalindrome = false,
+  viewMode = "loggedOut",
+  linkAuthor = true,
+}: {
+  post: BlueskyPost;
+  showPalindrome?: boolean;
+  viewMode?: PostViewMode;
+  linkAuthor?: boolean;
+}) {
   const { lang, t } = useI18n();
-  const view = useMemo(() => describePost(post), [post]);
+  const view = useMemo(() => describePost(post, viewMode), [post, viewMode]);
   const relative = formatRelativeTime(post.createdAt, lang);
   const actionLabel = view.palindrome ? t("post.viewPalindromeCard") : t("post.viewCard");
 
@@ -23,7 +32,17 @@ export default function BlueskyPostCard({ post }: { post: BlueskyPost }) {
           <p className="truncate text-sm font-semibold text-gray-900">
             {post.author.displayName ?? `@${post.author.handle}`}
           </p>
-          <p className="truncate text-xs text-gray-500">@{post.author.handle}</p>
+          {linkAuthor ? (
+            <Link
+              to="/explore"
+              search={{ account: post.author.did }}
+              className="block truncate text-xs text-gray-500 hover:text-violet-700"
+            >
+              @{post.author.handle}
+            </Link>
+          ) : (
+            <p className="truncate text-xs text-gray-500">@{post.author.handle}</p>
+          )}
         </div>
         {view.palindrome && (
           <span className="ml-auto shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
@@ -31,7 +50,14 @@ export default function BlueskyPostCard({ post }: { post: BlueskyPost }) {
           </span>
         )}
       </header>
+      {showPalindrome && view.palindrome && (
+        <div className="mt-2 rounded-lg bg-emerald-50 px-3 py-2">
+          <p className="text-xs font-medium text-emerald-800">{t("post.palindromeLabel")}</p>
+          <p className="mt-1 font-mono text-sm break-words text-emerald-950">{view.palindrome}</p>
+        </div>
+      )}
       <p className="mt-2 line-clamp-6 text-sm whitespace-pre-wrap break-words text-gray-700">
+        {showPalindrome && <span className="sr-only">{t("post.originalLabel")}: </span>}
         {view.segments.map((segment) =>
           segment.annotation ? (
             <span key={segment.start} className="text-gray-500">

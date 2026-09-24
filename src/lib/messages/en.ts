@@ -88,6 +88,22 @@ export const en = {
   "explore.badRequest": "Bluesky couldn’t process this search.",
   "explore.retry": "Try again",
   "explore.retryIn": "Try again in {count}s",
+  "account.formTitle": "Explore an account",
+  "account.formHint": "Enter a handle, DID, or profile URL.",
+  "account.hint": "Public posts and replies from this account that contain a palindrome.",
+  "account.placeholder": "alice.bsky.social or bsky.app/profile/…",
+  "account.button": "Explore account",
+  "account.heading": "Palindromes by",
+  "account.back": "Back to Explore",
+  "account.empty": "No palindromes were found in the loaded posts.",
+  "account.restricted":
+    "No palindromes can be shown because the posts loaded so far are restricted.",
+  "account.noneInPage": "No palindromes in the latest posts.",
+  "account.invalid": "That account doesn't look valid.",
+  "account.notFound": "That account isn't available.",
+  "account.nextError": "Couldn't load older posts.",
+  "account.loadOlder": "Load older posts",
+  "account.loadingMore": "Loading…",
   "post.checkTitle": "Check a Bluesky post",
   "post.checkHint": "Paste a post link to see the palindrome inside it.",
   "post.checkPlaceholder": "https://bsky.app/profile/…/post/…",
@@ -109,6 +125,8 @@ export const en = {
   "post.palindromeBadge": "palindrome",
   "post.viewPalindromeCard": "View palindrome",
   "post.viewCard": "View post",
+  "post.palindromeLabel": "Palindrome",
+  "post.originalLabel": "Original post",
 } as const;
 
 export type MessageKey = keyof typeof en;

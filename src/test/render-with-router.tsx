@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
+import type { ReactElement } from "react";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -9,7 +10,8 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import type { AnyRoute } from "@tanstack/react-router";
-import type { ReactElement } from "react";
+import { createTestQueryClient, TestQueryClientProvider } from "@/test/query-client";
+import { validateExploreSearch } from "@/lib/explore-search";
 
 type RenderWithRouterOptions = {
   routeTree: AnyRoute;
@@ -25,15 +27,20 @@ export const renderWithRouter = ({
     history: createMemoryHistory({ initialEntries: [initialEntry] }),
   });
 
-  return render(<RouterProvider router={router} />);
+  return render(
+    <TestQueryClientProvider client={createTestQueryClient()}>
+      <RouterProvider router={router} />
+    </TestQueryClientProvider>,
+  );
 };
 
-export const renderAtExplore = (ui: ReactElement): RenderResult => {
+export const renderAtExplore = (ui: ReactElement, initialEntry = "/explore"): RenderResult => {
   const rootRoute = createRootRoute({ component: () => <Outlet /> });
   const exploreRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/explore",
     component: () => ui,
+    validateSearch: validateExploreSearch,
   });
   const pRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -43,6 +50,6 @@ export const renderAtExplore = (ui: ReactElement): RenderResult => {
 
   return renderWithRouter({
     routeTree: rootRoute.addChildren([exploreRoute, pRoute]),
-    initialEntry: "/explore",
+    initialEntry,
   });
 };
