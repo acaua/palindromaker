@@ -33,7 +33,7 @@ const renderHeader = async (initial: string = "/") => {
   });
   renderWithRouter({
     routeTree: rootRoute.addChildren([homeRoute, aboutRoute]),
-    initialPath: initial,
+    initialEntry: initial,
   });
   await screen.findByText(initial === "/about" ? "about page" : "home page");
 };

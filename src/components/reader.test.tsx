@@ -137,7 +137,7 @@ async function renderRouted(ui: ReactElement, entry = "/p") {
   });
   const view = renderWithRouter({
     routeTree: rootRoute.addChildren([homeRoute, pRoute]),
-    initialPath: entry,
+    initialEntry: entry,
   });
   // RouterProvider resolves its initial location asynchronously and its
   // first paint is empty; callers await their own routed signal

@@ -1,13 +1,11 @@
 import { cleanup, fireEvent, screen } from "@testing-library/react";
-import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
-import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import ExplorePage from "@/components/explore-page";
 import { useBlueskySearch } from "@/hooks/use-bluesky-search";
 import { useCountdown } from "@/hooks/use-countdown";
 import { makePost } from "@/test/bluesky-post";
-import { renderWithRouter } from "@/test/render-with-router";
+import { renderAtExplore } from "@/test/render-with-router";
 
 vi.mock("@/hooks/use-bluesky-search", () => ({ useBlueskySearch: vi.fn() }));
 vi.mock("@/hooks/use-countdown", () => ({ useCountdown: vi.fn() }));
@@ -23,30 +21,12 @@ beforeEach(() => {
   mockedCountdown.mockReturnValue(60);
 });
 
-async function renderRouted(ui: ReactElement) {
-  const rootRoute = createRootRoute({ component: () => <Outlet /> });
-  const exploreRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/explore",
-    component: () => ui,
-  });
-  const pRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/p",
-    component: () => null,
-  });
-  const view = renderWithRouter({
-    routeTree: rootRoute.addChildren([exploreRoute, pRoute]),
-    initialPath: "/explore",
-  });
-  await Promise.resolve();
-  return view;
-}
+const renderExplorePage = () => renderAtExplore(<ExplorePage />);
 
 describe("ExplorePage", () => {
   test("lists the results", async () => {
     mockedSearch.mockReturnValue({ status: "ready", posts: [post], retry: () => {} });
-    await renderRouted(<ExplorePage />);
+    renderExplorePage();
 
     expect(await screen.findByText("Palindromes on Bluesky")).not.toBeNull();
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
@@ -54,7 +34,7 @@ describe("ExplorePage", () => {
 
   test("switching sort re-queries", async () => {
     mockedSearch.mockReturnValue({ status: "ready", posts: [], retry: () => {} });
-    await renderRouted(<ExplorePage />);
+    renderExplorePage();
     await screen.findByText(/No posts found right now/);
 
     fireEvent.click(screen.getByRole("button", { name: "Recent" }));
@@ -64,7 +44,7 @@ describe("ExplorePage", () => {
   test("a throttle gets its own message and a held retry", async () => {
     const retry = vi.fn();
     mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry, cooldownSeconds: 60 });
-    await renderRouted(<ExplorePage />);
+    renderExplorePage();
 
     expect(await screen.findByText(/rate-limiting/)).not.toBeNull();
     const button = screen.getByRole("button", { name: /Try again in \d+s/ });
@@ -75,7 +55,7 @@ describe("ExplorePage", () => {
     const retry = vi.fn();
     mockedSearch.mockReturnValue({ status: "rateLimited", posts: [], retry, cooldownSeconds: 60 });
     mockedCountdown.mockReturnValue(0);
-    await renderRouted(<ExplorePage />);
+    renderExplorePage();
 
     expect(await screen.findByText(/rate-limiting/)).not.toBeNull();
     const button = screen.getByRole("button", { name: "Try again" });
@@ -87,7 +67,7 @@ describe("ExplorePage", () => {
   test("other failures can be retried", async () => {
     const retry = vi.fn();
     mockedSearch.mockReturnValue({ status: "error", posts: [], retry });
-    await renderRouted(<ExplorePage />);
+    renderExplorePage();
 
     const button = await screen.findByRole("button", { name: "Try again" });
     fireEvent.click(button);
@@ -96,7 +76,7 @@ describe("ExplorePage", () => {
 
   test("a malformed search reads differently from a network failure", async () => {
     mockedSearch.mockReturnValue({ status: "badRequest", posts: [], retry: () => {} });
-    await renderRouted(<ExplorePage />);
+    renderExplorePage();
 
     expect(await screen.findByText(/couldn’t process this search/i)).not.toBeNull();
   });

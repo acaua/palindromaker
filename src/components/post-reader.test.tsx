@@ -34,7 +34,7 @@ async function renderRouted(ui: ReactElement) {
   });
   const view = renderWithRouter({
     routeTree: rootRoute.addChildren([pRoute]),
-    initialPath: "/p",
+    initialEntry: "/p",
   });
   await Promise.resolve();
   return view;
