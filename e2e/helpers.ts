@@ -4,6 +4,13 @@ import { DOC_STORAGE_KEY } from "@/lib/persistence";
 
 export const editor = (page: Page) => page.locator('[contenteditable="true"]');
 
+// a /p#t= share link for the given text
+export const shareUrl = (text: string) => `http://localhost:5173/p#t=${encodeURIComponent(text)}`;
+
+// the reader is static semantic text with an aria-label + role=region
+// (reader.tsx), the stable way to scope it and its decorations
+export const reader = (page: Page) => page.getByRole("region", { name: "Shared palindrome" });
+
 // ProseMirror needs realistic keystroke pacing for its selection sync to
 // keep up with synthetic CDP input
 export async function clearEditor(page: Page) {

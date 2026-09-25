@@ -1,19 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { clearEditor, editor, replaceAll, saved, typeText } from "./helpers";
+import { clearEditor, editor, reader, replaceAll, saved, shareUrl, typeText } from "./helpers";
 import { SAMPLE_CONTENT } from "@/lib/sample";
 
 // clipboard access has to be granted for the suite to observe what the
 // app's clipboard writes actually land
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
-
-const shareUrl = (text: string) => `http://localhost:5173/p#t=${encodeURIComponent(text)}`;
-
-// the reader carries an aria-label + role=region (contenteditable is
-// deliberately true so PM's caret machinery runs — reader.tsx), so the
-// role is also the stable way to scope its decorations
-const reader = (page: Page) => page.getByRole("region", { name: "Shared palindrome" });
 
 const shareButton = (page: Page) => page.getByRole("button", { name: "Share" });
 
@@ -74,78 +67,14 @@ test("the shared link opens the protective reader", async ({ page }) => {
   await page.goto(shareUrl(SAMPLE_CONTENT));
 
   await expect(reader(page)).toContainText(SAMPLE_CONTENT);
-  // the reader's surface is editable so PM's caret machinery runs, but
-  // reader.tsx claims every mutation event and editor-schema.ts drops
-  // surviving doc-changing transactions — typing and a keydown edit
-  // (Backspace) must both leave the text alone
-  await reader(page).pressSequentially("x");
-  await expect(reader(page)).toContainText(SAMPLE_CONTENT);
-  await reader(page).press("Backspace");
-  await expect(reader(page)).toContainText(SAMPLE_CONTENT);
+  // no editable surface at all: read-only is structural now, so there is no
+  // mutation path left to shield
+  await expect(page.locator("[contenteditable]")).toHaveCount(0);
   // no editor chrome: the status bar stays home
   await expect(shareButton(page)).toHaveCount(0);
   await expect(page.getByText("Find words")).toHaveCount(0);
   // center marks survive the round-trip
   await expect(readerDecoration(page, "bg-blue-200")).toHaveCount(2);
-});
-
-test("the reader's purple decorations follow the selection", async ({ page }) => {
-  await page.goto(shareUrl(SAMPLE_CONTENT));
-
-  // clicking the bounding box's center can land past the line's end, and
-  // clicks inside a decoration span are swallowed by the observer's
-  // ignore-selection logic; a small offset onto the first (undecorated)
-  // glyph always lands on a mirrored letter
-  await reader(page)
-    .locator("p")
-    .first()
-    .click({ position: { x: 2, y: 14 } });
-
-  await expect(readerDecoration(page, "bg-purple-200")).toBeVisible();
-  await expect(readerDecoration(page, "bg-purple-400")).toBeVisible();
-});
-
-test("arrow keys move the caret like an editable editor", async ({ page }) => {
-  await page.goto(shareUrl(SAMPLE_CONTENT));
-  await reader(page)
-    .locator("p")
-    .first()
-    .click({ position: { x: 2, y: 14 } });
-
-  const caret = () => page.evaluate(() => window.getSelection()!.getRangeAt(0).startOffset);
-
-  const start = await caret();
-  await page.keyboard.press("ArrowRight");
-  expect(await caret()).toBeGreaterThan(start);
-  const afterRight = await caret();
-  await page.keyboard.press("ArrowLeft");
-  expect(await caret()).toBeLessThan(afterRight);
-});
-
-test("vertical arrows cross the shared paragraphs", async ({ page }) => {
-  await page.goto(shareUrl(`${SAMPLE_CONTENT}\n${SAMPLE_CONTENT}`));
-  await reader(page)
-    .locator("p")
-    .first()
-    .click({ position: { x: 2, y: 14 } });
-
-  // which paragraph holds the caret after the movement
-  const paragraphOfCaret = page.evaluate.bind(page, () => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return -1;
-    const range = selection.getRangeAt(0);
-    const paragraphs = [...document.querySelectorAll('main [role="region"] p')];
-    for (const [index, p] of paragraphs.entries()) {
-      if (p.contains(range.startContainer)) return index;
-    }
-    return -1;
-  });
-
-  expect(await paragraphOfCaret()).toBe(0);
-  await page.keyboard.press("ArrowDown");
-  expect(await paragraphOfCaret()).toBe(1);
-  await page.keyboard.press("ArrowUp");
-  expect(await paragraphOfCaret()).toBe(0);
 });
 
 test("copy text puts the plain text on the clipboard", async ({ page }) => {

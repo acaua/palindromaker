@@ -74,8 +74,16 @@ The starter palindrome shown when storage holds nothing usable. One per UI langu
 The text a reader link carries in its fragment — the link itself is the payload.
 
 **Reader**:
-The view a shared link opens: the same card and highlights as the editor, but unable to change its text.
+The view a shared link opens: the same card and highlights as the editor, but static text that cannot change and needs no keyboard. A tap or the on-screen controls step through the mirror; selection, copy and scroll stay native.
 _Avoid_: viewer.
+
+**Pivot**:
+The letter the reader has selected; it and its mirror are tinted as a pair. Absent until the reader interacts.
+_Avoid_: caret, cursor.
+
+**Mirror step**:
+A pair the reader walks together, outermost first and the center last; the unit the reader's controls step through.
+_Avoid_: pair step, navigation step.
 
 **Post reference**:
 The reference a reader link carries to a Bluesky post. Opens the post and the palindrome within it.

@@ -6,8 +6,10 @@ import {
   UI_LANGUAGE_LABELS,
   UI_LANGUAGE_LOCALES,
   UI_LANGUAGE_TAGS,
+  formatCount,
   getUiLanguage,
   initUiLanguage,
+  interpolate,
   messages,
   resolveUiLanguage,
   resultCount,
@@ -71,11 +73,23 @@ describe("translate", () => {
     expect(translate("it", "status.palindrome")).toBe("Palindromo");
   });
 
+  test("formats a number in the UI language's locale", () => {
+    expect(formatCount("en", 1234)).toBe("1,234");
+    expect(formatCount("de", 1234)).toBe("1.234");
+    expect(formatCount("pt", 42)).toBe("42");
+  });
+
   test("pluralizes and formats the result count by language", () => {
     expect(resultCount("en", 1)).toBe("1 result");
     expect(resultCount("en", 1234)).toBe("1,234 results");
     expect(resultCount("pt", 1)).toBe("1 resultado");
     expect(resultCount("de", 1234)).toBe("1.234 Ergebnisse");
+  });
+
+  test("interpolate substitutes named placeholders and leaves unknown ones", () => {
+    expect(interpolate("Pair {n} of {m}", { n: "2", m: "5" })).toBe("Pair 2 of 5");
+    expect(interpolate("{count} results", { count: "1,234" })).toBe("1,234 results");
+    expect(interpolate("Pair {n} of {m}", { n: "2" })).toBe("Pair 2 of {m}");
   });
 
   test("substitutes the retry countdown by language", () => {

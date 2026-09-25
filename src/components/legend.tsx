@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { MIRROR_MATCH_MARKERS, MIRROR_MATCH_ORDER } from "@/components/mirror-match-markers";
 import { useI18n } from "@/hooks/use-i18n";
 
@@ -26,28 +28,40 @@ export function FinderLegend() {
   );
 }
 
-// the colors the editor highlights characters with, listed under the card
-// (gray-500 rather than the mockup's gray-400: the legend must pass the
-// color-contrast audit on the paper background)
-export function EditorLegend() {
+const LegendRow = ({ swatchClass, children }: { swatchClass: string; children: ReactNode }) => (
+  <span className={item}>
+    <span aria-hidden="true" className={`${swatch} ${swatchClass}`} />
+    {children}
+  </span>
+);
+
+// The colors a palindrome surface highlights characters with, listed under the
+// card (gray-500 rather than the mockup's gray-400: the legend must pass the
+// color-contrast audit on the paper background). The center and gap rows are
+// shared; only the third row's wording and aria-label differ between the editor
+// and the reader.
+function ColorLegend({ ariaLabel, mirrorLabel }: { ariaLabel: string; mirrorLabel: string }) {
   const { t } = useI18n();
   return (
     <footer
-      aria-label={t("legend.editorAria")}
+      aria-label={ariaLabel}
       className="mt-5 flex flex-wrap items-center justify-start gap-x-4 gap-y-1 text-xs text-gray-500"
     >
-      <span className={item}>
-        <span aria-hidden="true" className={`${swatch} bg-blue-200`} />
-        {t("legend.center")}
-      </span>
-      <span className={item}>
-        <span aria-hidden="true" className={`${swatch} bg-red-300`} />
-        {t("legend.breaks")}
-      </span>
-      <span className={item}>
-        <span aria-hidden="true" className={`${swatch} bg-purple-400`} />
-        {t("legend.caretMirror")}
-      </span>
+      <LegendRow swatchClass="bg-blue-200">{t("legend.center")}</LegendRow>
+      <LegendRow swatchClass="bg-red-300">{t("legend.breaks")}</LegendRow>
+      <LegendRow swatchClass="bg-purple-400">{mirrorLabel}</LegendRow>
     </footer>
   );
+}
+
+export function EditorLegend() {
+  const { t } = useI18n();
+  return <ColorLegend ariaLabel={t("legend.editorAria")} mirrorLabel={t("legend.caretMirror")} />;
+}
+
+// the reader's legend: the purple row is a tap-selected mirror pair, not a
+// caret — there is no caret in the reader
+export function ReaderLegend() {
+  const { t } = useI18n();
+  return <ColorLegend ariaLabel={t("reader.legendAria")} mirrorLabel={t("reader.legendMirror")} />;
 }
