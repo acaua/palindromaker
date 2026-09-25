@@ -16,36 +16,36 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@tanstack/react-query": "^5.103.2",
-    "@tanstack/react-router": "^1.170.33",
-    "@tanstack/react-virtual": "^3.14.10",
+    "@tanstack/react-router": "^1.170.39",
+    "@tanstack/react-virtual": "^3.14.13",
     "@tiptap/core": "^3.31.3",
     "@tiptap/pm": "^3.31.3",
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
-    "@eslint-react/eslint-plugin": "^5.19.0",
+    "@eslint-react/eslint-plugin": "^5.20.8",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/react": "^16.3.3",
-    "@types/node": "^26.4.1",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "4.1.11",
-    "happy-dom": "^20.14.0",
+    "happy-dom": "^20.14.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "^4.129.0"
+    "wrangler": "^4.137.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": "^22.18.0 || >=24.11.0"
   },
   "packageManager": "pnpm@11.25.0"
 }

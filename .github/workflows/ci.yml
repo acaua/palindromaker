@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       # setup-vp reads the vite-plus version from package.json (catalog: in
       # pnpm-workspace.yaml) and caches dependencies by pnpm-lock.yaml hash.
-      - uses: voidzero-dev/setup-vp@v1.19.0
+      - uses: voidzero-dev/setup-vp@v1.21.1
         with:
           node-version: "24"
           cache: true
@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: voidzero-dev/setup-vp@v1.19.0
+      - uses: voidzero-dev/setup-vp@v1.21.1
         with:
           node-version: "24"
           cache: true
