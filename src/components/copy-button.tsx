@@ -21,6 +21,7 @@ export default function CopyButton({
   getText,
   icon,
   disabled = false,
+  className = "",
 }: {
   label: string;
   title: string;
@@ -30,6 +31,7 @@ export default function CopyButton({
   getText: () => string;
   icon: ReactNode;
   disabled?: boolean;
+  className?: string;
 }) {
   const { copied, copy } = useCopyFeedback();
 
@@ -44,7 +46,7 @@ export default function CopyButton({
           disabled
             ? "cursor-not-allowed text-gray-400"
             : "cursor-pointer text-gray-700 hover:bg-gray-100"
-        }`}
+        } ${className}`}
       >
         {icon}
         {copied ? copiedLabel : label}

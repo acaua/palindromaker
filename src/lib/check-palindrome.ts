@@ -17,6 +17,18 @@ export const isLetter = (char: string): boolean => /^\p{L}/u.test(char);
 export const normalizeText = (text: string): string =>
   text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
+// The per-code-unit normalization both analyzers walk. For each UTF-16 code
+// unit of the source, `units` is what the checker sees — empty for a bare
+// combining mark, several characters when one expands. Keeping the source
+// offset lets each caller map the output back to where it came from (a
+// document position for the editor, a grapheme for the reader), so the walk
+// itself lives in one place.
+export function* normalizedUnits(source: string): Generator<{ offset: number; units: string }> {
+  for (let offset = 0; offset < source.length; offset++) {
+    yield { offset, units: normalizeText(source[offset]) };
+  }
+}
+
 const checkPalindrome = (text: string): PalindromeResult => {
   const normalizedText = normalizeText(text);
   let isPalindrome = true;

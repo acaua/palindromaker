@@ -58,10 +58,20 @@ export const messages: Record<UiLanguage, Table> = { en, pt, es, de, fr, it };
 
 export const translate = (lang: UiLanguage, key: MessageKey): string => messages[lang][key];
 
-// substitutes a preformatted value into a "{count}" placeholder; each
-// caller formats its own number (locale digits for counts, plain for the
-// cooldown's seconds)
-const fillCount = (template: string, value: string): string => template.replace("{count}", value);
+// substitutes preformatted values into "{name}" placeholders; each caller
+// formats its own numbers (locale digits for counts, plain for seconds).
+// Unknown placeholders are left untouched so a missing value is visible.
+export const interpolate = (template: string, values: Record<string, string>): string =>
+  template.replace(/\{(\w+)\}/g, (match, name: string) => values[name] ?? match);
+
+// the single-placeholder case ("{count}"), shared by resultCount and retryIn
+const fillCount = (template: string, value: string): string =>
+  interpolate(template, { count: value });
+
+// a number in the UI language's locale, not the browser's (result counts,
+// and the reader's "pair n of m")
+export const formatCount = (lang: UiLanguage, value: number): string =>
+  value.toLocaleString(UI_LANGUAGE_LOCALES[lang]);
 
 // "{count} results" / "{count} resultados": the wording is per-language
 // data (finder.resultOne/finder.resultMany, pluralized by count), the
@@ -69,7 +79,7 @@ const fillCount = (template: string, value: string): string => template.replace(
 export const resultCount = (lang: UiLanguage, count: number): string =>
   fillCount(
     messages[lang][count === 1 ? "finder.resultOne" : "finder.resultMany"],
-    count.toLocaleString(UI_LANGUAGE_LOCALES[lang]),
+    formatCount(lang, count),
   );
 
 // "Try again in 42s": the retry cooldown's remaining seconds

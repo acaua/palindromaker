@@ -1,9 +1,8 @@
 import { cleanup, fireEvent, screen } from "@testing-library/react";
-import type { Editor } from "@tiptap/core";
-import { TextSelection } from "@tiptap/pm/state";
+import { useState } from "react";
 import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import type { ReactElement } from "react";
-import { afterEach, describe, expect, test } from "vite-plus/test";
+import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 
 import Reader from "@/components/reader";
 import ReaderPage from "@/components/reader-page";
@@ -13,72 +12,147 @@ afterEach(cleanup);
 
 afterEach(() => {
   window.location.hash = "";
+  vi.restoreAllMocks();
 });
 
 describe("Reader", () => {
-  // the reader's view is editable so ProseMirror's caret machinery runs;
-  // read-only-ness lives in the claimed input events, not the attribute
-  const reader = (container: HTMLElement) => container.querySelector('[role="region"]');
+  const region = (container: HTMLElement) => container.querySelector('[role="region"]');
+  const purplePivot = (container: HTMLElement) =>
+    region(container)?.querySelectorAll(".bg-purple-200") ?? [];
+  const purpleMirror = (container: HTMLElement) =>
+    region(container)?.querySelectorAll(".bg-purple-400") ?? [];
 
-  test("renders the shared text with center marks kept, mutably shielded", async () => {
+  test("renders the shared text as static semantic text with center marks", async () => {
     const view = await renderRouted(<Reader text="A b, b a" />);
     await screen.findByText("Copy text");
-    const view1 = reader(view.container);
-    expect(view1?.textContent).toContain("A b, b a");
-    // the shared content is always a palindrome when produced by the
-    // share button, so both center halves stay marked
+
+    // no editable surface, no textbox: read-only is structural now
+    expect(view.container.querySelector("[contenteditable]")).toBeNull();
+    expect(region(view.container)?.getAttribute("contenteditable")).toBeNull();
+    expect(region(view.container)?.textContent).toContain("A b, b a");
+    // the shared content is always a palindrome when produced by the share
+    // button, so both center halves stay marked
     expect(view.container.querySelectorAll("span.pm-center1.bg-blue-200")).toHaveLength(1);
     expect(view.container.querySelectorAll("span.pm-center2.bg-blue-200")).toHaveLength(1);
-
-    // no input path may rewrite the shared text: the claimed
-    // beforeinput/paste/drop cancel the browser's write before the DOM
-    // moves (handleDOMEvents truthy return claims it from PM, too)
-    const region = view1!;
-    for (const type of [{ inputType: "insertText", data: "x" }, { inputType: "insertFromPaste" }]) {
-      const event = new Event("beforeinput", { bubbles: true, cancelable: true });
-      Object.assign(event, type);
-      fireEvent(region, event);
-      expect(event.defaultPrevented).toBe(true);
-    }
-    expect(view1?.textContent).toContain("A b, b a");
+    expect(region(view.container)?.querySelectorAll("p")).toHaveLength(1);
   });
 
-  test("the purple caret/mirror pair follows selection without editing", async () => {
-    let editor: Editor | undefined;
-    const view = await renderRouted(
-      <Reader text="A b, b a" onReady={(instance) => (editor = instance)} />,
-    );
+  test("states the palindrome verdict", async () => {
+    await renderRouted(<Reader text="A b, b a" />);
     await screen.findByText("Copy text");
-    if (!editor) throw new Error("the reader never got ready");
-    // editable:true — the caret machinery needs it (PM gates keydown
-    // handling on view.editable); mutations are cancelled in reader.tsx
-    expect(editor.isEditable).toBe(true);
-    const view1 = reader(view.container);
-    expect(view1).not.toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("Palindrome");
+    cleanup();
 
-    // the state-level quarantine: a doc-changing transaction is dropped
-    // outright by the ReadOnlyContent extension, whatever internal path
-    // produced it — the shared state (and thus Copy, reload) stays
-    // clean; selection-only transactions pass and caret navigation works
-    const { doc } = editor.view.state;
-    editor.view.dispatch(editor.view.state.tr.insertText("X", 3));
-    expect(editor.view.state.doc.eq(doc)).toBe(true);
-    // keydown-driven edits (Backspace/Delete) never reach a cancelable
-    // beforeinput: the filter is the layer that stops them
-    editor.view.dispatch(editor.view.state.tr.delete(3, 4));
-    expect(editor.view.state.doc.eq(doc)).toBe(true);
-    editor.view.dispatch(
-      editor.view.state.tr
-        .setSelection(TextSelection.create(editor.view.state.doc, 3))
-        .scrollIntoView(),
-    );
-    expect(editor.view.state.selection.head).toBe(3);
+    await renderRouted(<Reader text="hello world" />);
+    await screen.findByText("Copy text");
+    expect(screen.getByRole("status").textContent).toBe("Not a palindrome");
+  });
 
-    // the caret on the first "b" (index 2) marks itself and its mirror,
-    // the "b" at index 5 — scoped to the view, apart from the legend
-    // swatch that shares the class
-    expect(view1?.querySelectorAll("span.bg-purple-200")).toHaveLength(1);
-    expect(view1?.querySelectorAll("span.bg-purple-400")).toHaveLength(1);
+  test("tapping a letter lights its mirror pair", async () => {
+    const view = await renderRouted(<Reader text="A b, b a" />);
+    await screen.findByText("Copy text");
+
+    const letter = view.container.querySelector<HTMLElement>('[data-step="0"]');
+    expect(letter).not.toBeNull();
+    fireEvent.click(letter!);
+
+    expect(purplePivot(view.container)).toHaveLength(1);
+    expect(purpleMirror(view.container)).toHaveLength(1);
+  });
+
+  test("does not pivot while text is selected", async () => {
+    const view = await renderRouted(<Reader text="A b, b a" />);
+    await screen.findByText("Copy text");
+    vi.spyOn(window, "getSelection").mockReturnValue({ isCollapsed: false } as Selection);
+
+    fireEvent.click(view.container.querySelector<HTMLElement>('[data-step="0"]')!);
+    // the swipe accelerant shares the guard: a selection is never stepped
+    fireEvent.touchStart(view.container.querySelector('[role="region"]')!);
+    fireEvent.touchEnd(view.container.querySelector('[role="region"]')!);
+
+    expect(purplePivot(view.container)).toHaveLength(0);
+  });
+
+  test("the stepper steps, centres and stops at the boundaries", async () => {
+    await renderRouted(<Reader text="A b, b a" />);
+    await screen.findByText("Copy text");
+    const label = () => document.querySelector('[aria-live="polite"]')!.textContent;
+
+    const next = screen.getByRole("button", { name: "Next pair" });
+    const prev = screen.getByRole("button", { name: "Previous pair" });
+    // nothing is selected yet
+    expect(label()).toBe("");
+
+    fireEvent.click(next);
+    expect(label()).toBe("Pair 1 of 2");
+    fireEvent.click(next);
+    // the innermost even pair is the centre, and the end is a boundary
+    expect(label()).toBe("Center pair");
+    expect(next.hasAttribute("disabled")).toBe(true);
+
+    fireEvent.click(prev);
+    expect(label()).toBe("Pair 1 of 2");
+    expect(prev.hasAttribute("disabled")).toBe(true);
+  });
+
+  test("the stepper buttons work even while text is selected", async () => {
+    // the selection guard belongs to the tap and the swipe; the buttons are
+    // the accessible path and must keep working with a selection active
+    await renderRouted(<Reader text="A b, b a" />);
+    await screen.findByText("Copy text");
+    vi.spyOn(window, "getSelection").mockReturnValue({ isCollapsed: false } as Selection);
+    const label = () => document.querySelector('[aria-live="polite"]')!.textContent;
+
+    fireEvent.click(screen.getByRole("button", { name: "Next pair" }));
+    expect(label()).toBe("Pair 1 of 2");
+  });
+
+  test("the pair label counts pairs, excluding a lone center", async () => {
+    // "abcba" is two pairs plus a lone center: stepping through the pairs
+    // must say "Pair 1 of 2" / "Pair 2 of 2", never "of 3"
+    await renderRouted(<Reader text="abcba" />);
+    await screen.findByText("Copy text");
+    const label = () => document.querySelector('[aria-live="polite"]')!.textContent;
+
+    const next = screen.getByRole("button", { name: "Next pair" });
+    fireEvent.click(next);
+    expect(label()).toBe("Pair 1 of 2");
+    fireEvent.click(next);
+    expect(label()).toBe("Pair 2 of 2");
+    fireEvent.click(next);
+    expect(label()).toBe("Center");
+  });
+
+  test("offers no stepper when there is no pair to step", async () => {
+    // a non-palindrome has no steps; a single-letter palindrome has only a
+    // lone-center step, which is not a pair either
+    for (const text of ["hello world", "a", "!!!"]) {
+      const view = await renderRouted(<Reader text={text} />);
+      await screen.findByText("Copy text");
+
+      expect(screen.queryByRole("button", { name: "Next pair" })).toBeNull();
+      expect(view.container.querySelector('[aria-live="polite"]')).toBeNull();
+      cleanup();
+    }
+  });
+
+  test("does not focus the reader on load", async () => {
+    const view = await renderRouted(<Reader text="A b, b a" />);
+    await screen.findByText("Copy text");
+
+    expect(document.activeElement).not.toBe(region(view.container));
+  });
+
+  test("resets the step and announces the heading when the text changes", async () => {
+    const view = await renderRouted(<ChangingReader />);
+    await screen.findByText("Copy text");
+    fireEvent.click(view.container.querySelector<HTMLElement>('[data-step="0"]')!);
+    expect(purplePivot(view.container)).toHaveLength(1);
+
+    fireEvent.click(screen.getByText("swap"));
+
+    expect(purplePivot(view.container)).toHaveLength(0);
+    expect(document.activeElement?.tagName).toBe("H1");
   });
 
   test("offers Copy text and Edit this", async () => {
@@ -91,6 +165,18 @@ describe("Reader", () => {
     expect(edit.getAttribute("href")).toBe("/#t=A%20b%2C%20b%20a");
   });
 });
+
+function ChangingReader() {
+  const [text, setText] = useState("A b, b a");
+  return (
+    <>
+      <button type="button" onClick={() => setText("xyx")}>
+        swap
+      </button>
+      <Reader text={text} />
+    </>
+  );
+}
 
 describe("ReaderPage", () => {
   test("renders the shared palindrome from the hash", async () => {

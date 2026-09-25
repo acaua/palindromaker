@@ -1,18 +1,17 @@
-import { Extension, getSchema } from "@tiptap/core";
-import { Plugin } from "@tiptap/pm/state";
+import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 
 import { MirrorEditing } from "@/lib/mirror-extension";
 import type { MirrorEditingOptions } from "@/lib/mirror-extension";
 import { Palindrome } from "@/lib/palindrome-extension";
 
-// the one restricted TipTap vocabulary: every surface that shows a
-// palindrome — the editor (src/components/editor.tsx), the read-only
-// reader (src/components/reader.tsx), and the schema persistence
-// validates stored docs against — must speak it. StarterKit with most
-// extensions disabled: paragraphs and text only, so mirror editing, the
-// palindrome checker and the share round-trip never meet a node or mark
-// the palindrome logic cannot mirror.
+// the one restricted TipTap vocabulary every editing surface speaks: the
+// editor (src/components/editor.tsx) and the schema persistence validates
+// stored docs against. StarterKit with most extensions disabled: paragraphs
+// and text only, so mirror editing, the palindrome checker and the share
+// round-trip never meet a node or mark the palindrome logic cannot mirror.
+// The /p reader no longer speaks it: it renders static semantic text and
+// shares only the checker and the highlight classes.
 export const disabledStarterKitExtensions = {
   blockquote: false,
   bold: false,
@@ -37,31 +36,6 @@ export const extensions = (mirror: Partial<MirrorEditingOptions>) => [
   StarterKit.configure(disabledStarterKitExtensions),
   Palindrome,
   MirrorEditing.configure(mirror),
-];
-
-// the reader's last line of defence at the state level: every
-// doc-changing transaction is dropped, so no event-level gap (an IME's
-// non-cancelable composition commit, for instance) can rewrite shared
-// text — selection-only transactions pass, which is what caret
-// navigation needs
-const ReadOnlyContent = Extension.create({
-  name: "readOnlyContent",
-  addProseMirrorPlugins() {
-    return [
-      new Plugin({
-        filterTransaction: (transaction) => !transaction.docChanged,
-      }),
-    ];
-  },
-});
-
-// the read-only reader's list: the same restricted StarterKit plus
-// Palindrome, without MirrorEditing — nothing can be typed there, and
-// the shared schema is pinned by editor-schema.test.ts
-export const readerExtensions = () => [
-  ReadOnlyContent,
-  StarterKit.configure(disabledStarterKitExtensions),
-  Palindrome,
 ];
 
 // lets readStoredDoc reject stored docs this editor cannot represent;

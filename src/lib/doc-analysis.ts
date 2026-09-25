@@ -1,6 +1,6 @@
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
-import checkPalindrome, { isLetter, normalizeText } from "@/lib/check-palindrome";
+import checkPalindrome, { isLetter, normalizedUnits } from "@/lib/check-palindrome";
 import type { PalindromeResult } from "@/lib/check-palindrome";
 
 // A document seen the way the palindrome checker sees it: one normalized
@@ -52,14 +52,13 @@ const analyze = (doc: ProseMirrorNode): DocAnalysis => {
       isFirstBlock = false;
     } else if (node.isText && node.text) {
       raw += node.text;
-      for (let offset = 0; offset < node.text.length; offset++) {
-        const normalized = normalizeText(node.text[offset]);
+      for (const { offset, units } of normalizedUnits(node.text)) {
         // a character the checker never sees (e.g. a bare combining mark)
-        // normalizes to nothing and contributes no text and no position
-        for (let index = 0; index < normalized.length; index++) {
-          // normalization can expand one character into several; only the
-          // first keeps the document position
-          push(normalized[index], index === 0 ? pos + offset : undefined);
+        // normalizes to nothing and contributes no text and no position;
+        // normalization can expand one character into several, and only the
+        // first unit keeps the document position
+        for (let index = 0; index < units.length; index++) {
+          push(units[index], index === 0 ? pos + offset : undefined);
         }
       }
     }

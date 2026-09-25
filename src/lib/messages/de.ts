@@ -74,6 +74,18 @@ export const de: Table = {
   "reader.ariaLabel": "Geteiltes Palindrom",
   "reader.copyText": "Text kopieren",
   "reader.edit": "Bearbeiten",
+  "reader.normalizationHint":
+    "Groß-/Kleinschreibung, Akzente, Satzzeichen und Zeilenumbrüche werden ignoriert.",
+  "reader.tapHint":
+    "Tippe auf einen Buchstaben, um sein Spiegelbild zu sehen, oder nutze die Steuerung unten.",
+  "reader.noLetters": "Keine Buchstaben zum Vergleichen",
+  "reader.stepPrev": "Vorheriges Paar",
+  "reader.stepNext": "Nächstes Paar",
+  "reader.stepCenter": "Mitte",
+  "reader.pairLabel": "Paar {n} von {m}",
+  "reader.centerPair": "Mittleres Paar",
+  "reader.legendMirror": "aktuelles Spiegelpaar",
+  "reader.legendAria": "Legende des Lesers",
   "reader.empty.title": "Hier ist nichts geteilt",
   "reader.empty.body":
     "Dieser Link führt zu keinem Palindrom. Frag nach einem neuen, oder schreib dein eigenes.",

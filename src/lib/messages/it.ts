@@ -74,6 +74,18 @@ export const it: Table = {
   "reader.ariaLabel": "Palindromo condiviso",
   "reader.copyText": "Copia il testo",
   "reader.edit": "Modifica",
+  "reader.normalizationHint":
+    "Maiuscole, accenti, punteggiatura e interruzioni di riga non contano.",
+  "reader.tapHint":
+    "Tocca una lettera per vedere il suo specchio, oppure usa i controlli qui sotto.",
+  "reader.noLetters": "Nessuna lettera da confrontare",
+  "reader.stepPrev": "Coppia precedente",
+  "reader.stepNext": "Coppia successiva",
+  "reader.stepCenter": "Centro",
+  "reader.pairLabel": "Coppia {n} di {m}",
+  "reader.centerPair": "Coppia centrale",
+  "reader.legendMirror": "coppia speculare attuale",
+  "reader.legendAria": "legenda del lettore",
   "reader.empty.title": "Niente condiviso qui",
   "reader.empty.body":
     "Questo link non porta a nessun palindromo. Chiedine uno nuovo, o scrivi il tuo.",

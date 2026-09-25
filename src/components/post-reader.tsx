@@ -50,8 +50,9 @@ export default function PostReader({ input }: { input: PostRef }) {
 
   // The router only moves focus on a pathname change; the paste form
   // navigates to this same route with a new hash, so the moment the post
-  // resolves (or fails) the heading takes focus and is announced. (When
-  // there is a reader, its own autofocus wins — also announced, by name.)
+  // resolves (or fails) the heading takes focus and is announced. With a
+  // reader present that heading is the reader's own (the reader never
+  // autofocuses — ADR-0005), so the same effect announces it either way.
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (status === "loading" || status === "idle") return;
@@ -94,6 +95,7 @@ export default function PostReader({ input }: { input: PostRef }) {
         label={t("post.copyLink")}
         title={t("post.copyLink")}
         copiedLabel={t("share.copied")}
+        className="max-md:min-h-11"
         icon={<LinkIcon aria-hidden="true" className="h-4 w-4 text-gray-500" />}
         getText={() => location.href}
       />
@@ -102,7 +104,7 @@ export default function PostReader({ input }: { input: PostRef }) {
           href={pageUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-lg px-2 py-1.5 text-sm font-medium text-violet-700 hover:bg-gray-100"
+          className="inline-flex items-center rounded-lg px-2 py-1.5 text-sm font-medium text-violet-700 hover:bg-gray-100 max-md:min-h-11"
         >
           {t("post.viewOnBluesky")}
         </a>

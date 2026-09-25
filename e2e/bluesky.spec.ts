@@ -1,81 +1,19 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { replaceAll } from "./helpers";
-
-const DID = "did:plc:z72i7hdynmk6r22z27h6tvur";
-const RKEY = "3abc";
-const URI = `at://${DID}/app.bsky.feed.post/${RKEY}`;
-const TEXT = "My favourite: A man, a plan, a canal: Panama! #palindrome";
-
-const tagStart = TEXT.indexOf("#palindrome");
-const post = {
-  uri: URI,
-  cid: "cid",
-  author: { did: DID, handle: "pal.bsky.social", displayName: "Pal" },
-  record: {
-    $type: "app.bsky.feed.post",
-    text: TEXT,
-    createdAt: "2026-09-08T00:00:00.000Z",
-    facets: [
-      {
-        index: {
-          byteStart: Buffer.byteLength(TEXT.slice(0, tagStart)),
-          byteEnd: Buffer.byteLength(TEXT),
-        },
-        features: [{ $type: "app.bsky.richtext.facet#tag", tag: "palindrome" }],
-      },
-    ],
-  },
-  labels: [],
-  likeCount: 1,
-  repostCount: 0,
-  replyCount: 0,
-};
-
-// Everything the app fetches from Bluesky is stubbed, so the suite is
-// offline and deterministic. The embed iframe is served a blank page so it
-// never reaches embed.bsky.app.
-const stubEmbed = (page: Page) =>
-  page.route("https://embed.bsky.app/**", (route) =>
-    route.fulfill({ body: "<!doctype html><title>embed</title>", contentType: "text/html" }),
-  );
-
-const stubGetPosts = (page: Page, posts: unknown[]) =>
-  page.route("**/xrpc/app.bsky.feed.getPosts*", (route) => route.fulfill({ json: { posts } }));
-
-const stubSearch = (page: Page, posts: unknown[], cursor?: string) =>
-  page.route("**/xrpc/app.bsky.feed.searchPosts*", (route) =>
-    route.fulfill({ json: cursor ? { posts, cursor } : { posts } }),
-  );
-
-const stubAuthorFeed = async (page: Page, first: unknown[], older: unknown[]) => {
-  let requests = 0;
-  await page.route("**/xrpc/app.bsky.feed.getAuthorFeed*", (route) => {
-    requests += 1;
-    const cursor = new URL(route.request().url()).searchParams.get("cursor");
-    return route.fulfill({
-      json: cursor
-        ? { feed: older.map((item) => ({ post: item })) }
-        : { feed: first.map((item) => ({ post: item })), cursor: "older" },
-    });
-  });
-  return () => requests;
-};
-
-const stubResolveHandle = (page: Page) =>
-  page.route("**/xrpc/com.atproto.identity.resolveHandle*", (route) =>
-    route.fulfill({ json: { did: DID } }),
-  );
-
-const stubBluesky = async (page: Page) => {
-  await stubGetPosts(page, [post]);
-  await stubSearch(page, [post], "next");
-  await stubResolveHandle(page);
-  await stubEmbed(page);
-};
-
-const reader = (page: Page) => page.getByRole("region", { name: "Shared palindrome" });
+import { reader, replaceAll } from "./helpers";
+import {
+  DID,
+  RKEY,
+  URI,
+  post,
+  stubAuthorFeed,
+  stubBluesky,
+  stubEmbed,
+  stubGetPosts,
+  stubResolveHandle,
+  stubSearch,
+} from "./bluesky-stubs";
 
 test("a #b= link embeds the post and shows only its palindrome", async ({ page }) => {
   await stubBluesky(page);
@@ -104,9 +42,9 @@ test("the empty card checks a pasted post link in place", async ({ page }) => {
   // same route, new hash: the reader must re-render, not sit on the empty card
   await expect(reader(page)).toContainText("A man, a plan, a canal: Panama");
   expect(page.url()).toContain("b=");
-  // the resolved post moves focus into the reader (announced by its
-  // accessible name), so a screen reader learns the page changed
-  await expect(reader(page)).toBeFocused();
+  // the resolved post moves focus to the reader's heading (announced by its
+  // name), so a screen reader learns the page changed
+  await expect(page.getByRole("heading", { name: "A shared palindrome" })).toBeFocused();
 });
 
 test("Explore result links use SPA navigation and leave modifier clicks native", async ({

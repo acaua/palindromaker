@@ -74,6 +74,18 @@ export const fr: Table = {
   "reader.ariaLabel": "Palindrome partagé",
   "reader.copyText": "Copier le texte",
   "reader.edit": "Modifier",
+  "reader.normalizationHint":
+    "La casse, les accents, la ponctuation et les sauts de ligne sont ignorés.",
+  "reader.tapHint":
+    "Touchez une lettre pour voir son miroir, ou utilisez les commandes ci-dessous.",
+  "reader.noLetters": "Aucune lettre à comparer",
+  "reader.stepPrev": "Paire précédente",
+  "reader.stepNext": "Paire suivante",
+  "reader.stepCenter": "Centre",
+  "reader.pairLabel": "Paire {n} sur {m}",
+  "reader.centerPair": "Paire centrale",
+  "reader.legendMirror": "paire miroir actuelle",
+  "reader.legendAria": "légende du lecteur",
   "reader.empty.title": "Rien n’est partagé ici",
   "reader.empty.body":
     "Ce lien ne mène à aucun palindrome. Demandez-en un nouveau, ou écrivez le vôtre.",

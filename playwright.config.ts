@@ -14,6 +14,13 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      // a touch viewport for the reader only: the editor, dictionary and
+      // Bluesky suites are desktop-shaped, so scoping keeps the run cheap
+      name: "mobile",
+      testMatch: /reader\.spec\.ts/,
+      use: { ...devices["Pixel 7"] },
+    },
   ],
   webServer: {
     command: "pnpm dev",
