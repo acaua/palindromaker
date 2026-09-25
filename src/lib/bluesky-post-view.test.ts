@@ -37,4 +37,24 @@ describe("describePost", () => {
     expect(view.restricted).toBe(true);
     expect(view.palindrome).toBeNull();
   });
+
+  test("uses target-aware moderation modes", () => {
+    const authorRestricted = makePost({
+      text: "A man, a plan, a canal: Panama",
+      author: { ...makePost().author, accountLabels: ["!no-unauthenticated"] },
+    });
+    expect(describePost(authorRestricted, "loggedOut").restricted).toBe(true);
+    expect(describePost(authorRestricted, "accountExplore").restricted).toBe(true);
+    expect(describePost(authorRestricted, "hashtagExplore").restricted).toBe(false);
+    const profileRestricted = makePost({
+      author: { ...makePost().author, profileLabels: ["!no-unauthenticated"] },
+    });
+    expect(describePost(profileRestricted, "accountExplore").restricted).toBe(true);
+    const hidden = makePost({ labels: ["!hide"] });
+    expect(describePost(hidden, "hashtagExplore").restricted).toBe(false);
+    expect(describePost(hidden, "loggedOut").restricted).toBe(true);
+    expect(
+      describePost({ ...authorRestricted, labels: ["porn"] }, "accountExplore").restricted,
+    ).toBe(true);
+  });
 });

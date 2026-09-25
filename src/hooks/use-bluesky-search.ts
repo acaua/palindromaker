@@ -1,63 +1,71 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import {
   RATE_LIMIT_SECONDS,
+  BlueskyRequestError,
+  failureReason,
   failureStatus,
-  isRestrictedPost,
   searchQueries,
+  unwrapApiResult,
 } from "@/lib/bluesky-api";
 import type { BlueskyPost, SearchSort } from "@/lib/bluesky-api";
+import { isRestrictedPost } from "@/lib/bluesky-moderation";
+import { blueskyKeys } from "@/queries/query-keys";
 import { isTaggedWith, tagQuery, tagsFor } from "@/lib/bluesky-tags";
 import type { UiLanguage } from "@/lib/i18n";
-import { useKeyedResource } from "@/hooks/use-keyed-resource";
+import { REMOTE_GC_TIME, REMOTE_STALE_TIME } from "@/queries/query-client";
 
-// every answer carries the posts list — empty until a load lands — so it is
-// stated once rather than in every member
-interface SearchPosts {
-  posts: readonly BlueskyPost[];
-}
-
-export type BlueskySearchState = { retry: () => void } & SearchPosts &
-  (
-    | { status: "loading" | "ready" | "badRequest" | "error" }
-    | { status: "rateLimited"; cooldownSeconds: number }
-  );
-
-type SearchOutcome = SearchPosts &
-  (
-    | { status: "loading" }
-    | { status: "ready" }
-    | { status: "rateLimited"; cooldownSeconds: number }
-    | { status: "badRequest" }
-    | { status: "error" }
-  );
+export type BlueskySearchState = { retry: () => void } & (
+  | { status: "loading"; posts: readonly BlueskyPost[] }
+  | { status: "ready"; posts: readonly BlueskyPost[] }
+  | {
+      status: "rateLimited";
+      posts: readonly BlueskyPost[];
+      cooldownSeconds: number;
+      cooldownKey: number;
+      retryAt?: number;
+    }
+  | { status: "badRequest" | "error"; posts: readonly BlueskyPost[] }
+);
 
 const SEARCH_FAILURES = { rateLimited: "rateLimited", badRequest: "badRequest" } as const;
 
-// One OR query per (language, sort) for the tags of that language. The
-// endpoint refuses cursor paging without auth, so this is a single page of
-// `SEARCH_LIMIT`; a throttle and a malformed query each get their own
-// status so the UI can tell a back-off from a bug.
 export const useBlueskySearch = (lang: UiLanguage, sort: SearchSort): BlueskySearchState => {
-  const { state, retry } = useKeyedResource<SearchOutcome>(
-    `${lang}|${sort}`,
-    async (): Promise<SearchOutcome> => {
-      const tags = tagsFor(lang);
-      const result = await searchQueries(tags.map(tagQuery), sort);
-      if (!result.ok) {
-        const status = failureStatus(result.reason, SEARCH_FAILURES, "error");
-        return status === "rateLimited"
-          ? { status, posts: [], cooldownSeconds: RATE_LIMIT_SECONDS }
-          : { status, posts: [] };
-      }
-      const posts = result.value.filter(
-        (post) => !isRestrictedPost(post) && isTaggedWith(post, tags),
+  const tags = tagsFor(lang);
+  const queryClient = useQueryClient();
+  const query = useQuery<readonly BlueskyPost[]>({
+    queryKey: blueskyKeys.search(tags, sort),
+    queryFn: async ({ signal }) => {
+      const posts = unwrapApiResult(await searchQueries(tags.map(tagQuery), sort, fetch, signal));
+      for (const post of posts) queryClient.setQueryData(blueskyKeys.post(post.uri), post);
+      return posts.filter(
+        (post) => !isRestrictedPost(post, "hashtagExplore") && isTaggedWith(post, tags),
       );
-      return { status: "ready", posts };
     },
-    {
-      loading: { status: "loading", posts: [] },
-      error: { status: "error", posts: [] },
-    },
-  );
+    staleTime: REMOTE_STALE_TIME,
+    gcTime: REMOTE_GC_TIME,
+  });
+  const retry = () => {
+    void query.refetch();
+  };
 
-  return { ...state, retry };
+  if (query.isPending) {
+    return { status: "loading", posts: [], retry };
+  }
+  if (query.isError) {
+    const status = failureStatus(failureReason(query.error), SEARCH_FAILURES, "error");
+    if (status === "rateLimited") {
+      const retryAt = query.error instanceof BlueskyRequestError ? query.error.retryAt : undefined;
+      return {
+        status,
+        posts: [],
+        cooldownSeconds: RATE_LIMIT_SECONDS,
+        cooldownKey: retryAt ?? query.errorUpdatedAt,
+        retryAt,
+        retry,
+      };
+    }
+    return { status, posts: [], retry };
+  }
+  return { status: "ready", posts: query.data, retry };
 };

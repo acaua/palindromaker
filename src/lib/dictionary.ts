@@ -1,5 +1,6 @@
 import { normalizeText } from "@/lib/check-palindrome";
 import { mirrorWord, mirrorsItself } from "@/lib/mirror-word";
+import { abortReason, sharedRequest } from "@/lib/shared-request";
 
 export type Language = "pt-br" | "en" | "es" | "de" | "fr" | "it";
 
@@ -83,44 +84,48 @@ const yieldToBrowser = (): Promise<void> => {
   return scheduler?.yield?.() ?? new Promise((resolve) => setTimeout(resolve));
 };
 
-// Same dictionary as buildDictionary, built without blocking: the panel
-// shows "loading dictionary…" for a few ms longer, but typing, scrolling
-// and the editor stay responsive throughout.
+const throwIfAborted = (signal?: AbortSignal): void => {
+  if (signal?.aborted) throw abortReason(signal);
+};
+
 export const buildDictionaryIncrementally = async (
   text: string,
   yieldControl: () => Promise<void> = yieldToBrowser,
+  signal?: AbortSignal,
 ): Promise<Dictionary> => {
   const slices = buildSlices(text);
   for (;;) {
+    throwIfAborted(signal);
     const slice = slices.next();
     if (slice.done) return slice.value;
     await yieldControl();
+    throwIfAborted(signal);
   }
 };
 
-const dictionaryPromises = new Map<Language, Promise<Dictionary>>();
-
-export const loadDictionary = (language: Language): Promise<Dictionary> => {
-  let promise = dictionaryPromises.get(language);
-  if (!promise) {
-    const file = LANGUAGES.find((info) => info.code === language)!.file;
-    promise = fetch(file).then(
-      async (response) => {
-        if (!response.ok) {
-          dictionaryPromises.delete(language);
-          throw new Error(`Failed to load dictionary: ${response.status}`);
-        }
-        return buildDictionaryIncrementally(await response.text());
-      },
-      (error: unknown) => {
-        dictionaryPromises.delete(language);
-        throw error;
-      },
-    );
-    dictionaryPromises.set(language, promise);
-  }
-  return promise;
+const requestDictionary = async (
+  language: Language,
+  fetchImpl: typeof fetch,
+  signal?: AbortSignal,
+): Promise<Dictionary> => {
+  const file = LANGUAGES.find((info) => info.code === language)!.file;
+  const response = signal ? await fetchImpl(file, { signal }) : await fetchImpl(file);
+  if (!response.ok) throw new Error(`Failed to load dictionary: ${response.status}`);
+  throwIfAborted(signal);
+  return buildDictionaryIncrementally(await response.text(), yieldToBrowser, signal);
 };
+
+export const loadDictionary = (
+  language: Language,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Dictionary> =>
+  sharedRequest(
+    fetchImpl,
+    `dictionary|${language}`,
+    (requestSignal) => requestDictionary(language, fetchImpl, requestSignal),
+    signal,
+  );
 
 // dictionary entries are single words, so surrounding spaces are always a
 // typing artefact rather than something to match on

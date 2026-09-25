@@ -98,7 +98,7 @@ The longest palindrome a post's text contains, taken in letter space. Punctuatio
 _Avoid_: substring, match
 
 **Restricted post**:
-A post whose labels mark it adult or not for logged-out viewers. Its extracted palindrome is withheld.
+A post whose post or record labels mark it adult or unavailable to logged-out viewers. Logged-out reader views also apply account labels and profile `!no-unauthenticated`; Account Explore applies account `!hide`/`!no-unauthenticated` and profile `!no-unauthenticated` to each record without promoting adult or profile-wide labels to every post. Hashtag Explore preserves the legacy post-label-only filter. Its extracted palindrome is withheld. Moderation belongs to the surface, not the post: a post Account Explore lists can still be withheld by the logged-out reader that opens it, because the reader applies the account's adult labels where Account Explore does not.
 _Avoid_: flagged post, NSFW post
 
 **Palindrome tag**:
@@ -106,6 +106,15 @@ A hashtag the Explore page searches in the current UI language, each expanded to
 
 **Post view**:
 How the app presents one post: whether it is restricted, the palindrome it contains (absent when restricted or when there is none), and its text split into plain and annotated spans. The card and the reader share it.
+
+**Account-owned post**:
+An original post or reply whose author DID and AT-URI repository DID both match the requested account's resolved DID. Reposts, pins, and entries with any feed reason are not account-owned.
+
+**Account palindrome view**:
+The Explore account mode at `/explore?account=…`, showing account-owned posts and replies that contain a palindrome. Older posts load explicitly through the opaque author-feed cursor. Account Explore evaluates post and record labels per record and honors account access labels without using adult/profile-wide labels to suppress the account as a whole.
+
+**Author feed**:
+The chronological public `app.bsky.feed.getAuthorFeed` stream used by the account palindrome view. It requests no pins and the app removes every reason-bearing or foreign-account entry.
 
 ### Word finder
 

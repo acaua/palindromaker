@@ -8,9 +8,8 @@ export const normalizeTag = (tag: string): string => normalizeText(tag);
 // The accent-aware spellings the Explore page searches, per UI language.
 // Bluesky's search treats an accented hashtag as distinct from its
 // unaccented twin, so every tag is expanded to include both forms (see
-// withUnaccented). A language's set is joined into one OR query, so a page
-// load is a single request — Bluesky throttles bursts and refuses cursor
-// paging without auth.
+// withUnaccented). A language's set is issued as one request per spelling
+// because Bluesky's public search does not provide a reliable cursor.
 const BASE_TAGS: Record<UiLanguage, readonly string[]> = {
   pt: ["palíndromo"],
   en: ["palindrome"],

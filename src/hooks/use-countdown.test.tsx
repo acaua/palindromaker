@@ -26,6 +26,20 @@ describe("useCountdown", () => {
     expect(result.current).toBe(0);
   });
 
+  test("an absolute deadline does not restart on remount", async () => {
+    const deadline = Date.now() + 30_000;
+    const first = renderHook(() => useCountdown(60, deadline));
+    expect(first.result.current).toBe(30);
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(first.result.current).toBe(20);
+    first.unmount();
+
+    const second = renderHook(() => useCountdown(60, deadline));
+    expect(second.result.current).toBe(20);
+  });
+
   test("a fresh mount starts over", async () => {
     const first = renderHook(() => useCountdown(60));
     await act(async () => {

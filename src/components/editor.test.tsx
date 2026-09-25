@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import type { RefObject } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
@@ -7,6 +7,7 @@ import type { FinderHandle } from "@/components/editor";
 import type { EditorSession } from "@/lib/editor-session";
 import { readPrefs } from "@/lib/prefs";
 import { textToDoc } from "@/lib/share-link";
+import { renderWithQuery } from "@/test/query-client";
 
 // the real loader fetches megabytes; the panel only needs it to settle
 vi.mock("@/lib/dictionary", async (importOriginal) => {
@@ -37,7 +38,7 @@ const makeFinder = (open = false): FinderHandle => ({
 });
 
 const renderEditor = (session: EditorSession, finder = makeFinder()) => {
-  render(<Editor session={session} finder={finder} />);
+  renderWithQuery(<Editor session={session} finder={finder} />);
   return finder;
 };
 

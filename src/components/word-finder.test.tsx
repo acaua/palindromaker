@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import WordFinder from "@/components/word-finder";
@@ -6,6 +6,7 @@ import { buildDictionary, loadDictionary } from "@/lib/dictionary";
 import type { Dictionary, Language } from "@/lib/dictionary";
 import { PREFS_STORAGE_KEY, readPrefs } from "@/lib/prefs";
 import type { WordInsertMode } from "@/lib/word-insert";
+import { renderWithQuery } from "@/test/query-client";
 
 // the real loader fetches megabytes; these dictionaries are a handful of
 // words, and every other export stays real
@@ -32,7 +33,7 @@ const renderPanel = ({
   open = true,
   insertMode = "caret",
 }: { open?: boolean; insertMode?: WordInsertMode } = {}) =>
-  render(
+  renderWithQuery(
     <WordFinder
       open={open}
       onClose={onClose}
@@ -146,7 +147,7 @@ describe("WordFinder", () => {
   test("the chosen language is remembered for the next visit", async () => {
     const { unmount } = renderPanel();
     chooseLanguage("en");
-    await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("en"));
+    await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("en", expect.any(AbortSignal)));
 
     expect(readPrefs(localStorage).lang).toBe("en");
 
@@ -160,7 +161,9 @@ describe("WordFinder", () => {
     renderPanel();
 
     expect(languageSelect().value).toBe("pt-br");
-    await waitFor(() => expect(loadDictionary).toHaveBeenCalledWith("pt-br"));
+    await waitFor(() =>
+      expect(loadDictionary).toHaveBeenCalledWith("pt-br", expect.any(AbortSignal)),
+    );
   });
 
   test("the panel says what clicking a word will do", async () => {

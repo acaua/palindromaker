@@ -1,16 +1,19 @@
-import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import {
   RATE_LIMIT_SECONDS,
-  clearBlueskyCache,
+  clearBlueskyRateLimits,
+  fetchAuthorFeed,
   fetchPost,
-  isRestrictedPost,
   resolveHandle,
-  resolvePostRef,
   searchQueries,
   searchTaggedPosts,
 } from "@/lib/bluesky-api";
-import { BSKY_DID as DID, BSKY_RKEY as RKEY, BSKY_URI as URI } from "@/test/bluesky-post";
+import { isRestrictedPost } from "@/lib/bluesky-moderation";
+import { clearSharedRequests } from "@/lib/shared-request";
+import { BSKY_DID as DID, BSKY_URI as URI } from "@/test/bluesky-post";
+
+const OTHER_DID = "did:plc:z72i7hdynmk6r22z27h6tvus";
 
 const postView = (overrides: Record<string, unknown> = {}) => ({
   uri: URI,
@@ -44,7 +47,8 @@ const postView = (overrides: Record<string, unknown> = {}) => ({
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-beforeEach(clearBlueskyCache);
+beforeEach(clearBlueskyRateLimits);
+afterEach(clearSharedRequests);
 
 describe("fetchPost", () => {
   test("maps the fields the app uses, without the avatar", async () => {
@@ -60,7 +64,13 @@ describe("fetchPost", () => {
         labels: [],
         createdAt: "2026-09-08T00:00:00.000Z",
         likeCount: 3,
-        author: { did: DID, handle: "bsky.app", displayName: "Bluesky" },
+        author: {
+          did: DID,
+          handle: "bsky.app",
+          displayName: "Bluesky",
+          accountLabels: [],
+          profileLabels: [],
+        },
       }),
     });
   });
@@ -101,17 +111,188 @@ describe("fetchPost", () => {
     ).toEqual({ ok: false, reason: "error" });
   });
 
-  test("caches a success but never a failure", async () => {
+  test("canonicalizes a handle-authority response to the requested DID", async () => {
+    const result = await fetchPost(URI, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: "at://alice.bsky.social/app.bsky.feed.post/3kq7aeuwbg42k",
+            author: { did: DID, handle: "alice.bsky.social" },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toEqual({ ok: true, value: expect.objectContaining({ uri: URI }) });
+  });
+
+  test("drops a handle-authority response whose handle disagrees with the author", async () => {
+    const result = await fetchPost(URI, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: "at://mallory.bsky.social/app.bsky.feed.post/3kq7aeuwbg42k",
+            author: { did: DID, handle: "alice.bsky.social" },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toEqual({ ok: false, reason: "notFound" });
+  });
+
+  test("does not cache a success at the transport seam", async () => {
     const okFetch = vi.fn(async () => jsonResponse({ posts: [postView()] }));
     await fetchPost(URI, okFetch);
     await fetchPost(URI, okFetch);
-    expect(okFetch).toHaveBeenCalledTimes(1);
+    expect(okFetch).toHaveBeenCalledTimes(2);
 
     const other = `${URI}9`;
     const failFetch = vi.fn(async () => jsonResponse({}, 500));
     await fetchPost(other, failFetch);
     await fetchPost(other, failFetch);
     expect(failFetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("fetchAuthorFeed", () => {
+  test("maps the feed wrapper, keeps replies, excludes reposts, and preserves the cursor", async () => {
+    const original = postView({ uri: uri("original") });
+    const reply = postView({ uri: uri("reply") });
+    const reposted = postView({ uri: uri("reposted") });
+    const foreign = postView({
+      uri: `at://${OTHER_DID}/app.bsky.feed.post/foreign`,
+      author: { did: OTHER_DID, handle: "other.example" },
+    });
+    const foreignRepository = postView({
+      uri: `at://${OTHER_DID}/app.bsky.feed.post/foreign-repository`,
+    });
+    const mismatched = postView({ uri: `at://${OTHER_DID}/app.bsky.feed.post/mismatch` });
+
+    let requestUrl = "";
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      requestUrl =
+        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      return jsonResponse({
+        feed: [
+          { post: original },
+          { post: reply, reply: { root: { uri: original.uri }, parent: { uri: original.uri } } },
+          {
+            post: reposted,
+            reason: { $type: "app.bsky.feed.defs#reasonRepost", by: { did: DID, handle: "other" } },
+          },
+          {
+            post: postView({ uri: uri("pinned") }),
+            reason: { $type: "app.bsky.feed.defs#reasonPin" },
+          },
+          { post: foreign },
+          { post: foreignRepository },
+          { post: mismatched, reason: { $type: "unknown" } },
+        ],
+        cursor: "next",
+      });
+    });
+
+    await expect(fetchAuthorFeed(DID, null, fetchImpl)).resolves.toEqual({
+      ok: true,
+      value: {
+        posts: [original, reply].map((post) => expect.objectContaining({ uri: post.uri })),
+        cursor: "next",
+      },
+    });
+    const request = new URL(requestUrl);
+    expect(request.searchParams.get("actor")).toBe(DID);
+    expect(request.searchParams.get("filter")).toBe("posts_with_replies");
+    expect(request.searchParams.get("includePins")).toBe("false");
+
+    expect(request.searchParams.get("limit")).toBe("100");
+  });
+
+  test("shares an in-flight page without caching its result", async () => {
+    let resolveResponse!: (response: Response) => void;
+    const fetchImpl = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveResponse = resolve;
+        }),
+    );
+    const first = fetchAuthorFeed(DID, null, fetchImpl);
+    const second = fetchAuthorFeed(DID, null, fetchImpl);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    resolveResponse(jsonResponse({ feed: [{ post: postView() }] }));
+    await expect(first).resolves.toEqual({
+      ok: true,
+      value: { posts: [expect.objectContaining({ uri: URI })], cursor: null },
+    });
+    await expect(second).resolves.toEqual({
+      ok: true,
+      value: { posts: [expect.objectContaining({ uri: URI })], cursor: null },
+    });
+
+    const third = fetchAuthorFeed(DID, null, fetchImpl);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    resolveResponse(jsonResponse({ feed: [{ post: postView() }] }));
+    await expect(third).resolves.toEqual({
+      ok: true,
+      value: { posts: [expect.objectContaining({ uri: URI })], cursor: null },
+    });
+  });
+
+  test("cancels the physical request after the last consumer aborts", async () => {
+    vi.useFakeTimers();
+    let physicalSignal: AbortSignal | undefined;
+    const fetchImpl = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      physicalSignal = init?.signal ?? undefined;
+      return new Promise<Response>(() => {});
+    });
+    const controller = new AbortController();
+    const result = fetchAuthorFeed(DID, null, fetchImpl, controller.signal);
+    const expectation = expect(result).rejects.toBeDefined();
+    controller.abort();
+    await vi.runAllTimersAsync();
+
+    await expectation;
+    expect(physicalSignal?.aborted).toBe(true);
+    vi.useRealTimers();
+  });
+
+  test("sends the opaque cursor and treats a missing feed as an error", async () => {
+    let requestUrl = "";
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      requestUrl =
+        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      return jsonResponse({ cursor: "next" });
+    });
+    await expect(fetchAuthorFeed(DID, "opaque/cursor", fetchImpl)).resolves.toEqual({
+      ok: false,
+      reason: "error",
+    });
+    expect(new URL(requestUrl).searchParams.get("cursor")).toBe("opaque/cursor");
+  });
+
+  test("preserves an empty opaque cursor", async () => {
+    let requestUrl = "";
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      requestUrl =
+        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      return jsonResponse({ feed: [{ post: postView() }] });
+    });
+
+    await expect(fetchAuthorFeed(DID, "", fetchImpl)).resolves.toEqual(
+      expect.objectContaining({ ok: true }),
+    );
+    expect(new URL(requestUrl).searchParams.has("cursor")).toBe(true);
+    expect(new URL(requestUrl).searchParams.get("cursor")).toBe("");
+  });
+
+  test("maps unknown accounts and throttles", async () => {
+    await expect(
+      fetchAuthorFeed(DID, null, async () => new Response("", { status: 400 })),
+    ).resolves.toEqual({ ok: false, reason: "notFound" });
+    await expect(
+      fetchAuthorFeed(OTHER_DID, null, async () => new Response("", { status: 429 })),
+    ).resolves.toEqual(expect.objectContaining({ ok: false, reason: "rateLimited" }));
   });
 });
 
@@ -123,62 +304,67 @@ describe("resolveHandle", () => {
     });
   });
 
+  test("shares an in-flight handle resolution without caching the result", async () => {
+    let resolveResponse!: (response: Response) => void;
+    let calls = 0;
+    const fetchImpl = vi.fn(() => {
+      if (calls++ === 0) {
+        return new Promise<Response>((resolve) => {
+          resolveResponse = resolve;
+        });
+      }
+      return Promise.resolve(jsonResponse({ did: DID }));
+    });
+    const first = resolveHandle("bsky.app", fetchImpl);
+    const second = resolveHandle("bsky.app", fetchImpl);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    resolveResponse(jsonResponse({ did: DID }));
+    await expect(first).resolves.toEqual({ ok: true, value: DID });
+    await expect(second).resolves.toEqual({ ok: true, value: DID });
+    await expect(resolveHandle("bsky.app", fetchImpl)).resolves.toEqual({ ok: true, value: DID });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   test("an unknown handle is notFound, a malformed one is badRequest, a server failure is an error", async () => {
-    expect(await resolveHandle("nope", async () => jsonResponse({}, 404))).toEqual({
+    expect(await resolveHandle("unknown.bsky.social", async () => jsonResponse({}, 404))).toEqual({
       ok: false,
       reason: "notFound",
     });
+    expect(
+      await resolveHandle("unknown.bsky.social", async () =>
+        jsonResponse({ error: "HandleNotFound" }, 400),
+      ),
+    ).toEqual({ ok: false, reason: "notFound" });
+    expect(
+      await resolveHandle("unknown.bsky.social", async () =>
+        jsonResponse({ error: "InvalidRequest" }, 400),
+      ),
+    ).toEqual({ ok: false, reason: "notFound" });
+
     expect(await resolveHandle("bad handle", async () => jsonResponse({}, 400))).toEqual({
       ok: false,
       reason: "badRequest",
     });
-    expect(await resolveHandle("nope", async () => jsonResponse({}, 500))).toEqual({
+    expect(await resolveHandle("unknown.bsky.social", async () => jsonResponse({}, 500))).toEqual({
       ok: false,
       reason: "error",
     });
     // throttles are a search concern; here a 429 is a plain error
-    expect(await resolveHandle("nope", async () => jsonResponse({}, 429))).toEqual({
+    expect(await resolveHandle("unknown.bsky.social", async () => jsonResponse({}, 429))).toEqual({
       ok: false,
       reason: "error",
     });
   });
 });
 
-describe("resolvePostRef", () => {
-  test("an at-uri is its own answer, with no request", async () => {
-    const fetchImpl = vi.fn();
-    expect(await resolvePostRef({ kind: "uri", uri: URI }, fetchImpl)).toEqual({
-      ok: true,
-      value: URI,
-    });
-    expect(fetchImpl).not.toHaveBeenCalled();
-  });
-
-  test("a handle ref resolves the DID and builds the at-uri", async () => {
-    expect(
-      await resolvePostRef({ kind: "handle", handle: "bsky.app", rkey: RKEY }, async () =>
-        jsonResponse({ did: DID }),
-      ),
-    ).toEqual({ ok: true, value: URI });
-  });
-
-  test("a failed handle resolution is passed through", async () => {
-    expect(
-      await resolvePostRef({ kind: "handle", handle: "nope", rkey: "3abc" }, async () =>
-        jsonResponse({}, 404),
-      ),
-    ).toEqual({ ok: false, reason: "notFound" });
-  });
-});
-
 describe("searchTaggedPosts", () => {
-  test("maps and caches a successful page", async () => {
+  test("maps a successful page", async () => {
     const fetchImpl = vi.fn(async () => jsonResponse({ posts: [postView()], cursor: "abc" }));
     const result = await searchTaggedPosts("#palindrome", "latest", fetchImpl);
     expect(result).toEqual({ ok: true, value: [expect.objectContaining({ uri: URI })] });
 
     await searchTaggedPosts("#palindrome", "latest", fetchImpl);
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   test("tells a throttle, a bad request and a server error apart", async () => {
@@ -186,10 +372,10 @@ describe("searchTaggedPosts", () => {
     // reusing a key would serve the first answer again
     expect(
       await searchTaggedPosts("#p-403", "top", async () => new Response("", { status: 403 })),
-    ).toEqual({ ok: false, reason: "rateLimited" });
+    ).toEqual(expect.objectContaining({ ok: false, reason: "rateLimited" }));
     expect(
       await searchTaggedPosts("#p-429", "top", async () => new Response("", { status: 429 })),
-    ).toEqual({ ok: false, reason: "rateLimited" });
+    ).toEqual(expect.objectContaining({ ok: false, reason: "rateLimited" }));
     expect(
       await searchTaggedPosts("#p-400", "top", async () => new Response("", { status: 400 })),
     ).toEqual({ ok: false, reason: "badRequest" });
@@ -215,14 +401,12 @@ describe("searchTaggedPosts", () => {
 
   test("a throttle is remembered briefly, so retries stop spending", async () => {
     const fetchImpl = vi.fn(async () => new Response("", { status: 429 }));
-    expect(await searchTaggedPosts("#p", "top", fetchImpl)).toEqual({
-      ok: false,
-      reason: "rateLimited",
-    });
-    expect(await searchTaggedPosts("#p", "top", fetchImpl)).toEqual({
-      ok: false,
-      reason: "rateLimited",
-    });
+    expect(await searchTaggedPosts("#p", "top", fetchImpl)).toEqual(
+      expect.objectContaining({ ok: false, reason: "rateLimited" }),
+    );
+    expect(await searchTaggedPosts("#p", "top", fetchImpl)).toEqual(
+      expect.objectContaining({ ok: false, reason: "rateLimited" }),
+    );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
@@ -243,16 +427,278 @@ describe("searchTaggedPosts", () => {
 });
 
 describe("isRestrictedPost", () => {
-  test("flags adult and logged-out labels", async () => {
+  test("flags adult, author-level, and negated moderation labels", async () => {
+    const base = postView();
     const restricted = await fetchPost(URI, async () =>
       jsonResponse({ posts: [postView({ labels: [{ val: "porn" }] })] }),
     );
     expect(restricted.ok && isRestrictedPost(restricted.value)).toBe(true);
 
-    const clear = await fetchPost(`${URI}2`, async () =>
-      jsonResponse({ posts: [postView({ uri: `${URI}2` })] }),
+    const authorRestricted = await fetchPost(`${URI}2`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}2`,
+            author: { ...base.author, labels: [{ val: "!no-unauthenticated" }] },
+          }),
+        ],
+      }),
     );
-    expect(clear.ok && isRestrictedPost(clear.value)).toBe(false);
+    expect(authorRestricted.ok && isRestrictedPost(authorRestricted.value)).toBe(true);
+
+    const negated = await fetchPost(`${URI}3`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}3`,
+            author: {
+              ...base.author,
+              labels: [
+                {
+                  val: "!no-unauthenticated",
+                  src: DID,
+                  uri: `at://${DID}/app.bsky.actor.profile/self`,
+                  cts: "2026-09-08T00:00:00.000Z",
+                },
+                {
+                  val: "!no-unauthenticated",
+                  src: DID,
+                  uri: `at://${DID}/app.bsky.actor.profile/self`,
+                  cts: "2026-09-08T00:01:00.000Z",
+                  neg: true,
+                },
+              ],
+            },
+          }),
+        ],
+      }),
+    );
+    expect(negated.ok && isRestrictedPost(negated.value)).toBe(false);
+
+    const mixedSources = await fetchPost(`${URI}5`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}5`,
+            author: {
+              ...base.author,
+              labels: [
+                {
+                  val: "porn",
+                  src: DID,
+                  uri: DID,
+                  cts: "2026-09-08T00:00:00.000Z",
+                },
+                {
+                  val: "porn",
+                  src: OTHER_DID,
+                  uri: DID,
+                  cts: "2026-09-08T00:00:00.000Z",
+                },
+                {
+                  val: "porn",
+                  src: DID,
+                  uri: DID,
+                  cts: "2026-09-08T00:01:00.000Z",
+                  neg: true,
+                },
+              ],
+            },
+          }),
+        ],
+      }),
+    );
+    expect(mixedSources.ok && isRestrictedPost(mixedSources.value)).toBe(true);
+  });
+
+  test("does not promote profile adult labels to post restrictions", async () => {
+    const result = await fetchPost(`${URI}8`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}8`,
+            author: {
+              ...postView().author,
+              labels: [
+                {
+                  val: "porn",
+                  src: DID,
+                  uri: `at://${DID}/app.bsky.actor.profile/self`,
+                  cts: "2026-09-08T00:00:00.000Z",
+                },
+              ],
+            },
+          }),
+        ],
+      }),
+    );
+
+    expect(result.ok && isRestrictedPost(result.value)).toBe(false);
+    expect(result.ok && isRestrictedPost(result.value, "accountExplore")).toBe(false);
+  });
+
+  test("fails closed when a label container is malformed", async () => {
+    const result = await fetchPost(`${URI}9`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}9`,
+            labels: {},
+            author: { ...postView().author, labels: {} },
+          }),
+        ],
+      }),
+    );
+
+    expect(result.ok && isRestrictedPost(result.value)).toBe(true);
+    expect(result.ok && isRestrictedPost(result.value, "hashtagExplore")).toBe(false);
+  });
+
+  test("does not treat record hashtags as Explore facets", async () => {
+    const base = postView();
+    const result = await fetchPost(`${URI}4`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}4`,
+            record: { ...base.record, facets: [], tags: ["palindrome"] },
+          }),
+        ],
+      }),
+    );
+    expect(result.ok && result.value.tags).toEqual([]);
+  });
+
+  test("resolves label order and expiry conservatively", async () => {
+    const reordered = await fetchPost(`${URI}8`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}8`,
+            labels: [
+              {
+                val: "porn",
+                src: DID,
+                uri: `${URI}8`,
+                cts: "2026-09-08T00:02:00.000Z",
+                neg: true,
+              },
+              { val: "porn", src: DID, uri: `${URI}8`, cts: "2026-09-08T00:03:00.000Z" },
+            ],
+          }),
+        ],
+      }),
+    );
+    expect(reordered.ok && isRestrictedPost(reordered.value)).toBe(true);
+
+    const expired = await fetchPost(`${URI}9`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}9`,
+            labels: [
+              {
+                val: "porn",
+                src: DID,
+                uri: `${URI}9`,
+                cts: "2020-01-01T00:00:00.000Z",
+                exp: "2020-01-02T00:00:00.000Z",
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+    expect(expired.ok && isRestrictedPost(expired.value)).toBe(false);
+  });
+
+  test("keeps a positive restriction when the response omits a CID", async () => {
+    const result = await fetchPost(`${URI}10`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}10`,
+            cid: undefined,
+            labels: [
+              {
+                val: "porn",
+                src: DID,
+                uri: `${URI}10`,
+                cid: "cid-from-label",
+                cts: "2026-09-08T00:00:00.000Z",
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+    expect(result.ok && isRestrictedPost(result.value)).toBe(true);
+  });
+
+  test("does not let a CID-less negation clear a CID-bound positive", async () => {
+    const result = await fetchPost(`${URI}11`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}11`,
+            cid: undefined,
+            labels: [
+              {
+                val: "porn",
+                src: DID,
+                uri: `${URI}11`,
+                cid: "cid-label",
+                cts: "2026-09-08T00:00:00.000Z",
+              },
+              {
+                val: "porn",
+                src: DID,
+                uri: `${URI}11`,
+                cts: "2026-09-08T00:01:00.000Z",
+                neg: true,
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+
+    expect(result.ok && isRestrictedPost(result.value)).toBe(true);
+  });
+
+  test("maps record labels and scopes author labels explicitly", async () => {
+    const base = postView();
+    const result = await fetchPost(`${URI}6`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}6`,
+            record: { ...base.record, labels: { values: [{ val: "porn" }] } },
+            author: { ...base.author, labels: [{ val: "!no-unauthenticated" }] },
+          }),
+        ],
+      }),
+    );
+    expect(result.ok && result.value.recordLabels).toEqual(["porn"]);
+    expect(result.ok && isRestrictedPost(result.value)).toBe(true);
+    expect(result.ok && isRestrictedPost(result.value, "accountExplore")).toBe(true);
+
+    const authorOnly = await fetchPost(`${URI}7`, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: `${URI}7`,
+            author: {
+              ...base.author,
+              labels: [{ val: "!no-unauthenticated", uri: DID }],
+            },
+          }),
+        ],
+      }),
+    );
+    expect(authorOnly.ok && isRestrictedPost(authorOnly.value)).toBe(true);
+    expect(authorOnly.ok && isRestrictedPost(authorOnly.value, "accountExplore")).toBe(true);
+    expect(authorOnly.ok && isRestrictedPost(authorOnly.value, "hashtagExplore")).toBe(false);
   });
 });
 
@@ -299,7 +745,7 @@ describe("searchQueries", () => {
     // each expectation gets fresh queries: throttle answers are remembered
     expect(
       await searchQueries(["#a", "#b"], "top", async () => new Response("", { status: 403 })),
-    ).toEqual({ ok: false, reason: "rateLimited" });
+    ).toEqual(expect.objectContaining({ ok: false, reason: "rateLimited" }));
     expect(
       await searchQueries(["#c", "#d"], "top", async () => new Response("", { status: 401 })),
     ).toEqual({ ok: false, reason: "error" });

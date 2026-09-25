@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/tes
 import PostReader from "@/components/post-reader";
 import { useBlueskyPost } from "@/hooks/use-bluesky-post";
 import type { PostRef } from "@/lib/bluesky-post";
-import { makePost } from "@/test/bluesky-post";
+import { BSKY_DID, makePost } from "@/test/bluesky-post";
 import { renderWithRouter } from "@/test/render-with-router";
 
 vi.mock("@/hooks/use-bluesky-post", () => ({ useBlueskyPost: vi.fn() }));
@@ -15,7 +15,7 @@ vi.mock("@/components/bluesky-embed", () => ({ default: () => <div data-testid="
 
 const mockedUseBlueskyPost = vi.mocked(useBlueskyPost);
 
-const ref: PostRef = { kind: "uri", uri: "at://did:plc:x/app.bsky.feed.post/1" };
+const ref: PostRef = { kind: "uri", uri: `at://${BSKY_DID}/app.bsky.feed.post/1` };
 
 const retry = () => {};
 

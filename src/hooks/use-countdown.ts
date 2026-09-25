@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 
-// Whole seconds left, counting down from `seconds` on mount and flooring
-// at zero. Mount-fresh by design: the caller renders it only while the
-// cooldown applies, so every episode starts over with no reset logic. A
-// single interval ticks it down; React bails out once it floors. Backs a
-// retry button off a throttle instead of firing straight into it.
-export const useCountdown = (seconds: number): number => {
-  const [remaining, setRemaining] = useState(seconds);
+export const useCountdown = (seconds: number, deadline?: number): number => {
+  const [remaining, setRemaining] = useState(() =>
+    deadline === undefined ? seconds : Math.max(0, Math.ceil((deadline - Date.now()) / 1000)),
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
