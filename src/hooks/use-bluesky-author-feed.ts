@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   BlueskyRequestError,
+  failureStatus,
   fetchAuthorFeed,
   RATE_LIMIT_SECONDS,
   unwrapApiResult,
@@ -42,12 +43,19 @@ const failureFromError = (error: unknown, errorUpdatedAt: number): AuthorFeedFai
   return { reason: error.reason };
 };
 
-const statusForFailure = (failure: AuthorFeedFailure): "notFound" | "rateLimited" | "error" =>
-  failure.reason === "notFound"
-    ? "notFound"
-    : failure.reason === "rateLimited"
-      ? "rateLimited"
-      : "error";
+const AUTHOR_FEED_FAILURES = { notFound: "notFound", rateLimited: "rateLimited" } as const;
+
+const RESTING: Pick<
+  BlueskyAuthorFeedState,
+  "failure" | "nextPageFailure" | "posts" | "hasMore" | "isLoadingMore" | "allLoadedPostsRestricted"
+> = {
+  failure: null,
+  nextPageFailure: null,
+  posts: [],
+  hasMore: false,
+  isLoadingMore: false,
+  allLoadedPostsRestricted: false,
+};
 
 export const useBlueskyAuthorFeed = (actor: string | null): BlueskyAuthorFeedState => {
   const queryClient = useQueryClient();
@@ -120,59 +128,28 @@ export const useBlueskyAuthorFeed = (actor: string | null): BlueskyAuthorFeedSta
   };
 
   if (!actor) {
-    return {
-      ...base,
-      status: "idle",
-      failure: null,
-      nextPageFailure: null,
-      posts: [],
-      hasMore: false,
-      isLoadingMore: false,
-      allLoadedPostsRestricted: false,
-    };
+    return { ...base, ...RESTING, status: "idle" };
   }
   if ((handle !== null && identity.isPending) || (resolvedActor !== null && query.isPending)) {
-    return {
-      ...base,
-      status: "loading",
-      failure: null,
-      nextPageFailure: null,
-      posts: [],
-      hasMore: false,
-      isLoadingMore: false,
-      allLoadedPostsRestricted: false,
-    };
+    return { ...base, ...RESTING, status: "loading" };
   }
   if (identity.isError) {
     const failure = failureFromError(identity.error, identity.errorUpdatedAt);
     return {
       ...base,
-      status: statusForFailure(failure),
+      ...RESTING,
+      status: failureStatus(failure.reason, AUTHOR_FEED_FAILURES, "error"),
       failure,
-      nextPageFailure: null,
-      posts: [],
-      hasMore: false,
-      isLoadingMore: false,
-      allLoadedPostsRestricted: false,
     };
   }
   if (query.isError && !query.data) {
     const failure = failureFromError(query.error, query.errorUpdatedAt);
     return {
       ...base,
-      status: statusForFailure(failure),
+      ...RESTING,
+      status: failureStatus(failure.reason, AUTHOR_FEED_FAILURES, "error"),
       failure,
-      nextPageFailure: null,
-      posts: [],
-      hasMore: false,
-      isLoadingMore: false,
-      allLoadedPostsRestricted: false,
     };
   }
-  return {
-    ...base,
-    status: "ready",
-    failure: null,
-    nextPageFailure,
-  };
+  return { ...base, status: "ready", failure: null, nextPageFailure };
 };

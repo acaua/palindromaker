@@ -6,12 +6,14 @@ import AccountForm from "@/components/account-form";
 import BlueskyPostList from "@/components/bluesky-post-list";
 import PageHeading from "@/components/page-heading";
 import PostLinkForm from "@/components/post-link-form";
+import PostSkeletonGrid from "@/components/post-skeleton-grid";
 import ReaderMain from "@/components/reader-main";
 import { RetryLine, ThrottledRetry } from "@/components/retry-line";
 import { useI18n } from "@/hooks/use-i18n";
 import { useOpenPost } from "@/hooks/use-open-post";
 import { useBlueskySearch } from "@/hooks/use-bluesky-search";
 import type { SearchSort } from "@/lib/bluesky-api";
+import { resetPageView } from "@/lib/page-focus";
 
 const ExploreSearchMode = () => {
   const { lang, t } = useI18n();
@@ -62,19 +64,10 @@ const ExploreSearchMode = () => {
 
       <div className="mt-4">
         {state.status === "loading" && (
-          <>
-            <span role="status" className="sr-only">
-              {t("explore.loading")}
-            </span>
-            <ul aria-hidden="true" className="grid list-none gap-3 p-0 sm:grid-cols-2">
-              {["a", "b", "c", "d"].map((key) => (
-                <li
-                  key={key}
-                  className="h-36 animate-pulse rounded-xl bg-white/70 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                />
-              ))}
-            </ul>
-          </>
+          <PostSkeletonGrid
+            label={t("explore.loading")}
+            itemClassName="h-36 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          />
         )}
 
         {state.status === "ready" && state.posts.length === 0 && (
@@ -115,8 +108,7 @@ export default function ExplorePage() {
   useEffect(() => {
     if (accountRef.current === account) return;
     accountRef.current = account;
-    window.scrollTo(0, 0);
-    document.querySelector<HTMLElement>("main h1")?.focus();
+    resetPageView();
   }, [account]);
 
   return (

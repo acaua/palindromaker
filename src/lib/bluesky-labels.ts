@@ -1,12 +1,5 @@
 import { isDidAccount } from "@/lib/bluesky-account";
-
-type Json = Record<string, unknown>;
-
-const asRecord = (value: unknown): Json | null =>
-  typeof value === "object" && value !== null ? (value as Json) : null;
-
-const asString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
+import { asRecord, asString } from "@/lib/json";
 
 const labelTimestamp = (value: unknown): number | null => {
   if (typeof value !== "string") return null;

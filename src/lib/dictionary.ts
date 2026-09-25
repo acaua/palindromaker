@@ -1,6 +1,6 @@
 import { normalizeText } from "@/lib/check-palindrome";
 import { mirrorWord, mirrorsItself } from "@/lib/mirror-word";
-import { sharedRequest } from "@/lib/shared-request";
+import { abortReason, sharedRequest } from "@/lib/shared-request";
 
 export type Language = "pt-br" | "en" | "es" | "de" | "fr" | "it";
 
@@ -83,9 +83,6 @@ const yieldToBrowser = (): Promise<void> => {
   };
   return scheduler?.yield?.() ?? new Promise((resolve) => setTimeout(resolve));
 };
-
-const abortReason = (signal: AbortSignal): unknown =>
-  signal.reason ?? Object.assign(new Error("The operation was aborted"), { name: "AbortError" });
 
 const throwIfAborted = (signal?: AbortSignal): void => {
   if (signal?.aborted) throw abortReason(signal);

@@ -2,11 +2,12 @@ import { Link } from "@tanstack/react-router";
 
 import BlueskyPostList from "@/components/bluesky-post-list";
 import PageHeading from "@/components/page-heading";
+import PostSkeletonGrid from "@/components/post-skeleton-grid";
 import { RetryLine, ThrottledRetry } from "@/components/retry-line";
 import { useBlueskyAuthorFeed } from "@/hooks/use-bluesky-author-feed";
 import type { AuthorFeedFailure } from "@/hooks/use-bluesky-author-feed";
 import { useI18n } from "@/hooks/use-i18n";
-import { normalizeAccount } from "@/lib/bluesky-account";
+import { isDidAccount, normalizeAccount } from "@/lib/bluesky-account";
 
 const RateLimitedRetry = ({
   failure,
@@ -29,18 +30,7 @@ const ValidAccountFeed = ({ account }: { account: string }) => {
   const state = useBlueskyAuthorFeed(account);
 
   if (state.status === "loading") {
-    return (
-      <>
-        <span role="status" className="sr-only">
-          {t("explore.loading")}
-        </span>
-        <ul aria-hidden="true" className="grid list-none gap-3 p-0 sm:grid-cols-2">
-          {["a", "b", "c", "d"].map((key) => (
-            <li key={key} className="h-48 animate-pulse rounded-xl bg-white/70" />
-          ))}
-        </ul>
-      </>
-    );
+    return <PostSkeletonGrid label={t("explore.loading")} itemClassName="h-48" />;
   }
   if (state.status === "notFound" || state.status === "error" || state.status === "rateLimited") {
     return state.failure?.reason === "rateLimited" ? (
@@ -108,7 +98,7 @@ export default function AccountExplore({ input }: { input: string }) {
       <PageHeading>
         {t("account.heading")}{" "}
         <span className="text-violet-700">
-          {account && /^did:/i.test(account) ? account : `@${account ?? input}`}
+          {account && isDidAccount(account) ? account : `@${account ?? input}`}
         </span>
       </PageHeading>
       <p className="mt-2 max-w-xl text-sm leading-5 text-gray-600 md:mt-3 md:text-base md:leading-6">

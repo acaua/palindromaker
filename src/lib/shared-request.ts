@@ -19,7 +19,7 @@ const forgetScope = (scope: object, requests: Map<string, SharedEntry<unknown>>)
   }
 };
 
-const abortReason = (signal: AbortSignal): unknown =>
+export const abortReason = (signal: AbortSignal): unknown =>
   signal.reason ?? Object.assign(new Error("The operation was aborted"), { name: "AbortError" });
 
 const withConsumerAbort = <T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> => {

@@ -7,6 +7,7 @@ import {
   MALFORMED_LABEL,
   recordLabelValues,
 } from "@/lib/bluesky-labels";
+import { asRecord, asString } from "@/lib/json";
 import { sharedRequest } from "@/lib/shared-request";
 
 export interface BlueskyAuthor {
@@ -85,14 +86,6 @@ const searchFailure = (response: Response): ApiFailure =>
     : malformedOrError(response);
 
 export const SEARCH_LIMIT = 100;
-
-type Json = Record<string, unknown>;
-
-const asRecord = (value: unknown): Json | null =>
-  typeof value === "object" && value !== null ? (value as Json) : null;
-
-const asString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
 
 const asNumber = (value: unknown): number => (typeof value === "number" ? value : 0);
 
@@ -187,19 +180,14 @@ export const isRestrictedPost = (
   const labels = [...post.labels, ...post.recordLabels];
   if (mode === "loggedOut") {
     labels.push(...post.author.accountLabels);
-    labels.push(
-      ...post.author.profileLabels.filter(
-        (label) => label === "!no-unauthenticated" || label === MALFORMED_LABEL,
-      ),
-    );
   } else {
     labels.push(...post.author.accountLabels.filter((label) => ACCESS_LABELS.has(label)));
-    labels.push(
-      ...post.author.profileLabels.filter(
-        (label) => label === "!no-unauthenticated" || label === MALFORMED_LABEL,
-      ),
-    );
   }
+  labels.push(
+    ...post.author.profileLabels.filter(
+      (label) => label === "!no-unauthenticated" || label === MALFORMED_LABEL,
+    ),
+  );
   return labels.some((label) => RESTRICTED_LABELS.has(label));
 };
 
