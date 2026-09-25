@@ -3,12 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   RATE_LIMIT_SECONDS,
   BlueskyRequestError,
+  failureReason,
   failureStatus,
-  isRestrictedPost,
   searchQueries,
   unwrapApiResult,
 } from "@/lib/bluesky-api";
 import type { BlueskyPost, SearchSort } from "@/lib/bluesky-api";
+import { isRestrictedPost } from "@/lib/bluesky-moderation";
 import { blueskyKeys } from "@/queries/query-keys";
 import { isTaggedWith, tagQuery, tagsFor } from "@/lib/bluesky-tags";
 import type { UiLanguage } from "@/lib/i18n";
@@ -52,8 +53,7 @@ export const useBlueskySearch = (lang: UiLanguage, sort: SearchSort): BlueskySea
     return { status: "loading", posts: [], retry };
   }
   if (query.isError) {
-    const reason = query.error instanceof BlueskyRequestError ? query.error.reason : "error";
-    const status = failureStatus(reason, SEARCH_FAILURES, "error");
+    const status = failureStatus(failureReason(query.error), SEARCH_FAILURES, "error");
     if (status === "rateLimited") {
       const retryAt = query.error instanceof BlueskyRequestError ? query.error.retryAt : undefined;
       return {

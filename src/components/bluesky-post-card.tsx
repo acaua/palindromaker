@@ -6,7 +6,7 @@ import { useI18n } from "@/hooks/use-i18n";
 import type { BlueskyPost } from "@/lib/bluesky-api";
 import { postHash } from "@/lib/bluesky-post";
 import { describePost } from "@/lib/bluesky-post-view";
-import type { PostViewMode } from "@/lib/bluesky-post-view";
+import type { ModerationMode } from "@/lib/bluesky-moderation";
 import { formatRelativeTime } from "@/lib/relative-time";
 
 export default function BlueskyPostCard({
@@ -17,7 +17,7 @@ export default function BlueskyPostCard({
 }: {
   post: BlueskyPost;
   showPalindrome?: boolean;
-  viewMode?: PostViewMode;
+  viewMode?: ModerationMode;
   linkAuthor?: boolean;
 }) {
   const { lang, t } = useI18n();

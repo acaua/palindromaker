@@ -1,6 +1,6 @@
 import BlueskyPostCard from "@/components/bluesky-post-card";
 import type { BlueskyPost } from "@/lib/bluesky-api";
-import type { PostViewMode } from "@/lib/bluesky-post-view";
+import type { ModerationMode } from "@/lib/bluesky-moderation";
 
 export default function BlueskyPostList({
   posts,
@@ -10,7 +10,7 @@ export default function BlueskyPostList({
 }: {
   posts: readonly BlueskyPost[];
   showPalindromes?: boolean;
-  viewMode?: PostViewMode;
+  viewMode?: ModerationMode;
   linkAuthor?: boolean;
 }) {
   return (

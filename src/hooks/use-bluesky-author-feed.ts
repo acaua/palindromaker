@@ -9,15 +9,15 @@ import {
   unwrapApiResult,
 } from "@/lib/bluesky-api";
 import type { BlueskyAuthorFeedPage, BlueskyPost } from "@/lib/bluesky-api";
-import { isDidAccount } from "@/lib/bluesky-account";
-import { useBlueskyHandle } from "@/hooks/use-bluesky-handle";
+import { useResolvedActor } from "@/hooks/use-resolved-actor";
 import { blueskyKeys } from "@/queries/query-keys";
-import { describePost } from "@/lib/bluesky-post-view";
+import { postDigest } from "@/lib/bluesky-post-view";
+import type { ThrottleInfo } from "@/lib/throttle";
 import { REMOTE_GC_TIME, REMOTE_STALE_TIME } from "@/queries/query-client";
 
 export type AuthorFeedFailure =
   | { reason: "notFound" | "badRequest" | "error" }
-  | { reason: "rateLimited"; retryAt: number; cooldownSeconds: number };
+  | ({ reason: "rateLimited" } & ThrottleInfo);
 
 export interface BlueskyAuthorFeedState {
   status: "idle" | "loading" | "ready" | "notFound" | "rateLimited" | "error";
@@ -59,16 +59,9 @@ const RESTING: Pick<
 
 export const useBlueskyAuthorFeed = (actor: string | null): BlueskyAuthorFeedState => {
   const queryClient = useQueryClient();
-  const handle = actor !== null && !isDidAccount(actor) ? actor : null;
-  const identity = useBlueskyHandle(handle);
-  const resolvedActor =
-    actor !== null && isDidAccount(actor)
-      ? actor
-      : identity.isError
-        ? null
-        : (identity.data ?? null);
+  const { handle, identity, resolvedActor } = useResolvedActor(actor);
   const query = useInfiniteQuery<BlueskyAuthorFeedPage, BlueskyRequestError>({
-    queryKey: blueskyKeys.authorFeed(resolvedActor ?? "idle"),
+    queryKey: resolvedActor ? blueskyKeys.authorFeed(resolvedActor) : blueskyKeys.authorFeedIdle,
     enabled: resolvedActor !== null,
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam, signal }) => {
@@ -97,15 +90,15 @@ export const useBlueskyAuthorFeed = (actor: string | null): BlueskyAuthorFeedSta
     return result;
   }, [query.data?.pages]);
 
-  const view = useMemo(
-    () => loaded.map((post) => ({ post, view: describePost(post, "accountExplore") })),
+  const digests = useMemo(
+    () => loaded.map((post) => ({ post, digest: postDigest(post, "accountExplore") })),
     [loaded],
   );
-  const posts = view
-    .filter(({ view: postView }) => !postView.restricted && postView.palindrome !== null)
+  const posts = digests
+    .filter(({ digest }) => !digest.restricted && digest.palindrome !== null)
     .map(({ post }) => post);
   const allLoadedPostsRestricted =
-    loaded.length > 0 && view.every(({ view: postView }) => postView.restricted);
+    loaded.length > 0 && digests.every(({ digest }) => digest.restricted);
   const nextPageFailure = query.isFetchNextPageError
     ? failureFromError(query.error, query.errorUpdatedAt)
     : null;

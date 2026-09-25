@@ -1,12 +1,7 @@
 import { BSKY_API, atUriFor, parseAtUri } from "@/lib/bluesky-post";
 import type { FacetRange } from "@/lib/annotated-text";
 import { isDidAccount, isHandleAccount } from "@/lib/bluesky-account";
-import {
-  activeLabels,
-  authorLabelValues,
-  MALFORMED_LABEL,
-  recordLabelValues,
-} from "@/lib/bluesky-labels";
+import { activeLabels, authorLabelValues, recordLabelValues } from "@/lib/bluesky-labels";
 import { asRecord, asString } from "@/lib/json";
 import { sharedRequest } from "@/lib/shared-request";
 
@@ -65,6 +60,9 @@ export const unwrapApiResult = <T>(result: ApiResult<T>): T => {
   return result.value;
 };
 
+export const failureReason = (error: unknown): ApiFailureReason =>
+  error instanceof BlueskyRequestError ? error.reason : "error";
+
 export const failureStatus = <S extends string>(
   reason: ApiFailureReason,
   overrides: Partial<Record<ApiFailureReason, S>>,
@@ -97,6 +95,7 @@ const mapPost = (view: unknown, expected?: { did: string; rkey: string }): Blues
   const text = asString(rec?.text);
   const parsed = rawUri ? parseAtUri(rawUri) : null;
   const did = asString(author?.did);
+  const handle = asString(author?.handle);
   if (
     !post ||
     !author ||
@@ -111,6 +110,8 @@ const mapPost = (view: unknown, expected?: { did: string; rkey: string }): Blues
   }
   if (!isDidAccount(parsed.authority) && !isHandleAccount(parsed.authority)) return null;
   if (isDidAccount(parsed.authority) && parsed.authority !== did) return null;
+  if (isHandleAccount(parsed.authority) && parsed.authority.toLowerCase() !== handle?.toLowerCase())
+    return null;
   if (expected && (expected.did !== did || expected.rkey !== parsed.rkey)) return null;
 
   const uri = atUriFor(did, parsed.rkey);
@@ -146,7 +147,7 @@ const mapPost = (view: unknown, expected?: { did: string; rkey: string }): Blues
     recordLabels: recordLabelValues(rec.labels),
     author: {
       did,
-      handle: asString(author.handle) ?? did,
+      handle: handle ?? did,
       displayName: asString(author.displayName),
       accountLabels: authorLabels.accountLabels,
       profileLabels: authorLabels.profileLabels,
@@ -156,39 +157,6 @@ const mapPost = (view: unknown, expected?: { did: string; rkey: string }): Blues
     repostCount: asNumber(post.repostCount),
     replyCount: asNumber(post.replyCount),
   };
-};
-
-const LEGACY_HASHTAG_LABELS = new Set([
-  "porn",
-  "sexual",
-  "nudity",
-  "graphic-media",
-  "!no-unauthenticated",
-]);
-const RESTRICTED_LABELS = new Set([...LEGACY_HASHTAG_LABELS, "!hide", MALFORMED_LABEL]);
-const ACCESS_LABELS = new Set(["!hide", "!no-unauthenticated", MALFORMED_LABEL]);
-
-export type ModerationMode = "loggedOut" | "accountExplore" | "hashtagExplore";
-
-export const isRestrictedPost = (
-  post: BlueskyPost,
-  mode: ModerationMode = "loggedOut",
-): boolean => {
-  if (mode === "hashtagExplore") {
-    return post.labels.some((label) => LEGACY_HASHTAG_LABELS.has(label));
-  }
-  const labels = [...post.labels, ...post.recordLabels];
-  if (mode === "loggedOut") {
-    labels.push(...post.author.accountLabels);
-  } else {
-    labels.push(...post.author.accountLabels.filter((label) => ACCESS_LABELS.has(label)));
-  }
-  labels.push(
-    ...post.author.profileLabels.filter(
-      (label) => label === "!no-unauthenticated" || label === MALFORMED_LABEL,
-    ),
-  );
-  return labels.some((label) => RESTRICTED_LABELS.has(label));
 };
 
 const RATE_LIMIT_TTL = 60_000;

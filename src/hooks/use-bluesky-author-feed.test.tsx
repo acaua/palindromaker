@@ -248,4 +248,23 @@ describe("useBlueskyAuthorFeed", () => {
     await waitFor(() => expect(result.current.posts).toEqual([first, older]));
     expect(result.current.nextPageFailure).toBeNull();
   });
+
+  test("continues paging on an empty-string opaque cursor", async () => {
+    const first = makePost({ uri: "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/1" });
+    const older = makePost({ uri: "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/2" });
+    mockedFetchAuthorFeed
+      .mockResolvedValueOnce({ ok: true, value: { posts: [first], cursor: "" } })
+      .mockResolvedValueOnce({ ok: true, value: { posts: [older], cursor: null } });
+
+    const { result } = renderHook(() => useBlueskyAuthorFeed(BSKY_DID), {
+      wrapper: queryWrapper(client),
+    });
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.hasMore).toBe(true);
+
+    await act(async () => result.current.loadMore());
+    await waitFor(() => expect(result.current.posts).toEqual([first, older]));
+    expect(mockedFetchAuthorFeed.mock.calls[1]?.[1]).toBe("");
+    expect(result.current.hasMore).toBe(false);
+  });
 });

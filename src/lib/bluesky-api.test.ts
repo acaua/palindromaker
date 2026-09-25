@@ -5,11 +5,11 @@ import {
   clearBlueskyRateLimits,
   fetchAuthorFeed,
   fetchPost,
-  isRestrictedPost,
   resolveHandle,
   searchQueries,
   searchTaggedPosts,
 } from "@/lib/bluesky-api";
+import { isRestrictedPost } from "@/lib/bluesky-moderation";
 import { clearSharedRequests } from "@/lib/shared-request";
 import { BSKY_DID as DID, BSKY_URI as URI } from "@/test/bluesky-post";
 
@@ -124,6 +124,21 @@ describe("fetchPost", () => {
     );
 
     expect(result).toEqual({ ok: true, value: expect.objectContaining({ uri: URI }) });
+  });
+
+  test("drops a handle-authority response whose handle disagrees with the author", async () => {
+    const result = await fetchPost(URI, async () =>
+      jsonResponse({
+        posts: [
+          postView({
+            uri: "at://mallory.bsky.social/app.bsky.feed.post/3kq7aeuwbg42k",
+            author: { did: DID, handle: "alice.bsky.social" },
+          }),
+        ],
+      }),
+    );
+
+    expect(result).toEqual({ ok: false, reason: "notFound" });
   });
 
   test("does not cache a success at the transport seam", async () => {

@@ -5,25 +5,17 @@ import PageHeading from "@/components/page-heading";
 import PostSkeletonGrid from "@/components/post-skeleton-grid";
 import { RetryLine, ThrottledRetry } from "@/components/retry-line";
 import { useBlueskyAuthorFeed } from "@/hooks/use-bluesky-author-feed";
-import type { AuthorFeedFailure } from "@/hooks/use-bluesky-author-feed";
 import { useI18n } from "@/hooks/use-i18n";
 import { isDidAccount, normalizeAccount } from "@/lib/bluesky-account";
+import type { ThrottleInfo } from "@/lib/throttle";
 
 const RateLimitedRetry = ({
-  failure,
+  throttle,
   onRetry,
 }: {
-  failure: AuthorFeedFailure;
+  throttle: ThrottleInfo;
   onRetry: () => void;
-}) =>
-  failure.reason === "rateLimited" ? (
-    <ThrottledRetry
-      key={failure.retryAt}
-      cooldown={failure.cooldownSeconds}
-      retryAt={failure.retryAt}
-      onRetry={onRetry}
-    />
-  ) : null;
+}) => <ThrottledRetry key={throttle.retryAt} throttle={throttle} onRetry={onRetry} />;
 
 const ValidAccountFeed = ({ account }: { account: string }) => {
   const { t } = useI18n();
@@ -32,9 +24,11 @@ const ValidAccountFeed = ({ account }: { account: string }) => {
   if (state.status === "loading") {
     return <PostSkeletonGrid label={t("explore.loading")} itemClassName="h-48" />;
   }
+  const failure = state.failure;
+  const nextFailure = state.nextPageFailure;
   if (state.status === "notFound" || state.status === "error" || state.status === "rateLimited") {
-    return state.failure?.reason === "rateLimited" ? (
-      <RateLimitedRetry failure={state.failure} onRetry={state.retry} />
+    return failure?.reason === "rateLimited" ? (
+      <RateLimitedRetry throttle={failure} onRetry={state.retry} />
     ) : (
       <RetryLine
         message={state.status === "notFound" ? t("account.notFound") : t("explore.error")}
@@ -64,10 +58,10 @@ const ValidAccountFeed = ({ account }: { account: string }) => {
               : t("account.empty")}
         </p>
       )}
-      {state.nextPageFailure?.reason === "rateLimited" && (
-        <RateLimitedRetry failure={state.nextPageFailure} onRetry={state.retry} />
+      {nextFailure?.reason === "rateLimited" && (
+        <RateLimitedRetry throttle={nextFailure} onRetry={state.retry} />
       )}
-      {state.nextPageFailure && state.nextPageFailure.reason !== "rateLimited" && (
+      {nextFailure && nextFailure.reason !== "rateLimited" && (
         <RetryLine
           message={t("account.nextError")}
           tone="error"
@@ -75,7 +69,7 @@ const ValidAccountFeed = ({ account }: { account: string }) => {
           retryLabel={t("explore.retry")}
         />
       )}
-      {state.hasMore && !state.nextPageFailure && (
+      {state.hasMore && !nextFailure && (
         <button
           type="button"
           onClick={state.loadMore}

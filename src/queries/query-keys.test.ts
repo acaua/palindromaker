@@ -7,6 +7,8 @@ describe("bluesky query keys", () => {
   test("owns canonical post, idle, and handle keys", () => {
     expect(blueskyKeys.post(BSKY_URI)).toEqual(["bluesky", "post", BSKY_URI]);
     expect(blueskyKeys.postIdle).toEqual(["bluesky", "post", "idle"]);
+    expect(blueskyKeys.handleIdle).toEqual(["bluesky", "handle", "idle"]);
+    expect(blueskyKeys.authorFeedIdle).toEqual(["bluesky", "author-feed", "idle"]);
     expect(blueskyKeys.handle("Alice.bsky.social")).toEqual([
       "bluesky",
       "handle",

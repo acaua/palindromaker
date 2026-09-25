@@ -98,7 +98,7 @@ The longest palindrome a post's text contains, taken in letter space. Punctuatio
 _Avoid_: substring, match
 
 **Restricted post**:
-A post whose post or record labels mark it adult or unavailable to logged-out viewers. Logged-out reader views also apply account labels and profile `!no-unauthenticated`; Account Explore applies account `!hide`/`!no-unauthenticated` and profile `!no-unauthenticated` to each record without promoting adult or profile-wide labels to every post. Hashtag Explore preserves the legacy post-label-only filter. Its extracted palindrome is withheld.
+A post whose post or record labels mark it adult or unavailable to logged-out viewers. Logged-out reader views also apply account labels and profile `!no-unauthenticated`; Account Explore applies account `!hide`/`!no-unauthenticated` and profile `!no-unauthenticated` to each record without promoting adult or profile-wide labels to every post. Hashtag Explore preserves the legacy post-label-only filter. Its extracted palindrome is withheld. Moderation belongs to the surface, not the post: a post Account Explore lists can still be withheld by the logged-out reader that opens it, because the reader applies the account's adult labels where Account Explore does not.
 _Avoid_: flagged post, NSFW post
 
 **Palindrome tag**:

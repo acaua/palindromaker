@@ -2,14 +2,20 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import { useBlueskySearch } from "@/hooks/use-bluesky-search";
-import { isRestrictedPost, searchQueries } from "@/lib/bluesky-api";
+import { searchQueries } from "@/lib/bluesky-api";
+import { isRestrictedPost } from "@/lib/bluesky-moderation";
 import { BSKY_DID, makePost } from "@/test/bluesky-post";
 import { createTestQueryClient, queryWrapper } from "@/test/query-client";
 
 vi.mock("@/lib/bluesky-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/bluesky-api")>();
-  return { ...actual, searchQueries: vi.fn(), isRestrictedPost: vi.fn() };
+  return { ...actual, searchQueries: vi.fn() };
 });
+
+vi.mock("@/lib/bluesky-moderation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/bluesky-moderation")>()),
+  isRestrictedPost: vi.fn(),
+}));
 
 const mockedSearch = vi.mocked(searchQueries);
 const mockedRestricted = vi.mocked(isRestrictedPost);

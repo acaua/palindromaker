@@ -83,9 +83,8 @@ const ExploreSearchMode = () => {
         {state.status === "rateLimited" && (
           <ThrottledRetry
             key={state.cooldownKey}
+            throttle={{ cooldownSeconds: state.cooldownSeconds, retryAt: state.retryAt }}
             onRetry={state.retry}
-            cooldown={state.cooldownSeconds}
-            retryAt={state.retryAt}
           />
         )}
 

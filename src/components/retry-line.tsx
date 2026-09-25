@@ -1,6 +1,7 @@
 import { useI18n } from "@/hooks/use-i18n";
 import { useCountdown } from "@/hooks/use-countdown";
 import { retryIn } from "@/lib/i18n";
+import type { ThrottleInfo } from "@/lib/throttle";
 
 export interface RetryLineProps {
   message: string;
@@ -31,16 +32,14 @@ export const RetryLine = ({
 );
 
 export const ThrottledRetry = ({
+  throttle,
   onRetry,
-  cooldown,
-  retryAt,
 }: {
+  throttle: ThrottleInfo;
   onRetry: () => void;
-  cooldown: number;
-  retryAt?: number;
 }) => {
   const { lang, t } = useI18n();
-  const remaining = useCountdown(cooldown, retryAt);
+  const remaining = useCountdown(throttle.cooldownSeconds, throttle.retryAt);
   return (
     <RetryLine
       message={t("explore.rateLimited")}
