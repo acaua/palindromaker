@@ -103,6 +103,16 @@ describe("WordFinder", () => {
     expect(screen.queryByLabelText("results")).toBeNull();
   });
 
+  test("a loaded dictionary with an empty search invites typing", async () => {
+    await openLoaded();
+
+    expect(screen.getByText("Type to search…")).toBeTruthy();
+
+    type("ovo");
+    expect(await screen.findByText("Mirror · 1 result")).toBeTruthy();
+    expect(screen.queryByText("Type to search…")).toBeNull();
+  });
+
   test("a failed load reports the error and keeps no results on screen", async () => {
     renderPanel();
     type("ovo");

@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { URI, stubBluesky } from "./bluesky-stubs";
-import { reader, shareUrl } from "./helpers";
+import { expectNoHorizontalOverflow, reader, shareUrl } from "./helpers";
 import { SAMPLE_CONTENT } from "@/lib/sample";
 
 // clipboard access has to be granted for the exact-copy test to observe what
@@ -110,10 +110,13 @@ test("a phone has no horizontal overflow", async ({ page }) => {
   test.skip(!isMobile(), "viewport check is for the mobile project");
   await open(page, `${SAMPLE_CONTENT}\n${SAMPLE_CONTENT}`);
 
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(1);
+  await expectNoHorizontalOverflow(page);
+
+  // a long unbreakable token has to wrap instead of widening the page
+  // (the surface's `break-words`; the sample text is all short words)
+  await open(page, "a".repeat(120));
+
+  await expectNoHorizontalOverflow(page);
 });
 
 test("primary actions are at least 44px on a phone", async ({ page }) => {

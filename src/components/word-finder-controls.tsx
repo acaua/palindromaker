@@ -51,7 +51,7 @@ export default function WordFinderControls({
           aria-label={t("finder.languageAria")}
           value={language}
           onChange={(event) => onLanguageChange(event.target.value as Language)}
-          className="min-h-10 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700"
+          className="min-h-10 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700 max-md:min-h-11"
         >
           {LANGUAGES.map(({ code, label }) => (
             <option key={code} value={code}>
@@ -70,7 +70,7 @@ export default function WordFinderControls({
             type="button"
             aria-pressed={mode === value}
             onClick={() => onModeChange(value)}
-            className={`min-h-9 cursor-pointer rounded-md px-2 py-1 text-xs font-medium transition ${
+            className={`min-h-9 cursor-pointer rounded-md px-2 py-1 text-xs font-medium transition max-md:min-h-11 ${
               mode === value
                 ? "bg-white text-violet-700 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"

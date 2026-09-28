@@ -155,7 +155,7 @@ export default function Reader({
           role="region"
           aria-label={t("reader.ariaLabel")}
           onClick={onSurfaceClick}
-          className="min-h-32 p-6 pb-5 font-mono text-base leading-7 tracking-wide whitespace-pre-wrap text-gray-900 outline-none md:min-h-40 md:p-10 md:pb-8 md:text-xl md:leading-10"
+          className="min-h-32 p-6 pb-5 font-mono text-base leading-7 tracking-wide break-words whitespace-pre-wrap text-gray-900 outline-none md:min-h-40 md:p-10 md:pb-8 md:text-xl md:leading-10"
         >
           {analysis.lines.map((line) => (
             <p key={line.id}>

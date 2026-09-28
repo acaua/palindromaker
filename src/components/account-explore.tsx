@@ -74,7 +74,7 @@ const ValidAccountFeed = ({ account }: { account: string }) => {
           type="button"
           onClick={state.loadMore}
           disabled={state.isLoadingMore}
-          className="mx-auto mt-5 block cursor-pointer rounded-lg border border-violet-200 bg-white px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mx-auto mt-5 block cursor-pointer rounded-lg border border-violet-200 bg-white px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60 max-md:min-h-11"
         >
           {state.isLoadingMore ? t("account.loadingMore") : t("account.loadOlder")}
         </button>

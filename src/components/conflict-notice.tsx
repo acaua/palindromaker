@@ -23,14 +23,14 @@ export default function ConflictNotice({
         <button
           type="button"
           onClick={() => onResolve("theirs")}
-          className="min-h-9 cursor-pointer rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-medium text-amber-900 transition hover:bg-amber-100"
+          className="min-h-9 cursor-pointer rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-medium text-amber-900 transition hover:bg-amber-100 max-md:min-h-11"
         >
           {t("conflict.loadTheirs")}
         </button>
         <button
           type="button"
           onClick={() => onResolve("mine")}
-          className="min-h-9 cursor-pointer rounded-lg border border-transparent bg-amber-700 px-3 py-1.5 font-medium text-white transition hover:bg-amber-800"
+          className="min-h-9 cursor-pointer rounded-lg border border-transparent bg-amber-700 px-3 py-1.5 font-medium text-white transition hover:bg-amber-800 max-md:min-h-11"
         >
           {t("conflict.keepMine")}
         </button>

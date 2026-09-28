@@ -28,6 +28,7 @@ export const pt: Table = {
   "finder.error": "falha ao carregar o dicionário",
   "finder.retry": "tentar novamente",
   "finder.noMatches": "Nenhum resultado",
+  "finder.idle": "Digite para buscar…",
   "finder.hintMirrored":
     "Clique numa palavra para inseri-la no cursor, e o seu espelho do outro lado.",
   "finder.hintPaused":

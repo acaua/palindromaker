@@ -43,4 +43,12 @@ export const saved = (page: Page, text: string) =>
     .poll(() => page.evaluate((key) => localStorage.getItem(key) ?? "", DOC_STORAGE_KEY))
     .toContain(text);
 
+// no horizontal overflow: a 1px tolerance absorbs subpixel rounding
+export async function expectNoHorizontalOverflow(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+}
+
 export type { Locator };

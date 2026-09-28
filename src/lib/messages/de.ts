@@ -28,6 +28,7 @@ export const de: Table = {
   "finder.error": "Wörterbuch konnte nicht geladen werden",
   "finder.retry": "Erneut versuchen",
   "finder.noMatches": "Keine Treffer",
+  "finder.idle": "Zum Suchen tippen…",
   "finder.hintMirrored":
     "Klicke auf ein Wort, um es an der Einfügemarke einzufügen – mit seinem Spiegel auf der anderen Seite.",
   "finder.hintPaused":

@@ -41,9 +41,9 @@ export default function StatusBar({
       <StatusState hasLetters={facts.hasLetters} isPalindrome={facts.isPalindrome} />
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <MirrorSwitch enabled={facts.mirrorEnabled} onToggle={onToggleMirror} />
-        <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
+        <span aria-hidden="true" className="h-4 w-px bg-gray-200 max-md:hidden" />
         <ShareMenu facts={facts} origin={origin} />
-        <span aria-hidden="true" className="h-4 w-px bg-gray-200" />
+        <span aria-hidden="true" className="h-4 w-px bg-gray-200 max-md:hidden" />
         <FindWordsTrigger ref={triggerRef} expanded={finderOpen} onToggle={onToggleFinder} />
       </div>
     </div>
@@ -76,7 +76,7 @@ const MenuAction = ({
     disabled={disabled}
     title={title}
     onClick={onClick}
-    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium ${
+    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium max-md:min-h-11 ${
       disabled
         ? "cursor-not-allowed text-gray-400"
         : "cursor-pointer text-gray-700 hover:bg-gray-50"
@@ -152,7 +152,7 @@ const ShareMenu = ({ facts, origin }: { facts: EditorFacts; origin: string }) =>
         disabled={!shareable}
         title={triggerTitle}
         onClick={toggle}
-        className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium ${
+        className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium max-md:min-h-11 ${
           shareable
             ? "cursor-pointer text-gray-700 hover:bg-gray-100"
             : "cursor-not-allowed text-gray-400"
@@ -224,7 +224,7 @@ const FindWordsTrigger = ({
       aria-controls="word-finder-panel"
       title={t("findWords")}
       onClick={onToggle}
-      className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+      className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 max-md:min-h-11"
     >
       <MagnifyingGlassIcon aria-hidden="true" className="h-4 w-4 text-gray-500" />
       {t("findWords")}
@@ -243,7 +243,7 @@ const MirrorSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
       // keep the editor focus (and caret) when toggling
       onMouseDown={(event) => event.preventDefault()}
       title={enabled ? t("mirror.on") : t("mirror.off")}
-      className="flex cursor-pointer items-center gap-2"
+      className="flex cursor-pointer items-center gap-2 max-md:min-h-11"
     >
       <span
         aria-hidden="true"
