@@ -52,7 +52,7 @@ const ExploreSearchMode = () => {
               type="button"
               aria-pressed={sort === option}
               onClick={() => setSort(option)}
-              className={`cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition ${
+              className={`cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition max-md:min-h-11 ${
                 sort === option ? "bg-violet-600 text-white" : "text-gray-700 hover:bg-gray-100"
               }`}
             >

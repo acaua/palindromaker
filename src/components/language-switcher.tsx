@@ -19,7 +19,7 @@ export default function LanguageSwitcher() {
         setUiLanguage(next);
         prefs.write({ uiLang: next });
       }}
-      className="min-h-9 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700"
+      className="min-h-9 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 max-md:min-h-11"
     >
       {UI_LANGUAGES.map((code) => (
         <option key={code} value={code}>

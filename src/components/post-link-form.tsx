@@ -86,12 +86,12 @@ export default function PostLinkForm({ onSubmitUrl }: { onSubmitUrl: (uri: strin
           aria-invalid={error}
           aria-describedby={error ? errorId : undefined}
           spellCheck="false"
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+          className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 max-md:min-h-11"
         />
         <button
           type="submit"
           disabled={busy || value.trim() === ""}
-          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-600"
+          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-600 max-md:min-h-11"
         >
           <ArrowTopRightOnSquareIcon aria-hidden="true" className="h-4 w-4" />
           {busy ? t("post.checkResolving") : t("post.checkButton")}

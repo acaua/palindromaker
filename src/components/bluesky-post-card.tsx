@@ -36,9 +36,9 @@ export default function BlueskyPostCard({
             <Link
               to="/explore"
               search={{ account: post.author.did }}
-              className="block truncate text-xs text-gray-500 hover:text-violet-700"
+              className="flex items-center text-xs text-gray-500 hover:text-violet-700 max-md:min-h-11"
             >
-              @{post.author.handle}
+              <span className="truncate min-w-0">@{post.author.handle}</span>
             </Link>
           ) : (
             <p className="truncate text-xs text-gray-500">@{post.author.handle}</p>
@@ -78,7 +78,7 @@ export default function BlueskyPostCard({
           to="/p"
           hash={postHash(post.uri)}
           aria-label={`${actionLabel} — @${post.author.handle}`}
-          className="mt-2 block w-full cursor-pointer rounded-lg bg-violet-50 px-3 py-2 text-center text-sm font-medium text-violet-700 transition hover:bg-violet-100"
+          className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-lg bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100 max-md:min-h-11"
         >
           {actionLabel}
         </Link>

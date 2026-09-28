@@ -76,7 +76,7 @@ const MobileMenu = ({ pathname }: { pathname: string }) => {
           aria-label={t("nav.menu")}
           title={t("nav.menu")}
           onClick={toggle}
-          className="ml-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50"
+          className="ml-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50 max-md:min-h-11 max-md:min-w-11"
         >
           {open ? (
             <XMarkIcon aria-hidden="true" className="h-5 w-5" />
