@@ -15,10 +15,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
-      // a touch viewport for the reader only: the editor, dictionary and
-      // Bluesky suites are desktop-shaped, so scoping keeps the run cheap
+      // a touch viewport for the reader and the word-finder layout: the
+      // editor, dictionary and Bluesky suites stay desktop-shaped, so
+      // scoping keeps the run cheap
       name: "mobile",
-      testMatch: /reader\.spec\.ts/,
+      testMatch: /(reader|word-finder-mobile)\.spec\.ts/,
       use: { ...devices["Pixel 7"] },
     },
   ],

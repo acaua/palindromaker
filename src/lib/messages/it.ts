@@ -28,6 +28,7 @@ export const it: Table = {
   "finder.error": "impossibile caricare il dizionario",
   "finder.retry": "riprova",
   "finder.noMatches": "Nessun risultato",
+  "finder.idle": "Digita per cercare…",
   "finder.hintMirrored":
     "Fai clic su una parola per inserirla al cursore, e il suo specchio dall’altro lato.",
   "finder.hintPaused":

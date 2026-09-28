@@ -26,6 +26,7 @@ export const en = {
   "finder.error": "failed to load dictionary",
   "finder.retry": "retry",
   "finder.noMatches": "No matches",
+  "finder.idle": "Type to search…",
   "finder.hintMirrored": "Click a word to insert it at the caret, and its mirror opposite.",
   "finder.hintPaused":
     "Click a word to insert it at the caret. Mirroring resumes once the text reads the same both ways.",

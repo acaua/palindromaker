@@ -5,6 +5,7 @@ import { mkdirSync } from "node:fs";
 
 const breakpoints = [
   ["mobile", 390, 844],
+  ["phone-small", 375, 667],
   ["tablet", 834, 1194],
   ["desktop", 1440, 900],
 ];
@@ -22,6 +23,14 @@ for (const [name, width, height] of breakpoints) {
   await page.waitForTimeout(300);
   await page.screenshot({
     path: new URL(`../screenshots/app-${name}.png`, import.meta.url).pathname,
+  });
+  // the panel with results: a broad search is what fills the list
+  await page.locator("#word-finder-panel input").fill("abac");
+  await page.waitForSelector('[aria-label="results"] [role="listitem"]');
+  await page.locator("#word-finder-panel").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  await page.screenshot({
+    path: new URL(`../screenshots/app-${name}-finder.png`, import.meta.url).pathname,
   });
   // the closed state: no panel, the column re-centers full width
   await page.getByRole("button", { name: "Find words" }).click();

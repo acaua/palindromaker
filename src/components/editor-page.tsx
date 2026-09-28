@@ -58,18 +58,19 @@ export default function EditorPage() {
   };
 
   return (
-    // the word finder is a fixed panel: on md+ the column keeps out of its
-    // way, on mobile the sheet covers the bottom half. `m-auto` centers the
-    // column like the mockup when it fits, and falls back to page scroll
-    // from the top when a long palindrome outgrows the viewport — the
-    // vertical padding is what that fallback rests on, since the auto
-    // margins collapse to nothing exactly then.
+    // the word finder is a fixed panel from md up, so the column keeps out
+    // of its way there; on phones the panel is in the flow below the card and
+    // needs no reservation. `m-auto` centers the column like the mockup when
+    // it fits, and falls back to page scroll from the top when a long
+    // palindrome outgrows the viewport — the vertical padding is what that
+    // fallback rests on, since the auto margins collapse to nothing exactly
+    // then.
     <main
       className={`flex flex-1 flex-col bg-[#faf8f5] px-5 py-5 ${
         // the reservation is the mockup's column inset (27.5rem / 30rem)
         // plus one 1.25rem pad: at md it replaces pr-5, and the mockup
-        // keeps that pad *inside* the column
-        finderOpen ? "max-md:pb-[48dvh] md:pr-[28.75rem] xl:pr-[31.25rem]" : ""
+        // keeps that pad *inside* the column.
+        finderOpen ? "md:pr-[28.75rem] xl:pr-[31.25rem]" : ""
       }`}
     >
       <div className="m-auto w-full max-w-3xl">

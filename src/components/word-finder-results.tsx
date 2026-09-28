@@ -8,7 +8,11 @@ import { mirrorMatch } from "@/lib/dictionary";
 import { mirrorWord } from "@/lib/mirror-word";
 import { resultCount } from "@/lib/i18n";
 
-const ROW_HEIGHT = 32;
+// A fixed row height the virtualizer can position without measuring, so it
+// must match the row's rendered height. It is 44px at every breakpoint: a
+// viewport-dependent height would need re-measuring, and 44 keeps the touch
+// target comfortable on phones.
+const ROW_HEIGHT = 44;
 const OVERSCAN = 6;
 
 // exported for its unit test: a virtualizer measures its scroll container,
@@ -38,7 +42,7 @@ export const ResultRow = ({
       role="listitem"
       aria-posinset={index + 1}
       aria-setsize={total}
-      className="absolute top-0 left-0 h-8 w-full"
+      className="absolute top-0 left-0 h-11 w-full"
       style={{ transform: `translateY(${offset}px)` }}
     >
       <button
@@ -47,7 +51,7 @@ export const ResultRow = ({
         // the word goes in where the caret was left, so the click must not
         // take the editor's focus away first
         onMouseDown={(event) => event.preventDefault()}
-        className="flex h-8 w-full cursor-pointer items-center gap-3 px-4 text-left hover:bg-white"
+        className="flex h-11 w-full cursor-pointer items-center gap-3 px-4 text-left hover:bg-white"
       >
         <span className="min-w-0 flex-1 truncate" title={word}>
           {word}
@@ -68,7 +72,9 @@ export const ResultRow = ({
 };
 
 // The result list: broad searches match hundreds of thousands of words, so
-// only the rows in view exist in the DOM.
+// only the rows in view exist in the DOM. On phones the panel is in the page
+// flow with no fixed height, so the list caps itself (`flex-none` instead of
+// the collapsing `flex-1`) and scrolls internally.
 export default function WordFinderResults({
   words,
   dictionary,
@@ -111,7 +117,7 @@ export default function WordFinderResults({
         ref={scrollerRef}
         role="list"
         aria-label={t("finder.resultsAria")}
-        className="min-h-0 flex-1 overflow-y-auto font-mono text-base"
+        className="min-h-0 flex-1 overflow-y-auto font-mono text-base max-md:flex-none max-md:max-h-[55dvh]"
       >
         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {virtualizer.getVirtualItems().map((row) => (
