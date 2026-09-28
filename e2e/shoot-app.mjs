@@ -26,7 +26,7 @@ for (const [name, width, height] of breakpoints) {
   });
   // the panel with results: a broad search is what fills the list
   await page.locator("#word-finder-panel input").fill("abac");
-  await page.waitForSelector('[aria-label="results"] [role="listitem"]');
+  await page.waitForSelector('#word-finder-panel [role="listitem"]');
   await page.locator("#word-finder-panel").scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
   await page.screenshot({

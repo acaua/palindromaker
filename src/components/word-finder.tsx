@@ -118,7 +118,11 @@ export default function WordFinder({
         {state.status === "error" && (
           <p className="px-4 pb-4 text-sm text-red-700">
             {t("finder.error")}{" "}
-            <button type="button" onClick={state.retry} className="cursor-pointer underline">
+            <button
+              type="button"
+              onClick={state.retry}
+              className="cursor-pointer underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
+            >
               {t("finder.retry")}
             </button>
           </p>

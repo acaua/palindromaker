@@ -111,6 +111,12 @@ test("a phone has no horizontal overflow", async ({ page }) => {
   await open(page, `${SAMPLE_CONTENT}\n${SAMPLE_CONTENT}`);
 
   await expectNoHorizontalOverflow(page);
+
+  // a long unbreakable token has to wrap instead of widening the page
+  // (the surface's `break-words`; the sample text is all short words)
+  await open(page, "a".repeat(120));
+
+  await expectNoHorizontalOverflow(page);
 });
 
 test("primary actions are at least 44px on a phone", async ({ page }) => {

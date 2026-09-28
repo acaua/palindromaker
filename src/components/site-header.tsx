@@ -11,7 +11,7 @@ const desktopLinkClass = (active: boolean) =>
   `text-sm ${active ? "font-semibold text-violet-700" : "font-medium text-gray-600 transition hover:text-gray-900"}`;
 
 const panelLinkClass = (active: boolean) =>
-  `rounded-lg px-3 py-2.5 text-sm ${active ? "bg-violet-50 font-semibold text-violet-700" : "font-medium text-gray-700 transition hover:bg-gray-50"}`;
+  `rounded-lg px-3 py-2.5 text-sm max-md:min-h-11 ${active ? "bg-violet-50 font-semibold text-violet-700" : "font-medium text-gray-700 transition hover:bg-gray-50"}`;
 
 // the brand goes home; the page's visible name lives in the header, not in
 // a heading, so each page carries its own h1
